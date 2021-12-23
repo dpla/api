@@ -30,7 +30,8 @@ class PublicationRoutes()(implicit val system: ActorSystem[_]) {
               case Success(response) => response match {
                 case Right(pubsFuture) =>
                   onComplete(pubsFuture) {
-                    case Success(pubs) => complete(pubs)
+                    case Success(pubs) =>
+                      complete(pubs)
                     case Failure(e) =>
                       // Failure to parse ElasticSearch response
                       System.out.println(s"Error: $e")
@@ -53,20 +54,29 @@ class PublicationRoutes()(implicit val system: ActorSystem[_]) {
         path(Segment) { id =>
           get {
             rejectEmptyResponse {
+
               onComplete(ElasticSearchClient.find(id)) {
                 case Success(response) => response match {
-                  case Right(pub) => complete(pub)
-                  case Left(status) => {
+                  case Right(pubFuture) =>
+                    onComplete(pubFuture) {
+                      case Success(pub) =>
+                        complete(pub)
+                      case Failure(e) =>
+                        // Failure to parse ElasticSearch response
+                        System.out.println(s"Error: $e")
+                        complete(InternalServerError)
+                    }
+                  case Left(status) =>
+                    // ElasticSearch returned an error
                     val code = status.value
                     val msg = status.reason
                     System.out.println(s"Error: $code: $msg")
                     complete(InternalServerError)
-                  }
                 }
-                case Failure(e) => {
+                case Failure(e) =>
+                  // The call to the ElasticSearch API failed
                   System.out.println(e)
                   complete(InternalServerError)
-                }
               }
             }
           }

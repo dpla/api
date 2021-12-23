@@ -12,7 +12,7 @@ import akka.http.scaladsl.unmarshalling._
 object ElasticSearchClient {
 
   // TODO move to environmental variable
-  val elasticSearchEndpoint = "http://localhost:9200/eleanor/"
+  val elasticSearchEndpoint = "http://localhost:9200/eleanor"
 
   def all: Future[Either[StatusCode, Future[Publications]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
@@ -38,24 +38,24 @@ object ElasticSearchClient {
     })
   }
 
-  def find(id: String): Future[Either[StatusCode, Publication]] = {
+  def find(id: String): Future[Either[StatusCode, Future[Publication]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map/onComplete
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
+    val uri = s"$elasticSearchEndpoint/_doc/$id"
+
     val response: Future[HttpResponse] =
-      Http().singleRequest(HttpRequest(uri = s"$elasticSearchEndpoint/_doc/$id"))
+      Http().singleRequest(HttpRequest(uri = uri))
 
     response.map(res => {
       res.status.intValue match {
-        case 200 => Right(res.entity.toString.parseJson.convertTo[Publication])
+        case 200 =>
+          val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
+          val pub: Future[Publication] = body.map(_.parseJson.convertTo[Publication])
+          Right(pub)
         case _ => Left(res.status)
       }
     })
   }
 }
-
-case class ElasticSearchError(
-                             code: Int,
-                             message: String
-                             )
