@@ -1,21 +1,7 @@
 package dpla.publications
 
-import com.example.UserRegistry.ActionPerformed
-
-//#json-formats
 import spray.json.DefaultJsonProtocol
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat, _}
-
-//object JsonFormats  {
-//  // import the default encoders for primitive types (Int, String, Lists etc)
-//  import DefaultJsonProtocol._
-//
-//  implicit val publicationJsonFormat = jsonFormat2(Publication)
-//  implicit val publicationsJsonFormat = jsonFormat1(Publications)
-//
-//  implicit val actionPerformedJsonFormat = jsonFormat1(ActionPerformed)
-//}
-//#json-formats
+import spray.json.{JsString, JsValue, RootJsonFormat, _}
 
 object JsonFormats extends DefaultJsonProtocol {
 
@@ -70,7 +56,7 @@ object JsonFormats extends DefaultJsonProtocol {
         case unrecognized => deserializationError(s"json serialization error $unrecognized")
       }
 
-      Publications(count, 1, 1)
+      Publications(count, 0, 0)
     }
   }
 }

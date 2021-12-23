@@ -29,10 +29,7 @@ object RunApp {
   def main(args: Array[String]): Unit = {
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val publicationRegistryActor = context.spawn(PublicationRegistry(), "PublicationRegistryActor")
-      context.watch(publicationRegistryActor)
-
-      val routes = new PublicationRoutes(publicationRegistryActor)(context.system)
+      val routes = new PublicationRoutes()(context.system)
       startHttpServer(routes.publicationRoutes)(context.system)
 
       Behaviors.empty
