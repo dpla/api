@@ -10,23 +10,24 @@ import akka.util.Timeout
 
 import scala.util.{Failure, Success}
 
-class PublicationRoutes()(implicit val system: ActorSystem[_]) {
+class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val system: ActorSystem[_]) {
 
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
   import JsonFormats._
 
   // If ask takes more time than this to complete the request is failed
-  private implicit val timeout = Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
+  private implicit val timeout: Timeout = Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
 
   // needed for the future map/onComplete
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
+
 
   val publicationRoutes: Route =
     pathPrefix("publications") {
       concat(
         pathEnd {
           get {
-            onComplete(ElasticSearchClient.all) {
+            onComplete(elasticSearchClient.all) {
               case Success(response) => response match {
                 case Right(pubsFuture) =>
                   onComplete(pubsFuture) {
@@ -55,7 +56,7 @@ class PublicationRoutes()(implicit val system: ActorSystem[_]) {
           get {
             rejectEmptyResponse {
 
-              onComplete(ElasticSearchClient.find(id)) {
+              onComplete(elasticSearchClient.find(id)) {
                 case Success(response) => response match {
                   case Right(pubFuture) =>
                     onComplete(pubFuture) {

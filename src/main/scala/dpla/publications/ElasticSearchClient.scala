@@ -9,10 +9,8 @@ import spray.json._
 import JsonFormats._
 import akka.http.scaladsl.unmarshalling._
 
-object ElasticSearchClient {
+class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-  // TODO move to environmental variable
-  val elasticSearchEndpoint = "http://localhost:9200/eleanor"
 
   def all: Future[Either[StatusCode, Future[Publications]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")

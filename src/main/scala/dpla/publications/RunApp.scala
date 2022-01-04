@@ -27,9 +27,17 @@ object RunApp {
   }
   //#start-http-server
   def main(args: Array[String]): Unit = {
+
+    val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
+      case "" => "http://localhost:9200/eleanor"
+      case x => x
+    }
+
+    val elasticSearchClient = new ElasticSearchClient(elasticSearchEndpoint)
+
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val routes = new PublicationRoutes()(context.system)
+      val routes = new PublicationRoutes(elasticSearchClient)(context.system)
       startHttpServer(routes.publicationRoutes)(context.system)
 
       Behaviors.empty
