@@ -8,29 +8,48 @@ import scala.annotation.tailrec
 object JsonFormats extends DefaultJsonProtocol {
 
   implicit object PublicationFormat extends RootJsonFormat[Publication] {
-    def write(pub: Publication): JsValue =
-      JsObject(
-        "sourceUri" -> pub.sourceUri.toJson,
-        "title" -> pub.title.toJson
-      ).toJson
 
     def read(json: JsValue): Publication = {
       val root: JsObject = json.asJsObject()
 
       Publication(
+        author = parseStringArray(root, "_source", "author"),
+        genre = parseStringArray(root, "_source", "genre"),
+        id = parseString(root, "_id"),
+        itemUri = parseString(root, "_source", "itemUri"),
+        language = parseStringArray(root, "_source", "language"),
+        payloadUri = parseStringArray(root, "_source", "payloadUri"),
         sourceUri = parseString(root, "_source", "sourceUri"),
+        summary = parseStringArray(root, "_source", "summary"),
         title = parseStringArray(root, "_source", "title")
       )
     }
+
+    def write(pub: Publication): JsValue =
+      JsObject(
+        "count" -> JsNumber(1),
+        "docs" -> JsObject(
+          "id" -> pub.id.toJson,
+          "dataProvider" -> pub.sourceUri.toJson,
+          "ingestType" -> JsString("ebook"),
+          "isShownAt" -> pub.itemUri.toJson,
+          "object" -> pub.payloadUri.toJson,
+          "sourceResource" -> JsObject(
+            "creator" -> pub.author.toJson,
+            "description" -> pub.summary.toJson,
+            "language" -> JsObject(
+              "name" -> pub.language.toJson,
+            ),
+            "title" -> pub.title.toJson,
+            "subject" -> JsObject(
+              "name" -> pub.genre.toJson
+            )
+          )
+        )
+      ).toJson
   }
 
   implicit object PublicationsFormat extends RootJsonFormat[Publications] {
-    def write(pl: Publications): JsValue =
-      JsObject(
-        "count" -> pl.count.toJson,
-        "start" -> pl.start.toJson,
-        "limit" -> pl.limit.toJson
-      ).toJson
 
     def read(json: JsValue): Publications = {
 
@@ -42,6 +61,13 @@ object JsonFormats extends DefaultJsonProtocol {
         start = 0
       )
     }
+
+    def write(pl: Publications): JsValue =
+      JsObject(
+        "count" -> pl.count.toJson,
+        "start" -> pl.start.toJson,
+        "limit" -> pl.limit.toJson
+      ).toJson
   }
 
   // Methods for parsing JSON
@@ -141,6 +167,13 @@ case class Publications(
                        )
 
 case class Publication(
+                        author: Seq[String],
+                        genre: Seq[String],
+                        id: Option[String],
+                        itemUri: Option[String],
+                        language: Seq[String],
+                        payloadUri: Seq[String],
                         sourceUri: Option[String],
+                        summary: Seq[String],
                         title: Seq[String]
                       )
