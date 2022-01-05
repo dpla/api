@@ -8,7 +8,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
   implicit object PublicationFormat extends RootJsonFormat[Publication] {
 
     def read(json: JsValue): Publication = {
-      val root: JsObject = json.asJsObject()
+      val root: JsObject = json.asJsObject
 
       Publication(
         author = readStringArray(root, "_source", "author"),

@@ -7,8 +7,6 @@ import scala.annotation.tailrec
 /** Methods for reading JSON **/
 trait JsonFieldReader {
 
-  def foo: String = "hello"
-
   def readString(root: JsObject, path: String*): Option[String] = {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
