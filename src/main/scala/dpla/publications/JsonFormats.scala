@@ -20,33 +20,36 @@ object JsonFormats extends DefaultJsonProtocol {
         language = parseStringArray(root, "_source", "language"),
         payloadUri = parseStringArray(root, "_source", "payloadUri"),
         sourceUri = parseString(root, "_source", "sourceUri"),
+        subtitle = parseStringArray(root, "_source", "subtitle"),
         summary = parseStringArray(root, "_source", "summary"),
         title = parseStringArray(root, "_source", "title")
       )
     }
 
     def write(pub: Publication): JsValue =
-      JsObject(
+
+      filterEmptyFields(JsObject(
         "count" -> JsNumber(1),
-        "docs" -> JsObject(
+        "docs" -> filterEmptyFields(JsObject(
           "id" -> pub.id.toJson,
           "dataProvider" -> pub.sourceUri.toJson,
           "ingestType" -> JsString("ebook"),
           "isShownAt" -> pub.itemUri.toJson,
           "object" -> pub.payloadUri.toJson,
-          "sourceResource" -> JsObject(
+          "sourceResource" -> filterEmptyFields(JsObject(
             "creator" -> pub.author.toJson,
             "description" -> pub.summary.toJson,
-            "language" -> JsObject(
+            "language" -> filterEmptyFields(JsObject(
               "name" -> pub.language.toJson,
-            ),
-            "title" -> pub.title.toJson,
-            "subject" -> JsObject(
+            )),
+            "subject" -> filterEmptyFields(JsObject(
               "name" -> pub.genre.toJson
-            )
-          )
-        )
-      ).toJson
+            )),
+            "subtitle" -> pub.subtitle.toJson,
+            "title" -> pub.title.toJson
+          ))
+        ))
+      )).toJson
   }
 
   implicit object PublicationsFormat extends RootJsonFormat[Publications] {
@@ -70,7 +73,7 @@ object JsonFormats extends DefaultJsonProtocol {
       ).toJson
   }
 
-  // Methods for parsing JSON
+  /** Methods for reading JSON **/
 
   def parseString(root: JsObject, path: String*): Option[String] = {
     val nestedObjects: Seq[String] = path.dropRight(1)
@@ -155,9 +158,23 @@ object JsonFormats extends DefaultJsonProtocol {
       case Seq(JsNumber(value)) => Some(value.intValue)
       case _ => None
     }
+
+  /** Methods for writing JSON **/
+
+  // Filter out fields with null values or empty arrays.
+  def filterEmptyFields(obj: JsObject): JsObject = {
+    val filtered: Map[String, JsValue] = obj.fields.filterNot(_._2 match {
+      case JsNull => true
+      case JsArray(values) =>
+        if (values.isEmpty) true else false
+      case _ => false
+    })
+
+    JsObject(filtered)
+  }
 }
 
-// Case classes
+/** Case classes for reading ElasticSearch responses **/
 
 case class Publications(
                          count: Option[Int],
@@ -174,6 +191,7 @@ case class Publication(
                         language: Seq[String],
                         payloadUri: Seq[String],
                         sourceUri: Option[String],
+                        subtitle: Seq[String],
                         summary: Seq[String],
                         title: Seq[String]
                       )
