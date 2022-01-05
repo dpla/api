@@ -11,7 +11,6 @@ import akka.http.scaladsl.unmarshalling._
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-
   def all: Future[Either[StatusCode, Future[Publications]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map/onComplete

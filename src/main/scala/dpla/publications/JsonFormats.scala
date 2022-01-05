@@ -24,9 +24,12 @@ object JsonFormats extends DefaultJsonProtocol {
         case _ => None
       }
 
-      val title: Option[String] = source.getFields("title") match {
-        case Seq(JsString(value)) => Some(value)
-        case _ => None
+      val title: Seq[String] = source.getFields("title") match {
+        case Seq(JsArray(vector)) => vector.flatMap(_ match {
+          case JsString(value) => Some(value)
+          case _ => None
+        })
+        case _ => Seq[String]()
       }
 
       Publication(sourceUri, title)
@@ -70,5 +73,5 @@ case class Publications(
 
 case class Publication(
                         sourceUri: Option[String],
-                        title: Option[String]
+                        title: Seq[String]
                       )
