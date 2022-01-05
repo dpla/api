@@ -3,6 +3,8 @@ package dpla.publications
 import spray.json.DefaultJsonProtocol
 import spray.json.{JsString, JsValue, RootJsonFormat, _}
 
+import scala.annotation.tailrec
+
 object JsonFormats extends DefaultJsonProtocol {
 
   implicit object PublicationFormat extends RootJsonFormat[Publication] {
@@ -13,17 +15,12 @@ object JsonFormats extends DefaultJsonProtocol {
       ).toJson
 
     def read(json: JsValue): Publication = {
+      val root: JsObject = json.asJsObject()
 
-      val source: JsObject = json.asJsObject.getFields("_source") match {
-        case Seq(obj: JsObject) => obj
-        case unrecognized => deserializationError(s"json serialization error $unrecognized")
-      }
-
-      val sourceUri: Option[String] = getStringOpt(source, "sourceUri")
-
-      val title: Seq[String] = getStringSeq(source, "title")
-
-      Publication(sourceUri, title)
+      Publication(
+        sourceUri = parseString(root, "_source", "sourceUri"),
+        title = parseStringArray(root, "_source", "title")
+      )
     }
   }
 
@@ -37,45 +34,109 @@ object JsonFormats extends DefaultJsonProtocol {
 
     def read(json: JsValue): Publications = {
 
-      val count: Option[Int] = json.asJsObject.getFields("hits") match {
-        case Seq(obj: JsObject) =>
-          obj.getFields("total") match {
-            case Seq(obj: JsObject) => getIntOpt(obj, "value")
-            case unrecognized => deserializationError(s"json serialization error $unrecognized")
-          }
-        case unrecognized => deserializationError(s"json serialization error $unrecognized")
-      }
+      val root = json.asJsObject
 
-      Publications(count, 0, 0)
+      Publications(
+        count = parseInt(root, "hits", "total", "value"),
+        limit = 0,
+        start = 0
+      )
     }
   }
 
-  def getStringOpt(obj: JsObject, fieldName: String): Option[String] =
-    obj.getFields(fieldName) match {
+  // Methods for parsing JSON
+
+  def parseString(root: JsObject, path: String*): Option[String] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    getNestedObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getStringOpt(parent, child)
+        case _ => None // no children were provided in method parameters
+      }
+      case _ => None // parent object not found
+    }
+  }
+
+  def parseStringArray(root: JsObject, path: String*): Seq[String] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    getNestedObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getStringSeq(parent, child)
+        case _ => Seq[String]() // no children were provided in method parameters
+      }
+      case _ => Seq[String]() // parent object not found
+    }
+  }
+
+  def parseInt(root: JsObject, path: String*): Option[Int] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    getNestedObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getIntOpt(parent, child)
+        case _ => None // no children were provided in method parameters
+      }
+      case _ => None // parent object not found
+    }
+  }
+
+  def getNestedObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
+
+    @tailrec
+    def getNext(current: Option[JsObject], next: Seq[String]): Option[JsObject] =
+      if (next.isEmpty) current
+      else {
+        current match {
+          case Some(obj) => getNext(getObjOpt(obj, next.head), next.drop(1))
+          case _ => None
+        }
+      }
+
+    getNext(Some(root), children)
+  }
+
+  def getObjOpt(parent: JsObject, child: String): Option[JsObject] = {
+    parent.getFields(child) match {
+      case Seq(value: JsObject) => Some(value)
+      case _ => None
+    }
+  }
+
+  def getStringOpt(parent: JsObject, child: String): Option[String] =
+    parent.getFields(child) match {
       case Seq(JsString(value)) => Some(value)
+      case Seq(JsNumber(value)) => Some(value.toString)
       case _ => None
     }
 
-  def getStringSeq(obj: JsObject, fieldName: String): Seq[String] =
-    obj.getFields(fieldName) match {
+  def getStringSeq(parent: JsObject, child: String): Seq[String] =
+    parent.getFields(child) match {
       case Seq(JsArray(vector)) => vector.flatMap(_ match {
         case JsString(value) => Some(value)
         case _ => None
       })
+      case Seq(JsString(value)) => Seq(value)
       case _ => Seq[String]()
     }
 
-  def getIntOpt(obj: JsObject, fieldName: String): Option[Int] =
-    obj.getFields(fieldName) match {
+  def getIntOpt(parent: JsObject, child: String): Option[Int] =
+    parent.getFields(child) match {
       case Seq(JsNumber(value)) => Some(value.intValue)
       case _ => None
     }
 }
 
+// Case classes
+
 case class Publications(
                          count: Option[Int],
-                         start: Int,
-                         limit: Int
+                         limit: Int,
+                         start: Int
                          //                             docs: Array[Publication]
                        )
 
