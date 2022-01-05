@@ -19,18 +19,9 @@ object JsonFormats extends DefaultJsonProtocol {
         case unrecognized => deserializationError(s"json serialization error $unrecognized")
       }
 
-      val sourceUri: Option[String] = source.getFields("sourceUri") match {
-        case Seq(JsString(value)) => Some(value)
-        case _ => None
-      }
+      val sourceUri: Option[String] = getStringOpt(source, "sourceUri")
 
-      val title: Seq[String] = source.getFields("title") match {
-        case Seq(JsArray(vector)) => vector.flatMap(_ match {
-          case JsString(value) => Some(value)
-          case _ => None
-        })
-        case _ => Seq[String]()
-      }
+      val title: Seq[String] = getStringSeq(source, "title")
 
       Publication(sourceUri, title)
     }
@@ -46,14 +37,10 @@ object JsonFormats extends DefaultJsonProtocol {
 
     def read(json: JsValue): Publications = {
 
-      val count: Int = json.asJsObject.getFields("hits") match {
+      val count: Option[Int] = json.asJsObject.getFields("hits") match {
         case Seq(obj: JsObject) =>
           obj.getFields("total") match {
-            case Seq(obj: JsObject) =>
-              obj.getFields("value") match {
-                case Seq(JsNumber(value)) => value.intValue
-                case unrecognized => deserializationError(s"json serialization error $unrecognized")
-              }
+            case Seq(obj: JsObject) => getIntOpt(obj, "value")
             case unrecognized => deserializationError(s"json serialization error $unrecognized")
           }
         case unrecognized => deserializationError(s"json serialization error $unrecognized")
@@ -62,10 +49,31 @@ object JsonFormats extends DefaultJsonProtocol {
       Publications(count, 0, 0)
     }
   }
+
+  def getStringOpt(obj: JsObject, fieldName: String): Option[String] =
+    obj.getFields(fieldName) match {
+      case Seq(JsString(value)) => Some(value)
+      case _ => None
+    }
+
+  def getStringSeq(obj: JsObject, fieldName: String): Seq[String] =
+    obj.getFields(fieldName) match {
+      case Seq(JsArray(vector)) => vector.flatMap(_ match {
+        case JsString(value) => Some(value)
+        case _ => None
+      })
+      case _ => Seq[String]()
+    }
+
+  def getIntOpt(obj: JsObject, fieldName: String): Option[Int] =
+    obj.getFields(fieldName) match {
+      case Seq(JsNumber(value)) => Some(value.intValue)
+      case _ => None
+    }
 }
 
 case class Publications(
-                         count: Int,
+                         count: Option[Int],
                          start: Int,
                          limit: Int
                          //                             docs: Array[Publication]
