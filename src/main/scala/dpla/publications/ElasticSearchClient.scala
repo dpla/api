@@ -11,12 +11,12 @@ import akka.http.scaladsl.unmarshalling._
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-  def all: Future[Either[StatusCode, Future[PublicationList]]] = {
+  def search(): Future[Either[StatusCode, Future[PublicationList]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map/onComplete
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
-    val uri = s"$elasticSearchEndpoint/_search?q=*"
+    val uri = s"$elasticSearchEndpoint/_search"
 
     System.out.println(uri)
 
@@ -49,7 +49,7 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
     })
   }
 
-  def find(id: String): Future[Either[StatusCode, Future[SinglePublication]]] = {
+  def fetch(id: String): Future[Either[StatusCode, Future[SinglePublication]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map/onComplete
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
