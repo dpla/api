@@ -73,7 +73,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
   }
 
-  implicit object PublicationsFormat extends RootJsonFormat[PublicationList] {
+  implicit object PublicationListFormat extends RootJsonFormat[PublicationList] {
 
     def read(json: JsValue): PublicationList = {
       val root = json.asJsObject
