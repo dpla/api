@@ -6,7 +6,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 import JsonFormats._
 
-class PublicationMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
+class PublicationListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
 
   def readFile(filePath: String): String = {
     val source: String = getClass.getResource(filePath).getPath
