@@ -27,36 +27,38 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       )
     }
 
-    def write(pub: Publication): JsValue =
+    def write(pub: Publication): JsValue = {
 
-      filterEmptyFields(JsObject(
+      // TODO move count and docs root to another case class for SinglePublication
+      JsObject(
         "count" -> JsNumber(1),
-        "docs" -> filterEmptyFields(JsObject(
+        "docs" -> filterIfEmpty(JsObject(
           "id" -> pub.id.toJson,
           "dataProvider" -> pub.sourceUri.toJson,
           "ingestType" -> JsString("ebook"),
           "isShownAt" -> pub.itemUri.toJson,
           "object" -> pub.payloadUri.toJson,
-          "sourceResource" -> filterEmptyFields(JsObject(
+          "sourceResource" -> filterIfEmpty(JsObject(
             "creator" -> pub.author.toJson,
-            "date" -> filterEmptyFields(JsObject(
+            "date" -> filterIfEmpty(JsObject(
               "displayDate" -> pub.publicationDate.toJson
             )),
             "description" -> pub.summary.toJson,
             "format" -> pub.medium.toJson,
-            "language" -> filterEmptyFields(JsObject(
+            "language" -> filterIfEmpty(JsObject(
               "name" -> pub.language.toJson,
             )),
             "publisher" -> pub.publisher.toJson,
-            "subject" -> filterEmptyFields(JsObject(
+            "subject" -> filterIfEmpty(JsObject(
               "name" -> pub.genre.toJson
             )),
             "subtitle" -> pub.subtitle.toJson,
             "title" -> pub.title.toJson,
             "type" -> JsString("ebook")
-          ))
+          )
         ))
       )).toJson
+    }
   }
 
   implicit object PublicationsFormat extends RootJsonFormat[Publications] {
@@ -82,21 +84,27 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
   /** Methods for writing JSON **/
 
-  // Filter out fields with null values or empty arrays.
-  def filterEmptyFields(obj: JsObject): JsObject = {
-    val filtered: Map[String, JsValue] = obj.fields.filterNot(_._2 match {
-      case JsNull => true
-      case JsArray(values) =>
-        if (values.isEmpty) true else false
-      case _ => false
-    })
+  // Filter out fields whose values are: null, empty array, or object with all empty fields.
+  def filterIfEmpty(obj: JsObject): JsObject = {
 
+    def filterFields(fields: Map[String, JsValue]): Map[String, JsValue] =
+      fields.filterNot(_._2 match {
+        case JsNull => true
+        case JsArray(values) =>
+          if (values.isEmpty) true else false
+        case JsObject(fields) =>
+          if (filterFields(fields).isEmpty) true else false
+        case _ => false
+      })
+
+    val filtered = filterFields(obj.fields)
     JsObject(filtered)
   }
 }
 
 /** Case classes for reading ElasticSearch responses **/
 
+// TODO change to PublicationList
 case class Publications(
                          count: Option[Int],
                          limit: Int,

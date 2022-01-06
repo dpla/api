@@ -46,7 +46,7 @@ trait JsonFieldReader {
     }
   }
 
-  private def getNestedObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
+  def getNestedObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
 
     @tailrec
     def getNext(current: Option[JsObject], next: Seq[String]): Option[JsObject] =

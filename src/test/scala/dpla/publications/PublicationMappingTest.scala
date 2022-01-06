@@ -14,31 +14,36 @@ class PublicationMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
     buffered.getLines.mkString
   }
 
-  val data: String = readFile("/elasticSearchPublication.json")
-  val mapped: JsObject = data.parseJson.convertTo[Publication].toJson.asJsObject
+  val esPub: String = readFile("/elasticSearchPublication.json")
+  val pub: JsObject = esPub.parseJson.convertTo[Publication].toJson.asJsObject
 
-  "JsonFormats" should {
+  val esMinPub: String = readFile("/elasticSearchMinimalPublication.json")
+  val minPub: JsObject = esMinPub.parseJson.convertTo[Publication].toJson.asJsObject
+
+  "a single ebook record" should {
     "generate count" in {
       val expected = 1
-      val traversed = readInt(mapped, "count").getOrElse("NOT FOUND")
+      val traversed = readInt(pub, "count").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "generate ingestType" in {
       val expected = "ebook"
-      val traversed = readString(mapped, "docs", "ingestType").getOrElse("NOT FOUND")
+      val traversed = readString(pub, "docs", "ingestType").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "generate type" in {
       val expected = "ebook"
-      val traversed = readString(mapped, "docs", "sourceResource", "type").getOrElse("NOT FOUND")
+      val traversed = readString(pub, "docs", "sourceResource", "type").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
+    /** Field mappings */
+
     "map author" in {
       val expected = "J. S. Fletcher"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "creator")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "creator")
       traversed should contain only expected
     }
 
@@ -49,74 +54,148 @@ class PublicationMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
         "Lawyers -- Fiction",
         "London (England) -- Social life and customs -- 20th century -- Fiction"
       )
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "subject", "name")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "subject", "name")
       traversed should contain allElementsOf expected
     }
 
     "map id" in {
       val expected = "wfwPJ34Bj-MaVWqX9Kac"
-      val traversed = readString(mapped, "docs", "id").getOrElse("NOT FOUND")
+      val traversed = readString(pub, "docs", "id").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "map itemUri" in {
       val expected = "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery"
-      val traversed = readString(mapped, "docs", "isShownAt").getOrElse("NOT FOUND")
+      val traversed = readString(pub, "docs", "isShownAt").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "map language" in {
       val expected = "en-GB"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "language", "name")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "language", "name")
       traversed should contain only expected
     }
 
     "map medium" in {
       val expected = "Medium"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "format")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "format")
       traversed should contain only expected
     }
 
     "map payloadUri" in {
       val expected = "http://payload-permanent-address.dp.la"
-      val traversed = readStringArray(mapped, "docs", "object")
+      val traversed = readStringArray(pub, "docs", "object")
       traversed should contain only expected
     }
 
     "map publisher" in {
       val expected = "Publisher"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "publisher")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "publisher")
       traversed should contain only expected
     }
 
     "map publicationDate" in {
       val expected = "1922"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "date", "displayDate")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "date", "displayDate")
       traversed should contain only expected
     }
 
     "map sourceUri" in {
       val expected = "http://standardebooks.org"
-      val traversed = readString(mapped, "docs", "dataProvider").getOrElse("NOT FOUND")
+      val traversed = readString(pub, "docs", "dataProvider").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "map subtitle" in {
       val expected = "This is a subtitle"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "subtitle")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "subtitle")
       traversed should contain only expected
     }
 
     "map summary" in {
       val expected = "A young lawyer witnesses a suspicious death on a late-night train and investigates what turns out to be a murder."
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "description")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "description")
       traversed should contain only expected
     }
 
     "map title" in {
       val expected = "The Charing Cross Mystery"
-      val traversed = readStringArray(mapped, "docs", "sourceResource", "title")
+      val traversed = readStringArray(pub, "docs", "sourceResource", "title")
       traversed should contain only expected
+    }
+
+    /** Handle empty fields */
+
+    "ignore empty author" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "creator"
+    }
+
+    "ignore empty genre" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "subject"
+    }
+
+    "ignore empty itemUri" in {
+      val parent = getNestedObject(minPub, Seq("docs"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "isShownAt"
+    }
+
+    "ignore empty language" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "language"
+    }
+
+    "ignore empty medium" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "format"
+    }
+
+    "ignore empty payloadUri" in {
+      val parent = getNestedObject(minPub, Seq("docs"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "object"
+    }
+
+    "ignore empty publisher" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "publisher"
+    }
+
+    "ignore empty publicationDate" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "date"
+    }
+
+    "ignore empty sourceUri" in {
+      val parent = getNestedObject(minPub, Seq("docs"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "dateProvider"
+    }
+
+    "ignore empty subtitle" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "subtitle"
+    }
+
+    "ignore empty summary" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "description"
+    }
+
+    "ignore empty title" in {
+      val parent = getNestedObject(minPub, Seq("docs", "sourceResource"))
+      val fieldNames = parent.get.fields.keys
+      fieldNames should not contain "title"
     }
   }
 }
