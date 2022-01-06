@@ -19,7 +19,7 @@ trait JsonFieldReader {
       if (next.isEmpty) current
       else {
         current match {
-          case Some(obj) => getNext(getObjOpt(obj, next.head), next.drop(1))
+          case Some(obj) => getNext(getObjectOpt(obj, next.head), next.drop(1))
           case _ => None
         }
       }
@@ -33,7 +33,7 @@ trait JsonFieldReader {
 
     readObject(root, nestedObjects:_*) match {
       case Some(parent) => lastField match {
-        case Some(child) => getObjArray(parent, child)
+        case Some(child) => getObjectSeq(parent, child)
         case _ => Seq[JsObject]() // no children were provided in method parameters
       }
       case _ => Seq[JsObject]() // parent object not found
@@ -84,14 +84,14 @@ trait JsonFieldReader {
    *  They return the specified type of JsObject
    */
 
-  private def getObjOpt(parent: JsObject, child: String): Option[JsObject] = {
+  private def getObjectOpt(parent: JsObject, child: String): Option[JsObject] = {
     parent.getFields(child) match {
       case Seq(value: JsObject) => Some(value)
       case _ => None
     }
   }
 
-  private def getObjArray(parent: JsObject, child: String): Seq[JsObject] =
+  private def getObjectSeq(parent: JsObject, child: String): Seq[JsObject] =
     parent.getFields(child) match {
       case Seq(JsArray(vector)) => vector.flatMap(_ match {
         case JsObject(value) => Some(JsObject(value))
