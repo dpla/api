@@ -12,7 +12,7 @@ trait JsonFieldReader {
    *  They return the specified type of JsValue
    *  */
 
-  def readObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
+  def readObject(root: JsObject, path: String*): Option[JsObject] = {
 
     @tailrec
     def getNext(current: Option[JsObject], next: Seq[String]): Option[JsObject] =
@@ -24,14 +24,14 @@ trait JsonFieldReader {
         }
       }
 
-    getNext(Some(root), children)
+    getNext(Some(root), path)
   }
 
   def readObjectArray(root: JsObject, path: String*): Seq[JsObject] = {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 
-    readObject(root, nestedObjects) match {
+    readObject(root, nestedObjects:_*) match {
       case Some(parent) => lastField match {
         case Some(child) => getObjArray(parent, child)
         case _ => Seq[JsObject]() // no children were provided in method parameters
@@ -44,7 +44,7 @@ trait JsonFieldReader {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 
-    readObject(root, nestedObjects) match {
+    readObject(root, nestedObjects:_*) match {
       case Some(parent) => lastField match {
         case Some(child) => getStringOpt(parent, child)
         case _ => None // no children were provided in method parameters
@@ -57,7 +57,7 @@ trait JsonFieldReader {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 
-    readObject(root, nestedObjects) match {
+    readObject(root, nestedObjects:_*) match {
       case Some(parent) => lastField match {
         case Some(child) => getStringSeq(parent, child)
         case _ => Seq[String]() // no children were provided in method parameters
@@ -70,7 +70,7 @@ trait JsonFieldReader {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 
-    readObject(root, nestedObjects) match {
+    readObject(root, nestedObjects:_*) match {
       case Some(parent) => lastField match {
         case Some(child) => getIntOpt(parent, child)
         case _ => None // no children were provided in method parameters
