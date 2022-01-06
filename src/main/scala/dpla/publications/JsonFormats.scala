@@ -78,10 +78,11 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     def read(json: JsValue): PublicationList = {
       val root = json.asJsObject
 
+      // TODO add limit and start when working on pagination ticket
       PublicationList(
         count = readInt(root, "hits", "total", "value"),
-        limit = 0,
-        start = 0,
+        limit = None,
+        start = None,
         docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication])
       )
     }
@@ -123,8 +124,8 @@ case class SinglePublication(
 
 case class PublicationList(
                             count: Option[Int],
-                            limit: Int,
-                            start: Int,
+                            limit: Option[Int],
+                            start: Option[Int],
                             docs: Seq[Publication]
                           )
 
