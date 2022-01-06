@@ -20,8 +20,22 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
 
     System.out.println(uri)
 
-    val response: Future[HttpResponse] =
-      Http().singleRequest(HttpRequest(uri = uri))
+    val data: String =
+      """
+        |{
+        |  "query" : {
+        |     "match_all": {}
+        |  }
+        |}
+        |""".stripMargin
+
+    val request: HttpRequest = HttpRequest(
+      method = HttpMethods.GET,
+      uri = uri,
+      entity = HttpEntity(ContentTypes.`application/json`, data)
+    )
+
+    val response: Future[HttpResponse] = Http().singleRequest(request)
 
     response.map(res => {
       res.status.intValue match {
