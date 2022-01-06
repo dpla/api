@@ -11,7 +11,7 @@ import akka.http.scaladsl.unmarshalling._
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-  def all: Future[Either[StatusCode, Future[Publications]]] = {
+  def all: Future[Either[StatusCode, Future[PublicationList]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map/onComplete
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -27,7 +27,7 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
       res.status.intValue match {
         case 200 =>
           val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val pubs: Future[Publications] = body.map(_.parseJson.convertTo[Publications])
+          val pubs: Future[PublicationList] = body.map(_.parseJson.convertTo[PublicationList])
           Right(pubs)
         case _ =>
           Left(res.status)

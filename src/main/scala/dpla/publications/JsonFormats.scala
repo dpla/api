@@ -73,23 +73,25 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
   }
 
-  implicit object PublicationsFormat extends RootJsonFormat[Publications] {
+  implicit object PublicationsFormat extends RootJsonFormat[PublicationList] {
 
-    def read(json: JsValue): Publications = {
+    def read(json: JsValue): PublicationList = {
       val root = json.asJsObject
 
-      Publications(
+      PublicationList(
         count = readInt(root, "hits", "total", "value"),
         limit = 0,
-        start = 0
+        start = 0,
+        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication])
       )
     }
 
-    def write(pl: Publications): JsValue =
+    def write(pl: PublicationList): JsValue =
       JsObject(
         "count" -> pl.count.toJson,
         "start" -> pl.start.toJson,
-        "limit" -> pl.limit.toJson
+        "limit" -> pl.limit.toJson,
+        "docs" -> pl.docs.toJson
       ).toJson
   }
 
@@ -119,13 +121,12 @@ case class SinglePublication(
                               docs: Seq[Publication]
                             )
 
-// TODO change to PublicationList
-case class Publications(
-                         count: Option[Int],
-                         limit: Int,
-                         start: Int
-                         //                             docs: Array[Publication]
-                       )
+case class PublicationList(
+                            count: Option[Int],
+                            limit: Int,
+                            start: Int,
+                            docs: Seq[Publication]
+                          )
 
 case class Publication(
                         author: Seq[String],
