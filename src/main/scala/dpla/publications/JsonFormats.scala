@@ -15,8 +15,11 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         genre = readStringArray(root, "_source", "genre"),
         id = readString(root, "_id"),
         itemUri = readString(root, "_source", "itemUri"),
+        medium = readStringArray(root, "_source", "medium"),
         language = readStringArray(root, "_source", "language"),
         payloadUri = readStringArray(root, "_source", "payloadUri"),
+        publisher = readStringArray(root, "_source", "publisher"),
+        publicationDate = readStringArray(root, "_source", "publicationDate"),
         sourceUri = readString(root, "_source", "sourceUri"),
         subtitle = readStringArray(root, "_source", "subtitle"),
         summary = readStringArray(root, "_source", "summary"),
@@ -36,15 +39,21 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
           "object" -> pub.payloadUri.toJson,
           "sourceResource" -> filterEmptyFields(JsObject(
             "creator" -> pub.author.toJson,
+            "date" -> filterEmptyFields(JsObject(
+              "displayDate" -> pub.publicationDate.toJson
+            )),
             "description" -> pub.summary.toJson,
+            "format" -> pub.medium.toJson,
             "language" -> filterEmptyFields(JsObject(
               "name" -> pub.language.toJson,
             )),
+            "publisher" -> pub.publisher.toJson,
             "subject" -> filterEmptyFields(JsObject(
               "name" -> pub.genre.toJson
             )),
             "subtitle" -> pub.subtitle.toJson,
-            "title" -> pub.title.toJson
+            "title" -> pub.title.toJson,
+            "type" -> JsString("ebook")
           ))
         ))
       )).toJson
@@ -101,7 +110,10 @@ case class Publication(
                         id: Option[String],
                         itemUri: Option[String],
                         language: Seq[String],
+                        medium: Seq[String],
                         payloadUri: Seq[String],
+                        publisher: Seq[String],
+                        publicationDate: Seq[String],
                         sourceUri: Option[String],
                         subtitle: Seq[String],
                         summary: Seq[String],

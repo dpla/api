@@ -7,13 +7,6 @@
     "sourceUri": "http://standardebooks.org",
     "itemUri": "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery",
     "payloadUri": [
-      "http://payload-permanent-address.dp.la",
-      "http://payload-permanent-address.dp.la",
-      "http://payload-permanent-address.dp.la",
-      "http://payload-permanent-address.dp.la",
-      "http://payload-permanent-address.dp.la",
-      "http://payload-permanent-address.dp.la",
-      "http://payload-permanent-address.dp.la",
       "http://payload-permanent-address.dp.la"
     ],
     "title": [
@@ -22,13 +15,21 @@
     "author": [
       "J. S. Fletcher"
     ],
-    "subtitle": [],
+    "subtitle": [
+      "This is a subtitle"
+    ],
     "language": [
       "en-GB"
     ],
-    "medium": [],
-    "publisher": [],
-    "publicationDate": [],
+    "medium": [
+      "Medium"
+    ],
+    "publisher": [
+      "Publisher"
+    ],
+    "publicationDate": [
+      "1922"
+    ],
     "summary": [
       "A young lawyer witnesses a suspicious death on a late-night train and investigates what turns out to be a murder."
     ],
