@@ -131,13 +131,13 @@ class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFi
     /** Handle empty fields */
 
     "ignore empty author" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "creator"
     }
 
     "ignore empty genre" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "subject"
     }
@@ -149,13 +149,13 @@ class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFi
     }
 
     "ignore empty language" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "language"
     }
 
     "ignore empty medium" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "format"
     }
@@ -167,13 +167,13 @@ class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFi
     }
 
     "ignore empty publisher" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "publisher"
     }
 
     "ignore empty publicationDate" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "date"
     }
@@ -185,19 +185,19 @@ class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFi
     }
 
     "ignore empty subtitle" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "subtitle"
     }
 
     "ignore empty summary" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "description"
     }
 
     "ignore empty title" in {
-      val parent = getNestedObject(minFirstDoc, Seq("sourceResource"))
+      val parent = readObject(minFirstDoc, Seq("sourceResource"))
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "title"
     }

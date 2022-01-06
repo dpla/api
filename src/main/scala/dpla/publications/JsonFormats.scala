@@ -5,8 +5,6 @@ import spray.json.{JsString, JsValue, RootJsonFormat, _}
 
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
-//  implicit val singlePublicationFormat: RootJsonFormat[SinglePublication] = jsonFormat2(SinglePublication)
-
   implicit object PublicationFormat extends RootJsonFormat[Publication] {
 
     def read(json: JsValue): Publication = {

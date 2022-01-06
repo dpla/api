@@ -7,59 +7,12 @@ import scala.annotation.tailrec
 /** Methods for reading JSON **/
 trait JsonFieldReader {
 
-  def readString(root: JsObject, path: String*): Option[String] = {
-    val nestedObjects: Seq[String] = path.dropRight(1)
-    val lastField: Option[String] = path.lastOption
+  /** Public methods
+   *  These methods take a root JsObject and a path of zero to many children
+   *  They return the specified type of JsValue
+   *  */
 
-    getNestedObject(root, nestedObjects) match {
-      case Some(parent) => lastField match {
-        case Some(child) => getStringOpt(parent, child)
-        case _ => None // no children were provided in method parameters
-      }
-      case _ => None // parent object not found
-    }
-  }
-
-  def readStringArray(root: JsObject, path: String*): Seq[String] = {
-    val nestedObjects: Seq[String] = path.dropRight(1)
-    val lastField: Option[String] = path.lastOption
-
-    getNestedObject(root, nestedObjects) match {
-      case Some(parent) => lastField match {
-        case Some(child) => getStringSeq(parent, child)
-        case _ => Seq[String]() // no children were provided in method parameters
-      }
-      case _ => Seq[String]() // parent object not found
-    }
-  }
-
-  def readInt(root: JsObject, path: String*): Option[Int] = {
-    val nestedObjects: Seq[String] = path.dropRight(1)
-    val lastField: Option[String] = path.lastOption
-
-    getNestedObject(root, nestedObjects) match {
-      case Some(parent) => lastField match {
-        case Some(child) => getIntOpt(parent, child)
-        case _ => None // no children were provided in method parameters
-      }
-      case _ => None // parent object not found
-    }
-  }
-
-  def readObjectArray(root: JsObject, path: String*): Seq[JsObject] = {
-    val nestedObjects: Seq[String] = path.dropRight(1)
-    val lastField: Option[String] = path.lastOption
-
-    getNestedObject(root, nestedObjects) match {
-      case Some(parent) => lastField match {
-        case Some(child) => getObjArray(parent, child)
-        case _ => Seq[JsObject]() // no children were provided in method parameters
-      }
-      case _ => Seq[JsObject]() // parent object not found
-    }
-  }
-
-  def getNestedObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
+  def readObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
 
     @tailrec
     def getNext(current: Option[JsObject], next: Seq[String]): Option[JsObject] =
@@ -73,6 +26,63 @@ trait JsonFieldReader {
 
     getNext(Some(root), children)
   }
+
+  def readObjectArray(root: JsObject, path: String*): Seq[JsObject] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    readObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getObjArray(parent, child)
+        case _ => Seq[JsObject]() // no children were provided in method parameters
+      }
+      case _ => Seq[JsObject]() // parent object not found
+    }
+  }
+
+  def readString(root: JsObject, path: String*): Option[String] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    readObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getStringOpt(parent, child)
+        case _ => None // no children were provided in method parameters
+      }
+      case _ => None // parent object not found
+    }
+  }
+
+  def readStringArray(root: JsObject, path: String*): Seq[String] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    readObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getStringSeq(parent, child)
+        case _ => Seq[String]() // no children were provided in method parameters
+      }
+      case _ => Seq[String]() // parent object not found
+    }
+  }
+
+  def readInt(root: JsObject, path: String*): Option[Int] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    readObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getIntOpt(parent, child)
+        case _ => None // no children were provided in method parameters
+      }
+      case _ => None // parent object not found
+    }
+  }
+
+  /** Private helper methods
+   *  These methods take a parent JsObject and a single child
+   *  They return the specified type of JsObject
+   */
 
   private def getObjOpt(parent: JsObject, child: String): Option[JsObject] = {
     parent.getFields(child) match {
