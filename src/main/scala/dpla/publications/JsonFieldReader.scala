@@ -46,6 +46,19 @@ trait JsonFieldReader {
     }
   }
 
+  def readObjectArray(root: JsObject, path: String*): Seq[JsObject] = {
+    val nestedObjects: Seq[String] = path.dropRight(1)
+    val lastField: Option[String] = path.lastOption
+
+    getNestedObject(root, nestedObjects) match {
+      case Some(parent) => lastField match {
+        case Some(child) => getObjArray(parent, child)
+        case _ => Seq[JsObject]() // no children were provided in method parameters
+      }
+      case _ => Seq[JsObject]() // parent object not found
+    }
+  }
+
   def getNestedObject(root: JsObject, children: Seq[String]): Option[JsObject] = {
 
     @tailrec
@@ -67,6 +80,17 @@ trait JsonFieldReader {
       case _ => None
     }
   }
+
+  private def getObjArray(parent: JsObject, child: String): Seq[JsObject] =
+    parent.getFields(child) match {
+      case Seq(JsArray(vector)) => vector.flatMap(_ match {
+        case JsObject(value) => Some(JsObject(value))
+        case _ => None
+      })
+      case Seq(JsObject(value)) => Seq(JsObject(value))
+      case _ => Seq[JsObject]()
+    }
+
 
   private def getStringOpt(parent: JsObject, child: String): Option[String] =
     parent.getFields(child) match {

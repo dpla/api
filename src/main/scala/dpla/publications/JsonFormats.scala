@@ -5,6 +5,8 @@ import spray.json.{JsString, JsValue, RootJsonFormat, _}
 
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
+//  implicit val singlePublicationFormat: RootJsonFormat[SinglePublication] = jsonFormat2(SinglePublication)
+
   implicit object PublicationFormat extends RootJsonFormat[Publication] {
 
     def read(json: JsValue): Publication = {
@@ -29,42 +31,53 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
     def write(pub: Publication): JsValue = {
 
-      // TODO move count and docs root to another case class for SinglePublication
-      JsObject(
-        "count" -> JsNumber(1),
-        "docs" -> filterIfEmpty(JsObject(
-          "id" -> pub.id.toJson,
-          "dataProvider" -> pub.sourceUri.toJson,
-          "ingestType" -> JsString("ebook"),
-          "isShownAt" -> pub.itemUri.toJson,
-          "object" -> pub.payloadUri.toJson,
-          "sourceResource" -> filterIfEmpty(JsObject(
-            "creator" -> pub.author.toJson,
-            "date" -> filterIfEmpty(JsObject(
-              "displayDate" -> pub.publicationDate.toJson
-            )),
-            "description" -> pub.summary.toJson,
-            "format" -> pub.medium.toJson,
-            "language" -> filterIfEmpty(JsObject(
-              "name" -> pub.language.toJson,
-            )),
-            "publisher" -> pub.publisher.toJson,
-            "subject" -> filterIfEmpty(JsObject(
-              "name" -> pub.genre.toJson
-            )),
-            "subtitle" -> pub.subtitle.toJson,
-            "title" -> pub.title.toJson,
-            "type" -> JsString("ebook")
-          )
+      filterIfEmpty(JsObject(
+        "id" -> pub.id.toJson,
+        "dataProvider" -> pub.sourceUri.toJson,
+        "ingestType" -> JsString("ebook"),
+        "isShownAt" -> pub.itemUri.toJson,
+        "object" -> pub.payloadUri.toJson,
+        "sourceResource" -> filterIfEmpty(JsObject(
+          "creator" -> pub.author.toJson,
+          "date" -> filterIfEmpty(JsObject(
+            "displayDate" -> pub.publicationDate.toJson
+          )),
+          "description" -> pub.summary.toJson,
+          "format" -> pub.medium.toJson,
+          "language" -> filterIfEmpty(JsObject(
+            "name" -> pub.language.toJson,
+          )),
+          "publisher" -> pub.publisher.toJson,
+          "subject" -> filterIfEmpty(JsObject(
+            "name" -> pub.genre.toJson
+          )),
+          "subtitle" -> pub.subtitle.toJson,
+          "title" -> pub.title.toJson,
+          "type" -> JsString("ebook")
         ))
       )).toJson
+    }
+  }
+
+  implicit object SinglePublicationFormat extends RootJsonFormat[SinglePublication] {
+
+    def read(json: JsValue): SinglePublication = {
+      SinglePublication(
+        docs = Seq(json.convertTo[Publication])
+      )
+    }
+
+    def write(sp: SinglePublication): JsValue = {
+      JsObject(
+        "count" -> JsNumber(1),
+        "docs" -> sp.docs.toJson
+      ).toJson
     }
   }
 
   implicit object PublicationsFormat extends RootJsonFormat[Publications] {
 
     def read(json: JsValue): Publications = {
-
       val root = json.asJsObject
 
       Publications(
@@ -103,6 +116,10 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 }
 
 /** Case classes for reading ElasticSearch responses **/
+
+case class SinglePublication(
+                              docs: Seq[Publication]
+                            )
 
 // TODO change to PublicationList
 case class Publications(
