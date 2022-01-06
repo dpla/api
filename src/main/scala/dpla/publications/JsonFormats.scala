@@ -1,7 +1,7 @@
 package dpla.publications
 
 import spray.json.DefaultJsonProtocol
-import spray.json.{JsString, JsValue, RootJsonFormat, _}
+import spray.json._
 
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 

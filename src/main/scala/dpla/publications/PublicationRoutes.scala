@@ -27,7 +27,8 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
       concat(
         pathEnd {
           get {
-            onComplete(elasticSearchClient.search) {
+            val params = SearchParams()
+            onComplete(elasticSearchClient.search(params)) {
               case Success(response) => response match {
                 case Right(pubsFuture) =>
                   onComplete(pubsFuture) {

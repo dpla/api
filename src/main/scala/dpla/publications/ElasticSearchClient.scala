@@ -11,7 +11,7 @@ import akka.http.scaladsl.unmarshalling._
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-  def search(): Future[Either[StatusCode, Future[PublicationList]]] = {
+  def search(params: SearchParams): Future[Either[StatusCode, Future[PublicationList]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map/onComplete
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -20,14 +20,9 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
 
     System.out.println(uri)
 
-    val data: String =
-      """
-        |{
-        |  "query" : {
-        |     "match_all": {}
-        |  }
-        |}
-        |""".stripMargin
+    val data = composeQuery(params).toString
+
+    System.out.println(data)
 
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.GET,
@@ -69,4 +64,21 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
       }
     })
   }
+
+  def composeQuery(params: SearchParams): JsValue = {
+    JsObject(
+      "from" -> params.from.toJson,
+      "size" -> params.page_size.toJson,
+      "query" -> JsObject(
+        "match_all" -> JsObject()
+      )
+    ).toJson
+  }
+}
+
+case class SearchParams(
+                       page: Int = 1,
+                       page_size: Int = 10
+                       ) {
+  def from: Int = (page-1)*page_size
 }
