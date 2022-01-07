@@ -26,9 +26,8 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
       concat(
         pathEnd {
           get {
-            // TODO THIS IS WHERE I LEFT OFF
             parameters("page".optional, "page_size".optional) { (page, pageSize) =>
-              val params = validSearchParams(page, pageSize)
+              val params = ParamValidator.getSearchParams(page, pageSize)
               onComplete(elasticSearchClient.search(params)) {
                 case Success(response) => response match {
                   case Right(pubsFuture) =>
@@ -86,35 +85,5 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
           }
         }
       )
-    }
-
-  private def validSearchParams(page: Option[String], pageSize: Option[String]): SearchParams = {
-    SearchParams(
-      page = validPage(page),
-      pageSize = validPageSize(pageSize)
-    )
-  }
-
-  private def toIntOpt(str: String): Option[Int] =
-    try {
-      Some(str.toInt)
-    } catch {
-      case _: Exception => None
-    }
-
-  // Must be an integer greater than 0, defaults to 1
-  private def validPage(page: Option[String]): Int =
-    page.flatMap(toIntOpt) match {
-      case Some(int) =>
-        if (int == 0) 1 else int
-      case None => 1
-    }
-
-  // Must be an integer between 0 and 1000, defaults to 10
-  private def validPageSize(pageSize: Option[String]): Int =
-    pageSize.flatMap(toIntOpt) match {
-      case Some(int) =>
-        if (int > 1000) 1000 else int
-      case None => 10
     }
 }
