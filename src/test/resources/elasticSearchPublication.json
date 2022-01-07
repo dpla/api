@@ -1,0 +1,46 @@
+{
+  "_index":"eleanor-20220104-154349",
+  "_type":"_doc",
+  "_id":"wfwPJ34Bj-MaVWqX9Kac",
+  "_version":1,
+  "_seq_no":42,
+  "_primary_term":1,
+  "found":true,
+  "_source": {
+    "sourceUri": "http://standardebooks.org",
+    "itemUri": "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery",
+    "payloadUri": [
+      "http://payload-permanent-address.dp.la"
+    ],
+    "title": [
+      "The Charing Cross Mystery"
+    ],
+    "author": [
+      "J. S. Fletcher"
+    ],
+    "subtitle": [
+      "This is a subtitle"
+    ],
+    "language": [
+      "en-GB"
+    ],
+    "medium": [
+      "Medium"
+    ],
+    "publisher": [
+      "Publisher"
+    ],
+    "publicationDate": [
+      "1922"
+    ],
+    "summary": [
+      "A young lawyer witnesses a suspicious death on a late-night train and investigates what turns out to be a murder."
+    ],
+    "genre": [
+      "Detective and mystery stories",
+      "Murder -- Investigation -- Fiction",
+      "Lawyers -- Fiction",
+      "London (England) -- Social life and customs -- 20th century -- Fiction"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "_index":"eleanor-20220104-154349",
+  "_type":"_doc",
+  "_id":"wfwPJ34Bj-MaVWqX9Kac",
+  "_version":1,
+  "_seq_no":42,
+  "_primary_term":1,
+  "found":true,
+  "_source": {
+    "sourceUri": null,
+    "itemUri": null,
+    "payloadUri": [],
+    "title": [],
+    "author": [],
+    "subtitle": [],
+    "language": [],
+    "medium": [],
+    "publisher": [],
+    "publicationDate": [],
+    "summary": [],
+    "genre": []
+  }
+}
