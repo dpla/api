@@ -34,7 +34,7 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
 
   def search(params: SearchParams): Future[Either[StatusCode, Future[PublicationList]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
-    // needed for the future map/onComplete
+    // needed for the future map
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
     val uri = s"$elasticSearchEndpoint/_search"
