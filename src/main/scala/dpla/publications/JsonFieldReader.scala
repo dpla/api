@@ -28,20 +28,20 @@ trait JsonFieldReader {
   }
 
   def readObjectArray(root: JsObject, path: String*): Seq[JsObject] =
-    read(getObjectSeq, root, path).asInstanceOf[Seq[JsObject]]
+    read(getObjectSeq, root, path).getOrElse(Seq[JsObject]())
 
   def readString(root: JsObject, path: String*): Option[String] =
-    read(getStringOpt, root, path).asInstanceOf[Option[String]]
+    read(getStringOpt, root, path)
 
   def readStringArray(root: JsObject, path: String*): Seq[String] =
-    read(getStringSeq, root, path).asInstanceOf[Seq[String]]
+    read(getStringSeq, root, path).getOrElse(Seq[String]())
 
   def readInt(root: JsObject, path: String*): Option[Int] =
-    read(getIntOpt, root, path).asInstanceOf[Option[Int]]
+    read(getIntOpt, root, path)
 
   /** Private helper methods */
 
-  private def read(getMethod: (JsObject, String) => Any, root: JsObject, path: Seq[String]): Any = {
+  private def read[T](getMethod: (JsObject, String) => Option[T], root: JsObject, path: Seq[String]): Option[T] = {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 
@@ -66,14 +66,14 @@ trait JsonFieldReader {
     }
   }
 
-  private def getObjectSeq(parent: JsObject, child: String): Seq[JsObject] =
+  private def getObjectSeq(parent: JsObject, child: String): Option[Seq[JsObject]]=
     parent.getFields(child) match {
-      case Seq(JsArray(vector)) => vector.flatMap(_ match {
+      case Seq(JsArray(vector)) => Some(vector.flatMap(_ match {
         case JsObject(value) => Some(JsObject(value))
         case _ => None
-      })
-      case Seq(JsObject(value)) => Seq(JsObject(value))
-      case _ => Seq[JsObject]()
+      }))
+      case Seq(JsObject(value)) => Some(Seq(JsObject(value)))
+      case _ => None
     }
 
 
@@ -84,14 +84,14 @@ trait JsonFieldReader {
       case _ => None
     }
 
-  private def getStringSeq(parent: JsObject, child: String): Seq[String] =
+  private def getStringSeq(parent: JsObject, child: String): Option[Seq[String]] =
     parent.getFields(child) match {
-      case Seq(JsArray(vector)) => vector.flatMap(_ match {
+      case Seq(JsArray(vector)) => Some(vector.flatMap(_ match {
         case JsString(value) => Some(value)
         case _ => None
-      })
-      case Seq(JsString(value)) => Seq(value)
-      case _ => Seq[String]()
+      }))
+      case Seq(JsString(value)) => Some(Seq(value))
+      case _ => None
     }
 
   private def getIntOpt(parent: JsObject, child: String): Option[Int] =
