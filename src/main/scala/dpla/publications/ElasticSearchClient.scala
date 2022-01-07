@@ -68,7 +68,7 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
   def composeQuery(params: SearchParams): JsValue = {
     JsObject(
       "from" -> params.from.toJson,
-      "size" -> params.page_size.toJson,
+      "size" -> params.pageSize.toJson,
       "query" -> JsObject(
         "match_all" -> JsObject()
       )
@@ -77,8 +77,8 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
 }
 
 case class SearchParams(
-                       page: Int = 1,
-                       page_size: Int = 10
+                       page: Int,
+                       pageSize: Int
                        ) {
-  def from: Int = (page-1)*page_size
+  def from: Int = (page-1)*pageSize
 }
