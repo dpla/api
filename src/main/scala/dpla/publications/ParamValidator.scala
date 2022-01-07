@@ -39,5 +39,9 @@ case class SearchParams(
                          page: Int,
                          pageSize: Int
                        ) {
+  // ElasticSearch param that defines the number of hits to skip
   def from: Int = (page-1)*pageSize
+
+  // DPLA MAP field that gives the index of the first result on the page (starting at 1)
+  def start: Int = from+1
 }

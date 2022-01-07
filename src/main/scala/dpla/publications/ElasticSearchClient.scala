@@ -52,7 +52,8 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
       res.status.intValue match {
         case 200 =>
           val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val pubs: Future[PublicationList] = body.map(_.parseJson.convertTo[PublicationList])
+          val pubs: Future[PublicationList] =
+            body.map(_.parseJson.convertTo[PublicationList].copy(limit=Some(params.pageSize), start=Some(params.start)))
           Right(pubs)
         case _ =>
           Left(res.status)
