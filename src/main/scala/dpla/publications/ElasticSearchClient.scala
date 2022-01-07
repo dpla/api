@@ -13,7 +13,7 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
 
   def fetch(id: String): Future[Either[StatusCode, Future[SinglePublication]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
-    // needed for the future map/onComplete
+    // needed for the future map
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
     val uri = s"$elasticSearchEndpoint/_doc/$id"
@@ -61,7 +61,7 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
     })
   }
 
-  def composeQuery(params: SearchParams): JsValue = {
+  private def composeQuery(params: SearchParams): JsValue = {
     JsObject(
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
