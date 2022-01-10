@@ -1,5 +1,7 @@
 package dpla.publications
 
+import scala.util.Try
+
 /**
  * Validates user-supplied parameters and provides default values.
  */
@@ -12,11 +14,7 @@ object ParamValidator {
     )
 
   private def toIntOpt(str: String): Option[Int] =
-    try {
-      Some(str.toInt)
-    } catch {
-      case _: Exception => None
-    }
+    Try(str.toInt).toOption
 
   // Must be an integer greater than 0, defaults to 1
   private def validPage(page: Option[String]): Int =
