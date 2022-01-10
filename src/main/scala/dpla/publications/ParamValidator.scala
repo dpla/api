@@ -43,7 +43,9 @@ object ParamValidator {
     }
   }
 
-  def validFacetSize(facetSize: Option[String]): Option[Int] = None
+  // TODO: This is where I left off
+  // Must be an integer between 0 and 2000
+  def validFacetSize(facetSize: Option[String]): Option[Int] = ???
 
   // Must be an integer greater than 0, defaults to 1
   private def validPage(page: Option[String]): Int = {
