@@ -9,6 +9,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
 
   val minRawParams: RawParams = RawParams(
     facets = None,
+    facetSize = None,
     page = None,
     pageSize = None,
     q = None

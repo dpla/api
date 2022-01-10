@@ -12,6 +12,7 @@ object ParamValidator {
   def getSearchParams(raw: RawParams): Try[SearchParams] = Try(
     SearchParams(
       facets = validFacets(raw.facets),
+      facetSize = validFacetSize(raw.facetSize),
       page = validPage(raw.page),
       pageSize = validPageSize(raw.pageSize),
       q = validQ(raw.q)
@@ -41,6 +42,8 @@ object ParamValidator {
       case None => None
     }
   }
+
+  def validFacetSize(facetSize: Option[String]): Option[Int] = None
 
   // Must be an integer greater than 0, defaults to 1
   private def validPage(page: Option[String]): Int = {
@@ -91,8 +94,11 @@ object ParamValidator {
     }
 }
 
+/** Case classes for search params */
+
 case class RawParams(
                       facets: Option[String],
+                      facetSize: Option[String],
                       page: Option[String],
                       pageSize: Option[String],
                       q: Option[String]
@@ -100,6 +106,7 @@ case class RawParams(
 
 case class SearchParams(
                          facets: Option[Seq[String]],
+                         facetSize: Option[Int],
                          page: Int,
                          pageSize: Int,
                          q: Option[String]

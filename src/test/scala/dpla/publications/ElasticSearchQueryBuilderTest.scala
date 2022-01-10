@@ -9,6 +9,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   val minSearchParams: SearchParams = SearchParams(
     facets = None,
+    facetSize = None,
     page = 3,
     pageSize = 20,
     q = None
@@ -17,6 +18,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   val detailQueryParams: SearchParams = SearchParams(
     facets = Some(Seq("dataProvider", "sourceResource.subject.name")),
+    facetSize = Some(10),
     page = 3,
     pageSize = 20,
     q = Some("dogs")
