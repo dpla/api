@@ -18,7 +18,23 @@ object ParamValidator {
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
 
-  private def validFacets(facets: Option[String]): Option[Seq[String]] = Some(Seq[String]())
+  private def validFacets(facets: Option[String]): Option[Seq[String]] = {
+    val facetableFields: Seq[String] = Seq(
+      "dataProvider",
+      "sourceResource.creator",
+      "sourceResource.format",
+      "sourceResource.language.name",
+      "sourceResource.publisher",
+      "sourceResource.subject.name"
+    )
+
+    facets match {
+      case Some(f) =>
+        val filtered = f.split(",").filter(facetableFields.contains)
+        if (filtered.nonEmpty) Some(filtered) else None
+      case _ => None
+    }
+  }
 
   // Must be an integer greater than 0, defaults to 1
   private def validPage(page: Option[String]): Int =
@@ -59,4 +75,20 @@ case class SearchParams(
 
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
   def start: Int = from+1
+
+  // ElasticSearch param that defines aggregations (i.e. facets)
+  def aggFields: Option[Seq[String]] = facets match {
+    case Some(f) =>
+      val mapped = f.flatMap(_ match {
+        case "dataProvider" => Some("sourceUri")
+        case "sourceResource.creator" => Some("author")
+        case "sourceResource.format" => Some("medium")
+        case "sourceResource.language.name" => Some("language")
+        case "sourceResource.publisher" => Some("publisher")
+        case "sourceResource.subject.name" => Some("genre")
+        case _ => None
+      })
+      if (mapped.nonEmpty) Some(mapped) else None
+    case None => None
+  }
 }
