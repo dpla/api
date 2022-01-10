@@ -7,15 +7,18 @@ import scala.util.Try
  */
 object ParamValidator {
 
-  def getSearchParams(page: Option[String], pageSize: Option[String], q: Option[String]): SearchParams =
+  def getSearchParams(raw: RawParams): SearchParams =
     SearchParams(
-      page = validPage(page),
-      pageSize = validPageSize(pageSize),
-      q = validQ(q)
+      facets = validFacets(raw.facets),
+      page = validPage(raw.page),
+      pageSize = validPageSize(raw.pageSize),
+      q = validQ(raw.q)
     )
 
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
+
+  private def validFacets(facets: Option[String]): Option[Seq[String]] = Some(Seq[String]())
 
   // Must be an integer greater than 0, defaults to 1
   private def validPage(page: Option[String]): Int =
@@ -38,7 +41,15 @@ object ParamValidator {
     q.flatMap(keyword => if (keyword.length < 2 || keyword.length > 200) None else Some(keyword))
 }
 
+case class RawParams(
+                      facets: Option[String],
+                      page: Option[String],
+                      pageSize: Option[String],
+                      q: Option[String]
+                    )
+
 case class SearchParams(
+                         facets: Option[Seq[String]],
                          page: Int,
                          pageSize: Int,
                          q: Option[String]
