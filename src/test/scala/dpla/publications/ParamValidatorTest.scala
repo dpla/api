@@ -57,7 +57,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       validated should contain allElementsOf expected
     }
 
-    "handle out-of-range param" in {
+    "handle unfacetable field" in {
       val given = Some("sourceResource.title")
       val raw = minRawParams.copy(facets=given)
       val validated = ParamValidator.getSearchParams(raw)
@@ -144,12 +144,25 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       assert (validated == expected)
     }
 
-    "hand out-of-range param" in {
+    "handle too-short param" in {
       val given = Some("d")
-      val expected = None
       val raw = minRawParams.copy(q=given)
-      val validated = expectSuccess(raw).q
-      assert (validated == expected)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(q=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
     }
   }
 }

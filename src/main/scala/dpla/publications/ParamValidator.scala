@@ -20,6 +20,7 @@ object ParamValidator {
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
 
+  // Must be a facetable field
   private def validFacets(facets: Option[String]): Option[Seq[String]] = {
     val facetableFields: Seq[String] = Seq(
       "dataProvider",
@@ -59,7 +60,15 @@ object ParamValidator {
 
   // Must be a string between 2 and 200 characters
   private def validQ(q: Option[String]): Option[String] =
-    q.flatMap(keyword => if (keyword.length < 2 || keyword.length > 200) None else Some(keyword))
+    q  match {
+      case Some(keyword) =>
+        if (keyword.length < 2 || keyword.length > 200) {
+          // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
+          // For internal consistency, and exception is thrown here in both cases.
+          throw new InvalidParameterException("q must be between 2 and 200 characters")
+        } else Some(keyword)
+      case _ => None
+    }
 }
 
 case class RawParams(
