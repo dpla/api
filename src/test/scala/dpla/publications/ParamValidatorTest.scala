@@ -112,18 +112,16 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
 
     "handle non-int param" in {
       val given = Some("foo")
-      val expected = 10
       val raw = minRawParams.copy(pageSize=given)
-      val validated = expectSuccess(raw).pageSize
-      assert(validated == expected)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
     }
 
     "handle out-of-range param" in {
       val given = Some("999999")
-      val expected = 1000
       val raw = minRawParams.copy(pageSize=given)
-      val validated = expectSuccess(raw).pageSize
-      assert(validated == expected)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
     }
   }
 

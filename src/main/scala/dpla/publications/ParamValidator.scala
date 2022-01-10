@@ -38,7 +38,7 @@ object ParamValidator {
           else throw new InvalidParameterException(s"$candidate is not a facetable field")
         })
         if (filtered.nonEmpty) Some(filtered) else None
-      case _ => None
+      case None => None
     }
   }
 
@@ -52,19 +52,31 @@ object ParamValidator {
           case Some(int) =>
             if (int == 0) throw new InvalidParameterException(pageRule)
             else int
-          case None => throw new InvalidParameterException(pageRule)
+          case None =>
+            // not an integer
+            throw new InvalidParameterException(pageRule)
         }
-      case _ => 1
+      case None => 1
     }
   }
 
   // Must be an integer between 0 and 1000, defaults to 10
-  private def validPageSize(pageSize: Option[String]): Int =
-    pageSize.flatMap(toIntOpt) match {
-      case Some(int) =>
-        if (int > 1000) 1000 else int
+  private def validPageSize(pageSize: Option[String]): Int = {
+    val pageSizeRule = "page_size must be an integer between 0 an 1000"
+
+    pageSize match {
+      case Some(p) =>
+        toIntOpt(p) match {
+          case Some(int) =>
+            if (int > 1000) throw new InvalidParameterException(pageSizeRule)
+            else int
+          case None =>
+            // not an integer
+            throw new InvalidParameterException(pageSizeRule)
+        }
       case None => 10
     }
+  }
 
   // Must be a string between 2 and 200 characters
   private def validQ(q: Option[String]): Option[String] =
@@ -75,7 +87,7 @@ object ParamValidator {
           // For internal consistency, and exception is thrown here in both cases.
           throw new InvalidParameterException("q must be between 2 and 200 characters")
         } else Some(keyword)
-      case _ => None
+      case None => None
     }
 }
 
