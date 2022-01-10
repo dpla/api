@@ -1,19 +1,6 @@
 lazy val akkaHttpVersion = "10.2.7"
 lazy val akkaVersion    = "2.6.17"
 
-enablePlugins(DockerPlugin)
-
-docker / dockerfile := {
-  val artifact: File = assembly.value
-  val artifactTargetPath = s"/app/${artifact.name}"
-
-  new Dockerfile {
-    from("openjdk:8-jre")
-    add(artifact, artifactTargetPath)
-    entryPoint("java", "-jar", artifactTargetPath)
-  }
-}
-
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
