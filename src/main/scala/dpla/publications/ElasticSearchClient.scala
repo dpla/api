@@ -11,33 +11,9 @@ import akka.http.scaladsl.unmarshalling._
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-  def all: Future[Either[StatusCode, Future[PublicationList]]] = {
+  def fetch(id: String): Future[Either[StatusCode, Future[SinglePublication]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
-    // needed for the future map/onComplete
-    implicit val executionContext: ExecutionContextExecutor = system.executionContext
-
-    val uri = s"$elasticSearchEndpoint/_search?q=*"
-
-    System.out.println(uri)
-
-    val response: Future[HttpResponse] =
-      Http().singleRequest(HttpRequest(uri = uri))
-
-    response.map(res => {
-      res.status.intValue match {
-        case 200 =>
-          val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val pubs: Future[PublicationList] = body.map(_.parseJson.convertTo[PublicationList])
-          Right(pubs)
-        case _ =>
-          Left(res.status)
-      }
-    })
-  }
-
-  def find(id: String): Future[Either[StatusCode, Future[SinglePublication]]] = {
-    implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
-    // needed for the future map/onComplete
+    // needed for the future map
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
     val uri = s"$elasticSearchEndpoint/_doc/$id"
@@ -54,5 +30,44 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
         case _ => Left(res.status)
       }
     })
+  }
+
+  def search(params: SearchParams): Future[Either[StatusCode, Future[PublicationList]]] = {
+    implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
+    // needed for the future map
+    implicit val executionContext: ExecutionContextExecutor = system.executionContext
+
+    val uri = s"$elasticSearchEndpoint/_search"
+    val data = composeQuery(params).toString
+
+    val request: HttpRequest = HttpRequest(
+      method = HttpMethods.GET,
+      uri = uri,
+      entity = HttpEntity(ContentTypes.`application/json`, data)
+    )
+
+    val response: Future[HttpResponse] = Http().singleRequest(request)
+
+    response.map(res => {
+      res.status.intValue match {
+        case 200 =>
+          val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
+          val pubs: Future[PublicationList] =
+            body.map(_.parseJson.convertTo[PublicationList].copy(limit=Some(params.pageSize), start=Some(params.start)))
+          Right(pubs)
+        case _ =>
+          Left(res.status)
+      }
+    })
+  }
+
+  private def composeQuery(params: SearchParams): JsValue = {
+    JsObject(
+      "from" -> params.from.toJson,
+      "size" -> params.pageSize.toJson,
+      "query" -> JsObject(
+        "match_all" -> JsObject()
+      )
+    ).toJson
   }
 }

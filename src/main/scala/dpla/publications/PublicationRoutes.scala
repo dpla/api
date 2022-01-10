@@ -21,34 +21,36 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
   // needed for the future map/onComplete
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
-
   val publicationRoutes: Route =
     pathPrefix("publications") {
       concat(
         pathEnd {
           get {
-            onComplete(elasticSearchClient.all) {
-              case Success(response) => response match {
-                case Right(pubsFuture) =>
-                  onComplete(pubsFuture) {
-                    case Success(pubs) =>
-                      complete(pubs)
-                    case Failure(e) =>
-                      // Failure to parse ElasticSearch response
-                      System.out.println(s"Error: $e")
-                      complete(InternalServerError)
-                  }
-                case Left(status) =>
-                  // ElasticSearch returned an error
-                  val code = status.value
-                  val msg = status.reason
-                  System.out.println(s"Error: $code: $msg")
+            parameters("page".optional, "page_size".optional) { (page, pageSize) =>
+              val params = ParamValidator.getSearchParams(page, pageSize)
+              onComplete(elasticSearchClient.search(params)) {
+                case Success(response) => response match {
+                  case Right(pubsFuture) =>
+                    onComplete(pubsFuture) {
+                      case Success(pubs) =>
+                        complete(pubs)
+                      case Failure(e) =>
+                        // Failure to parse ElasticSearch response
+                        System.out.println(s"Error: $e")
+                        complete(InternalServerError)
+                    }
+                  case Left(status) =>
+                    // ElasticSearch returned an error
+                    val code = status.value
+                    val msg = status.reason
+                    System.out.println(s"Error: $code: $msg")
+                    complete(InternalServerError)
+                }
+                case Failure(e) =>
+                  // The call to the ElasticSearch API failed
+                  System.out.println(e)
                   complete(InternalServerError)
               }
-              case Failure(e) =>
-                // The call to the ElasticSearch API failed
-                System.out.println(e)
-                complete(InternalServerError)
             }
           }
         },
@@ -56,7 +58,7 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
           get {
             rejectEmptyResponse {
 
-              onComplete(elasticSearchClient.find(id)) {
+              onComplete(elasticSearchClient.fetch(id)) {
                 case Success(response) => response match {
                   case Right(pubFuture) =>
                     onComplete(pubFuture) {
