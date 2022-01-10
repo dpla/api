@@ -3,6 +3,8 @@ package dpla.publications
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.util.{Failure, Success}
+
 class ParamValidatorTest extends AnyWordSpec with Matchers {
 
   val minRawParams: RawParams = RawParams(
@@ -12,10 +14,16 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     q = None
   )
 
+  def expectSuccess(raw: RawParams): SearchParams =
+    ParamValidator.getSearchParams(raw) match {
+      case Success(p) => p
+      case Failure(_) => throw new RuntimeException("unexpected validation error")
+    }
+
   "facet validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = ParamValidator.getSearchParams(minRawParams).aggFields
+      val validated = expectSuccess(minRawParams).aggFields
       assert(validated == expected)
     }
 
@@ -23,7 +31,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("sourceResource.subject.name")
       val expected = Some(Seq("genre"))
       val raw = minRawParams.copy(facets=given)
-      val validated = ParamValidator.getSearchParams(raw).aggFields
+      val validated = expectSuccess(raw).aggFields
       assert(validated == expected)
     }
 
@@ -45,23 +53,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
         "genre"
       )
       val raw = minRawParams.copy(facets=given)
-      val validated = ParamValidator.getSearchParams(raw).aggFields.getOrElse(Seq[String]())
+      val validated = expectSuccess(raw).aggFields.getOrElse(Seq[String]())
       validated should contain allElementsOf expected
     }
 
     "handle out-of-range param" in {
       val given = Some("sourceResource.title")
-      val expected = None
       val raw = minRawParams.copy(facets=given)
-      val validated = ParamValidator.getSearchParams(raw).aggFields
-      assert(validated == expected)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
     }
   }
 
   "page validator" should {
     "handle empty param" in {
       val expected = 1
-      val validated = ParamValidator.getSearchParams(minRawParams).page
+      val validated = expectSuccess(minRawParams).page
       assert(validated == expected)
     }
 
@@ -69,7 +76,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("27")
       val expected = 27
       val raw = minRawParams.copy(page=given)
-      val validated = ParamValidator.getSearchParams(raw).page
+      val validated = expectSuccess(raw).page
       assert(validated == expected)
     }
 
@@ -77,7 +84,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("foo")
       val expected = 1
       val raw = minRawParams.copy(page=given)
-      val validated = ParamValidator.getSearchParams(raw).page
+      val validated = expectSuccess(raw).page
       assert(validated == expected)
     }
 
@@ -85,7 +92,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("0")
       val expected = 1
       val raw = minRawParams.copy(page=given)
-      val validated = ParamValidator.getSearchParams(raw).page
+      val validated = expectSuccess(raw).page
       assert(validated == expected)
     }
   }
@@ -93,7 +100,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "page size validator" should {
     "handle empty param" in {
       val expected = 10
-      val validated = ParamValidator.getSearchParams(minRawParams).pageSize
+      val validated = expectSuccess(minRawParams).pageSize
       assert(validated == expected)
     }
 
@@ -101,7 +108,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("50")
       val expected = 50
       val raw = minRawParams.copy(pageSize=given)
-      val validated = ParamValidator.getSearchParams(raw).pageSize
+      val validated = expectSuccess(raw).pageSize
       assert(validated == expected)
     }
 
@@ -109,7 +116,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("foo")
       val expected = 10
       val raw = minRawParams.copy(pageSize=given)
-      val validated = ParamValidator.getSearchParams(raw).pageSize
+      val validated = expectSuccess(raw).pageSize
       assert(validated == expected)
     }
 
@@ -117,16 +124,15 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("999999")
       val expected = 1000
       val raw = minRawParams.copy(pageSize=given)
-      val validated = ParamValidator.getSearchParams(raw).pageSize
+      val validated = expectSuccess(raw).pageSize
       assert(validated == expected)
     }
   }
 
   "q validator" should {
     "handle empty param" in {
-      val given = None
       val expected = None
-      val validated = ParamValidator.getSearchParams(minRawParams).q
+      val validated = expectSuccess(minRawParams).q
       assert (validated == expected)
     }
 
@@ -134,7 +140,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("dogs")
       val expected = Some("dogs")
       val raw = minRawParams.copy(q=given)
-      val validated = ParamValidator.getSearchParams(raw).q
+      val validated = expectSuccess(raw).q
       assert (validated == expected)
     }
 
@@ -142,7 +148,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("d")
       val expected = None
       val raw = minRawParams.copy(q=given)
-      val validated = ParamValidator.getSearchParams(raw).q
+      val validated = expectSuccess(raw).q
       assert (validated == expected)
     }
   }

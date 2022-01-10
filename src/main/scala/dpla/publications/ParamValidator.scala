@@ -1,5 +1,6 @@
 package dpla.publications
 
+import java.security.InvalidParameterException
 import scala.util.Try
 
 /**
@@ -7,13 +8,14 @@ import scala.util.Try
  */
 object ParamValidator {
 
-  def getSearchParams(raw: RawParams): SearchParams =
+  // Method returns Failure if any parameters are invalid
+  def getSearchParams(raw: RawParams): Try[SearchParams] = Try(
     SearchParams(
       facets = validFacets(raw.facets),
       page = validPage(raw.page),
       pageSize = validPageSize(raw.pageSize),
       q = validQ(raw.q)
-    )
+    ))
 
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
@@ -30,7 +32,10 @@ object ParamValidator {
 
     facets match {
       case Some(f) =>
-        val filtered = f.split(",").filter(facetableFields.contains)
+        val filtered = f.split(",").map(candidate => {
+          if (facetableFields.contains(candidate)) candidate
+          else throw new InvalidParameterException(s"$candidate is not a facetable field")
+        })
         if (filtered.nonEmpty) Some(filtered) else None
       case _ => None
     }
