@@ -10,6 +10,7 @@ lazy val root = (project in file(".")).
 
     name := "ebook-api",
     assembly / mainClass := Some("dpla.publications.RunApp"),
+    assembly / assemblyJarName := "dpla-ebooks-api.jar",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"                % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json"     % akkaHttpVersion,
@@ -28,3 +29,4 @@ ThisBuild / assemblyMergeStrategy := {
   case "META-INF/MANIFEST.MF" => MergeStrategy.discard
   case x => MergeStrategy.first
 }
+
