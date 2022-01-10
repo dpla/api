@@ -43,12 +43,20 @@ object ParamValidator {
   }
 
   // Must be an integer greater than 0, defaults to 1
-  private def validPage(page: Option[String]): Int =
-    page.flatMap(toIntOpt) match {
-      case Some(int) =>
-        if (int == 0) 1 else int
-      case None => 1
+  private def validPage(page: Option[String]): Int = {
+    val pageRule = "page must be an integer greater than 0"
+
+    page match {
+      case Some(p) =>
+        toIntOpt(p) match {
+          case Some(int) =>
+            if (int == 0) throw new InvalidParameterException(pageRule)
+            else int
+          case None => throw new InvalidParameterException(pageRule)
+        }
+      case _ => 1
     }
+  }
 
   // Must be an integer between 0 and 1000, defaults to 10
   private def validPageSize(pageSize: Option[String]): Int =
