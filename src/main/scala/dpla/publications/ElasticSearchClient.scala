@@ -37,8 +37,8 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
     // needed for the future map
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
-    val uri = s"$elasticSearchEndpoint/_search"
-    val data = composeQuery(params).toString
+    val uri: String = s"$elasticSearchEndpoint/_search"
+    val data: String = ElasticSearchQueryBuilder.composeQuery(params).toString
 
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.GET,
@@ -59,15 +59,5 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
           Left(res.status)
       }
     })
-  }
-
-  private def composeQuery(params: SearchParams): JsValue = {
-    JsObject(
-      "from" -> params.from.toJson,
-      "size" -> params.pageSize.toJson,
-      "query" -> JsObject(
-        "match_all" -> JsObject()
-      )
-    ).toJson
   }
 }

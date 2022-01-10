@@ -1,6 +1,6 @@
 package dpla.publications
 
-import spray.json.{JsArray, JsNumber, JsObject, JsString}
+import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString}
 
 import scala.annotation.tailrec
 
@@ -38,6 +38,9 @@ trait JsonFieldReader {
 
   def readInt(root: JsObject, path: String*): Option[Int] =
     read(getIntOpt, root, path)
+
+  def readBoolean(root: JsObject, path: String*): Option[Boolean] =
+    read(getBooleanOpt, root, path)
 
   /** Private helper methods */
 
@@ -97,6 +100,12 @@ trait JsonFieldReader {
   private def getIntOpt(parent: JsObject, child: String): Option[Int] =
     parent.getFields(child) match {
       case Seq(JsNumber(value)) => Some(value.intValue)
+      case _ => None
+    }
+
+  private def getBooleanOpt(parent: JsObject, child: String): Option[Boolean] =
+    parent.getFields(child ) match {
+      case Seq(JsBoolean(value)) => Some(value.booleanValue)
       case _ => None
     }
 }
