@@ -7,10 +7,11 @@ import scala.util.Try
  */
 object ParamValidator {
 
-  def getSearchParams(page: Option[String], pageSize: Option[String]): SearchParams =
+  def getSearchParams(page: Option[String], pageSize: Option[String], q: Option[String]): SearchParams =
     SearchParams(
       page = validPage(page),
-      pageSize = validPageSize(pageSize)
+      pageSize = validPageSize(pageSize),
+      q = validQ(q)
     )
 
   private def toIntOpt(str: String): Option[Int] =
@@ -31,11 +32,16 @@ object ParamValidator {
         if (int > 1000) 1000 else int
       case None => 10
     }
+
+  // Must be a string between 2 and 200 characters
+  private def validQ(q: Option[String]): Option[String] =
+    q.flatMap(keyword => if (keyword.length < 2 || keyword.length > 200) None else Some(keyword))
 }
 
 case class SearchParams(
                          page: Int,
-                         pageSize: Int
+                         pageSize: Int,
+                         q: Option[String]
                        ) {
   // ElasticSearch param that defines the number of hits to skip
   def from: Int = (page-1)*pageSize
