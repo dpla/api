@@ -91,26 +91,26 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       ).toJson
   }
 
-  implicit object AggregationListFormat extends RootJsonFormat[AggregationList] {
+  implicit object FacetListFormat extends RootJsonFormat[FacetList] {
 
-    def read(json: JsValue): AggregationList = {
+    def read(json: JsValue): FacetList = {
       val root: JsObject = json.asJsObject
       val fieldNames = readObject(root).get.fields.keys
 
-      val aggregations: Seq[Aggregation] = fieldNames.map(field =>
-        Aggregation(
+      val facets: Seq[Facet] = fieldNames.map(field =>
+        Facet(
           field = field,
           buckets = readObjectArray(root, field, "buckets").map(_.toJson.convertTo[Bucket])
         )
       ).toSeq
 
-      AggregationList(aggregations)
+      FacetList(facets)
     }
 
-    def write(al: AggregationList): JsValue = {
+    def write(al: FacetList): JsValue = {
       var aggObject = JsObject()
 
-      al.aggregations.foreach(agg => {
+      al.facets.foreach(agg => {
         aggObject = JsObject(aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson)))
       })
 
@@ -129,7 +129,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         limit = None,
         start = None,
         docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication]),
-        facets = readObject(root, "aggregations").map(_.toJson.convertTo[AggregationList])
+        facets = readObject(root, "aggregations").map(_.toJson.convertTo[FacetList])
       )
     }
 
@@ -177,7 +177,7 @@ case class PublicationList(
                             limit: Option[Int],
                             start: Option[Int],
                             docs: Seq[Publication],
-                            facets: Option[AggregationList]
+                            facets: Option[FacetList]
                           )
 
 case class Publication(
@@ -196,14 +196,14 @@ case class Publication(
                         title: Seq[String]
                       )
 
-case class AggregationList(
-                            aggregations: Seq[Aggregation]
-                          )
+case class FacetList(
+                      facets: Seq[Facet]
+                    )
 
-case class Aggregation(
-                        field: String,
-                        buckets: Seq[Bucket]
-                      )
+case class Facet(
+                  field: String,
+                  buckets: Seq[Bucket]
+                )
 
 case class Bucket(
                    key: Option[String],
