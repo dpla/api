@@ -80,9 +80,9 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   "agg query builder" should {
     "handle missing facets" in {
-      val parent = readObject(minQuery)
+      val parent = readObject(minQuery, "aggs")
       val fieldNames = parent.get.fields.keys
-      fieldNames should not contain "aggs"
+      assert(fieldNames.isEmpty)
     }
 
     "include all facets" in {
