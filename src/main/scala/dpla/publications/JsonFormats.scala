@@ -132,14 +132,20 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       )
     }
 
-    def write(pl: PublicationList): JsValue =
-      JsObject(
+    def write(pl: PublicationList): JsValue = {
+      val base: JsObject = JsObject(
         "count" -> pl.count.toJson,
         "start" -> pl.start.toJson,
         "limit" -> pl.limit.toJson,
-        "docs" -> pl.docs.toJson,
-        "facets" -> pl.facets.toJson
-      ).toJson
+        "docs" -> pl.docs.toJson
+      )
+
+      val complete: JsObject =
+        if (pl.facets.nonEmpty) JsObject(base.fields + ("facets" -> pl.facets.toJson))
+        else base
+
+      complete.toJson
+    }
   }
 
   /** Methods for writing JSON **/

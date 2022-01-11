@@ -29,22 +29,22 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   "query builder" should {
     "specify from" in {
-      val expected = 40
-      val traversed = readInt(minQuery, "from").getOrElse("NOT FOUND")
+      val expected = Some(40)
+      val traversed = readInt(minQuery, "from")
       assert(traversed == expected)
     }
 
     "specify size" in {
-      val expected = 20
-      val traversed = readInt(minQuery, "size").getOrElse("NOT FOUND")
+      val expected = Some(20)
+      val traversed = readInt(minQuery, "size")
       assert(traversed == expected)
     }
   }
 
   "keyword query builder" should {
     "handle missing q" in {
-      val expected = JsObject()
-      val traversed = readObject(minQuery, "query", "match_all").get
+      val expected = Some(JsObject())
+      val traversed = readObject(minQuery, "query", "match_all")
       assert(traversed == expected)
     }
 
@@ -60,21 +60,20 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
 
     "specify wildcard analyzer" in {
-      val expected = true
-      val traversed = readBoolean(detailQuery, "query", "query_string", "analyze_wildcard").get
+      val expected = Some(true)
+      val traversed = readBoolean(detailQuery, "query", "query_string", "analyze_wildcard")
       assert(traversed == expected)
     }
 
     "specify default operator" in {
-      val expected = "AND"
+      val expected = Some("AND")
       val traversed = readString(detailQuery, "query", "query_string", "default_operator")
-        .getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "specify lenient" in {
-      val expected = true
-      val traversed = readBoolean(detailQuery, "query", "query_string", "lenient").get
+      val expected = Some(true)
+      val traversed = readBoolean(detailQuery, "query", "query_string", "lenient")
       assert(traversed == expected)
     }
   }
@@ -94,9 +93,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
 
     "specify facet field" in {
-      val expected = "genre"
+      val expected = Some("genre")
       val traversed = readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
-        .getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 

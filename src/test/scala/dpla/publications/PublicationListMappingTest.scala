@@ -28,7 +28,8 @@ class PublicationListMappingTest extends AnyWordSpec with Matchers with JsonFiel
     }
 
     "handle empty docs" in {
-
+      val traversed = readObjectArray(minPubList, "docs")
+      assert(traversed.isEmpty)
     }
 
     "map all docs" in {
@@ -55,9 +56,9 @@ class PublicationListMappingTest extends AnyWordSpec with Matchers with JsonFiel
     }
 
     "handle empty facets" in {
-      val expected = None
-      val traversed = readObject(minPubList, "facets")
-      assert(traversed == expected)
+      val parent = readObject(minPubList)
+      val children = parent.get.fields.keys
+      children should not contain "facets"
     }
 
     "map all facets" in {
