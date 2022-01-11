@@ -24,12 +24,7 @@ object ParamValidator {
   // Must be a facetable field
   private def validFacets(facets: Option[String]): Option[Seq[String]] = {
     val facetableFields: Seq[String] = Seq(
-      "dataProvider",
-      "sourceResource.creator",
-      "sourceResource.format",
-      "sourceResource.language.name",
-      "sourceResource.publisher",
-      "sourceResource.subject.name"
+      "dataProvider"
     )
 
     facets match {

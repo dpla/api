@@ -5,22 +5,13 @@ import spray.json._
 
 object ElasticSearchQueryBuilder {
 
-  def composeQuery(params: SearchParams): JsValue = {
+  def composeQuery(params: SearchParams): JsValue =
     JsObject(
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
       "query" -> keywordQuery(params.q),
       "aggs" -> aggQuery(params.facets, params.facetSize)
     ).toJson
-
-//    params.facets match {
-//      case Some(facetArray) =>
-//        // add "agg" field to base
-//        JsObject(base.fields + ("aggs" -> aggQuery(facetArray, params.facetSize))).toJson
-//      case None =>
-//        base.toJson
-//    }
-  }
 
   // Map DPLA MAP fields to ElasticSearch fields
   private def dplaToElasticSearch = Map(
