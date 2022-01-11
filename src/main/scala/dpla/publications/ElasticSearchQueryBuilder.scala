@@ -10,7 +10,7 @@ object ElasticSearchQueryBuilder {
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
       "query" -> keywordQuery(params.q),
-      "aggs" -> aggQuery(params.facets, params.facetSize)
+      "aggs" -> aggsQuery(params.facets, params.facetSize)
     ).toJson
 
   // Map DPLA MAP fields to ElasticSearch fields
@@ -56,8 +56,8 @@ object ElasticSearchQueryBuilder {
     "title^2".toJson
   )
 
-  // Composes an aggregate (facet) query object
-  private def aggQuery(facets: Option[Seq[String]], facetSize: Int): JsObject =
+  // Composes an aggregates (facets) query object
+  private def aggsQuery(facets: Option[Seq[String]], facetSize: Int): JsObject =
     facets match {
       case Some(facetArray) =>
         var base = JsObject()
