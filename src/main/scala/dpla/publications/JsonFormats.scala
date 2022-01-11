@@ -91,25 +91,38 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       ).toJson
   }
 
+  /** In an ElasticSearch response, facets look something like this:
+   *  {"aggregations": {"dataProvider": {"buckets": [...]}}, "sourceResource.publisher": {"buckets": [...]}}}
+   *  You therefore have to read the keys of the "aggregation" object to get the facet field names.
+   */
   implicit object FacetListFormat extends RootJsonFormat[FacetList] {
 
     def read(json: JsValue): FacetList = {
       val root: JsObject = json.asJsObject
-      val fieldNames = readObject(root).get.fields.keys
 
-      val facets: Seq[Facet] = fieldNames.map(field =>
-        Facet(
-          field = field,
-          buckets = readObjectArray(root, field, "buckets").map(_.toJson.convertTo[Bucket])
-        )
-      ).toSeq
+      readObject(root) match {
+        case Some(obj) =>
+          val fieldNames: Seq[String] = obj.fields.keys.toSeq
 
-      FacetList(facets)
+          val facets: Seq[Facet] = fieldNames.map(fieldName =>
+            Facet(
+              field = fieldName,
+              buckets = readObjectArray(root, fieldName, "buckets").map(_.toJson.convertTo[Bucket])
+            )
+          )
+
+          FacetList(facets)
+
+        case None =>
+          // This should never happen
+          FacetList(Seq[Facet]())
+      }
     }
 
     def write(al: FacetList): JsValue = {
       var aggObject = JsObject()
 
+      // Add a field to aggObject for each facet field
       al.facets.foreach(agg => {
         aggObject = JsObject(aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson)))
       })
@@ -140,6 +153,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         "docs" -> pl.docs.toJson
       )
 
+      // Add facets if there are any
       val complete: JsObject =
         if (pl.facets.nonEmpty) JsObject(base.fields + ("facets" -> pl.facets.toJson))
         else base
