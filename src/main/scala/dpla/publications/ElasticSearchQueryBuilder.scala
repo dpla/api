@@ -61,19 +61,17 @@ object ElasticSearchQueryBuilder {
     facets match {
       case Some(facetArray) =>
         var base = JsObject()
-        facetArray.foreach(facet =>
-          base = JsObject(base.fields + (facet -> singleAgg(facet, facetSize)))
-        )
+        // Iterate through each facet and add a field to the base JsObject
+        facetArray.foreach(facet => {
+          val terms = JsObject(
+            "terms" -> JsObject(
+              "field" -> dplaToElasticSearch(facet).toJson,
+              "size" -> facetSize.toJson
+            )
+          )
+          base = JsObject(base.fields + (facet -> terms))
+        })
         base
       case None => JsObject()
     }
-
-  private def singleAgg(facet: String, facetSize: Int): JsObject = {
-    JsObject(
-      "terms" -> JsObject(
-        "field" -> dplaToElasticSearch(facet).toJson,
-        "size" -> facetSize.toJson
-      )
-    )
-  }
 }
