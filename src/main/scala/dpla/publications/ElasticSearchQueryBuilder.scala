@@ -15,11 +15,21 @@ object ElasticSearchQueryBuilder {
     params.facets match {
       case Some(facetArray) =>
         // add "agg" field to base
-        JsObject(base.fields + ("agg" -> aggQuery(facetArray, params.facetSize))).toJson
+        JsObject(base.fields + ("aggs" -> aggQuery(facetArray, params.facetSize))).toJson
       case None =>
         base.toJson
     }
   }
+
+  // Map DPLA MAP fields to ElasticSearch fields
+  private def dplaToElasticSearch = Map(
+    "dataProvider" -> "sourceUri",
+    "sourceResource.creator" -> "author",
+    "sourceResource.format" -> "medium",
+    "sourceResource.language.name" -> "language",
+    "sourceResource.publisher" -> "publisher",
+    "sourceResource.subject.name" -> "genre"
+  )
 
   private def keywordQuery(q: Option[String]): JsObject =
     q match {
@@ -63,7 +73,7 @@ object ElasticSearchQueryBuilder {
   private def singleAgg(facet: String, facetSize: Int): JsObject = {
     JsObject(
       "terms" -> JsObject(
-        "field" -> facet.toJson,
+        "field" -> dplaToElasticSearch(facet).toJson,
         "size" -> facetSize.toJson
       )
     )

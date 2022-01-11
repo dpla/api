@@ -82,26 +82,26 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "handle missing facets" in {
       val parent = readObject(minQuery)
       val fieldNames = parent.get.fields.keys
-      fieldNames should not contain "agg"
+      fieldNames should not contain "aggs"
     }
 
     "include all facets" in {
       val expected = Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")
-      val parent = readObject(detailQuery, "agg")
+      val parent = readObject(detailQuery, "aggs")
       val fieldNames = parent.get.fields.keys
       fieldNames should contain allElementsOf expected
     }
 
     "specify facet field" in {
-      val expected = "sourceResource.subject.name"
-      val traversed = readString(detailQuery, "agg", "sourceResource.subject.name", "terms", "field")
+      val expected = "genre"
+      val traversed = readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
         .getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "specify facet size" in {
       val expected = Some(100)
-      val traversed = readInt(detailQuery, "agg", "sourceResource.subject.name", "terms", "size")
+      val traversed = readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
       assert(traversed == expected)
     }
   }
