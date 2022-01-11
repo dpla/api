@@ -22,6 +22,7 @@ object ParamValidator {
     Try(str.toInt).toOption
 
   // Must be a facetable field
+  // Facetable fields must be indexed as type "keyword" in ElasticSearch
   private def validFacets(facets: Option[String]): Option[Seq[String]] = {
     val facetableFields: Seq[String] = Seq(
       "dataProvider"

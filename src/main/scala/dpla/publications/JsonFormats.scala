@@ -123,7 +123,6 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     def read(json: JsValue): PublicationList = {
       val root = json.asJsObject
 
-      // TODO add limit and start when working on pagination ticket
       PublicationList(
         count = readInt(root, "hits", "total", "value"),
         limit = None,
@@ -133,17 +132,14 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       )
     }
 
-    def write(pl: PublicationList): JsValue = {
-      val facets: JsValue = if (pl.facets.nonEmpty) pl.facets.toJson else JsArray()
-
-      JsObject(
+    def write(pl: PublicationList): JsValue =
+      filterIfEmpty(JsObject(
         "count" -> pl.count.toJson,
         "start" -> pl.start.toJson,
         "limit" -> pl.limit.toJson,
         "docs" -> pl.docs.toJson,
-        "facets" -> facets
-      ).toJson
-    }
+        "facets" -> pl.facets.toJson
+      )).toJson
   }
 
   /** Methods for writing JSON **/
