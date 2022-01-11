@@ -14,14 +14,17 @@ object ElasticSearchQueryBuilder {
     ).toJson
 
   // Map DPLA MAP fields to ElasticSearch fields
-  private def dplaToElasticSearch = Map(
-    "dataProvider" -> "sourceUri",
-    "sourceResource.creator" -> "author",
-    "sourceResource.format" -> "medium",
-    "sourceResource.language.name" -> "language",
-    "sourceResource.publisher" -> "publisher",
-    "sourceResource.subject.name" -> "genre"
-  )
+  private def dplaToElasticSearch(dplaField: String): String = {
+    val fieldMap = Map(
+      "dataProvider" -> "sourceUri",
+      "sourceResource.creator" -> "author",
+      "sourceResource.format" -> "medium",
+      "sourceResource.language.name" -> "language",
+      "sourceResource.publisher" -> "publisher",
+      "sourceResource.subject.name" -> "genre"
+    )
+    fieldMap(dplaField)
+  }
 
   private def keywordQuery(q: Option[String]): JsObject =
     q match {

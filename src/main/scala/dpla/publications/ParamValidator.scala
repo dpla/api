@@ -127,20 +127,4 @@ case class SearchParams(
 
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
   def start: Int = from+1
-
-  // ElasticSearch param that defines aggregations (i.e. facets)
-  def aggFields: Option[Seq[String]] = facets match {
-    case Some(f) =>
-      val mapped = f.flatMap(_ match {
-        case "dataProvider" => Some("sourceUri")
-        case "sourceResource.creator" => Some("author")
-        case "sourceResource.format" => Some("medium")
-        case "sourceResource.language.name" => Some("language")
-        case "sourceResource.publisher" => Some("publisher")
-        case "sourceResource.subject.name" => Some("genre")
-        case _ => None
-      })
-      if (mapped.nonEmpty) Some(mapped) else None
-    case None => None
-  }
 }

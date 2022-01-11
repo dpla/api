@@ -24,39 +24,17 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "facet validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).aggFields
+      val validated = expectSuccess(minRawParams).facets
       assert(validated == expected)
     }
 
     "handle valid param" in {
       val given = Some("dataProvider")
-      val expected = Some(Seq("sourceUri"))
+      val expected = Some(Seq("dataProvider"))
       val raw = minRawParams.copy(facets=given)
-      val validated = expectSuccess(raw).aggFields
+      val validated = expectSuccess(raw).facets
       assert(validated == expected)
     }
-
-//    "map all valid params" in {
-//      val given = Some(Seq(
-//        "dataProvider",
-//        "sourceResource.creator",
-//        "sourceResource.format",
-//        "sourceResource.language.name",
-//        "sourceResource.publisher",
-//        "sourceResource.subject.name"
-//      ).mkString(","))
-//      val expected = Seq(
-//        "sourceUri",
-//        "author",
-//        "medium",
-//        "language",
-//        "publisher",
-//        "genre"
-//      )
-//      val raw = minRawParams.copy(facets=given)
-//      val validated = expectSuccess(raw).aggFields.getOrElse(Seq[String]())
-//      validated should contain allElementsOf expected
-//    }
 
     "handle unfacetable field" in {
       val given = Some("sourceResource.title")
