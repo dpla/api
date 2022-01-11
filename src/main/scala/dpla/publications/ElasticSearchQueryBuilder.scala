@@ -9,7 +9,8 @@ object ElasticSearchQueryBuilder {
     JsObject(
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> keywordQuery(params.q)
+      "query" -> keywordQuery(params.q),
+      "agg" -> aggQuery(params.facets, params.facetSize)
     ).toJson
 
   private def keywordQuery(q: Option[String]): JsObject =
@@ -41,4 +42,27 @@ object ElasticSearchQueryBuilder {
     "summary^0.75".toJson,
     "title^2".toJson
   )
+
+  // Composes an aggregate (facet) query object
+  private def aggQuery(facets: Option[Seq[String]], facetSize: Int): JsObject = {
+    facets match {
+      case Some(facetArray) =>
+        var base = JsObject()
+        facetArray.foreach(facet =>
+          base = JsObject(base.fields + (facet -> singleAgg(facet, facetSize)))
+        )
+        base
+      case None =>
+        JsObject()
+    }
+  }
+
+  private def singleAgg(facet: String, facetSize: Int): JsObject = {
+    JsObject(
+      "terms" -> JsObject(
+        "field" -> facet.toJson,
+        "size" -> facetSize.toJson
+      )
+    )
+  }
 }

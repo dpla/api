@@ -66,6 +66,36 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "facet size validator" should {
+    "handle empty param" in {
+      val expected = 50
+      val validated = expectSuccess(minRawParams).facetSize
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("30")
+      val expected = 30
+      val raw = minRawParams.copy(facetSize=given)
+      val validated = expectSuccess(raw).facetSize
+      assert(validated == expected)
+    }
+
+    "handle non-int param" in {
+      val given = Some("foo")
+      val raw = minRawParams.copy(page=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+
+    "handle out-of-range param" in {
+      val given = Some("9999")
+      val raw = minRawParams.copy(facetSize=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
   "page validator" should {
     "handle empty param" in {
       val expected = 1

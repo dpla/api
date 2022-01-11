@@ -9,7 +9,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   val minSearchParams: SearchParams = SearchParams(
     facets = None,
-    facetSize = None,
+    facetSize = 100,
     page = 3,
     pageSize = 20,
     q = None
@@ -17,8 +17,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   val minQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(minSearchParams).asJsObject
 
   val detailQueryParams: SearchParams = SearchParams(
-    facets = Some(Seq("dataProvider", "sourceResource.subject.name")),
-    facetSize = Some(10),
+    facets = Some(Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")),
+    facetSize = 100,
     page = 3,
     pageSize = 20,
     q = Some("dogs")
@@ -74,6 +74,34 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "specify lenient" in {
       val expected = true
       val traversed = readBoolean(detailQuery, "query", "query_string", "lenient").get
+      assert(traversed == expected)
+    }
+  }
+
+  "agg query builder" should {
+    "handle missing facets" in {
+      val parent = readObject(minQuery, "agg")
+      val fieldNames = parent.get.fields.keys
+      assert(fieldNames.isEmpty)
+    }
+
+    "include all facets" in {
+      val expected = Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")
+      val parent = readObject(detailQuery, "agg")
+      val fieldNames = parent.get.fields.keys
+      fieldNames should contain allElementsOf expected
+    }
+
+    "specify facet field" in {
+      val expected = "sourceResource.subject.name"
+      val traversed = readString(detailQuery, "agg", "sourceResource.subject.name", "terms", "field")
+        .getOrElse("NOT FOUND")
+      assert(traversed == expected)
+    }
+
+    "specify facet size" in {
+      val expected = Some(100)
+      val traversed = readInt(detailQuery, "agg", "sourceResource.subject.name", "terms", "size")
       assert(traversed == expected)
     }
   }

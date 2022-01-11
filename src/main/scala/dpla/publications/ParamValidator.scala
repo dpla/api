@@ -43,9 +43,23 @@ object ParamValidator {
     }
   }
 
-  // TODO: This is where I left off
-  // Must be an integer between 0 and 2000
-  def validFacetSize(facetSize: Option[String]): Option[Int] = ???
+  // Must be an integer between 0 and 2000, defaults to 50
+  def validFacetSize(facetSize: Option[String]): Int = {
+    val facetSizeRule = "facet_size must be an integer between 0 and 2000"
+
+    facetSize match {
+      case Some(f) =>
+        toIntOpt(f) match {
+          case Some(int) =>
+            if (int > 2000) throw new InvalidParameterException(facetSizeRule)
+            else int
+          case None =>
+            // not an integer
+            throw new InvalidParameterException(facetSizeRule)
+        }
+      case None => 50
+    }
+  }
 
   // Must be an integer greater than 0, defaults to 1
   private def validPage(page: Option[String]): Int = {
@@ -108,7 +122,7 @@ case class RawParams(
 
 case class SearchParams(
                          facets: Option[Seq[String]],
-                         facetSize: Option[Int],
+                         facetSize: Int,
                          page: Int,
                          pageSize: Int,
                          q: Option[String]
