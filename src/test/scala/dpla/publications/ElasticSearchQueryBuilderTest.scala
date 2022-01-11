@@ -112,19 +112,31 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "map DPLA MAP fields to ElasticSearch fields" in {
       val dplaFields = Seq(
         "dataProvider",
+        "isShownAt",
+        "object",
         "sourceResource.creator",
+        "sourceResource.date",
+        "sourceResource.description",
         "sourceResource.format",
         "sourceResource.language.name",
         "sourceResource.publisher",
-        "sourceResource.subject.name"
+        "sourceResource.subject.name",
+        "sourceResource.subtitle",
+        "sourceResource.title"
       )
       val expected = Seq(
         "sourceUri",
+        "itemUri",
+        "payloadUri",
         "author",
+        "publicationDate",
+        "summary",
         "medium",
         "language",
         "publisher",
-        "genre"
+        "genre",
+        "subtitle",
+        "title"
       )
       val mapped = dplaFields.map(field => ElasticSearchQueryBuilder invokePrivate dplaToElasticSearch(field))
       mapped should contain allElementsOf expected

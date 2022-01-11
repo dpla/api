@@ -17,11 +17,17 @@ object ElasticSearchQueryBuilder {
   private def dplaToElasticSearch(dplaField: String): String = {
     val fieldMap = Map(
       "dataProvider" -> "sourceUri",
+      "isShownAt" -> "itemUri",
+      "object" -> "payloadUri",
       "sourceResource.creator" -> "author",
+      "sourceResource.date" -> "publicationDate",
+      "sourceResource.description" -> "summary",
       "sourceResource.format" -> "medium",
       "sourceResource.language.name" -> "language",
       "sourceResource.publisher" -> "publisher",
-      "sourceResource.subject.name" -> "genre"
+      "sourceResource.subject.name" -> "genre",
+      "sourceResource.subtitle" -> "subtitle",
+      "sourceResource.title" -> "title"
     )
     fieldMap(dplaField)
   }
