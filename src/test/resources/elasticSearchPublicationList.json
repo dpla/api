@@ -25,5 +25,31 @@
     }
   },
   "timed_out":false,
-  "took":6
+  "took":6,
+  "aggregations" : {
+    "dataProvider": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "http://standardebooks.org",
+          "doc_count": 590
+        },
+        {
+          "key": "http://another_source_uri.org",
+          "doc_count": 872
+        }
+      ]
+    },
+    "sourceResource.creator": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "Jules Verne",
+          "doc_count": 5
+        }
+      ]
+    }
+  }
 }

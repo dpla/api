@@ -49,9 +49,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
 
     "specify keyword" in {
-      val expected = "dogs"
+      val expected = Some("dogs")
       val traversed = readString(detailQuery, "query", "query_string", "query")
-        .getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 

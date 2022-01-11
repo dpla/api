@@ -133,13 +133,13 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
 
     def write(pl: PublicationList): JsValue =
-      filterIfEmpty(JsObject(
+      JsObject(
         "count" -> pl.count.toJson,
         "start" -> pl.start.toJson,
         "limit" -> pl.limit.toJson,
         "docs" -> pl.docs.toJson,
         "facets" -> pl.facets.toJson
-      )).toJson
+      ).toJson
   }
 
   /** Methods for writing JSON **/
