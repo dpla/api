@@ -73,6 +73,51 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
   }
 
+  implicit object BucketFormat extends RootJsonFormat[Bucket] {
+
+    def read(json: JsValue): Bucket = {
+      val root = json.asJsObject
+
+      Bucket(
+        key = readString(root, "key"),
+        docCount = readInt(root, "doc_count")
+      )
+    }
+
+    def write(b: Bucket): JsValue =
+      JsObject(
+        "term" -> b.key.toJson,
+        "count" -> b.docCount.toJson
+      ).toJson
+  }
+
+  implicit object AggregationListFormat extends RootJsonFormat[AggregationList] {
+
+    def read(json: JsValue): AggregationList = {
+      val root: JsObject = json.asJsObject
+      val fieldNames = readObject(root).get.fields.keys
+
+      val aggregations: Seq[Aggregation] = fieldNames.map(field =>
+        Aggregation(
+          field = field,
+          buckets = readObjectArray(root, field, "buckets").map(_.toJson.convertTo[Bucket])
+        )
+      ).toSeq
+
+      AggregationList(aggregations)
+    }
+
+    def write(al: AggregationList): JsValue = {
+      var aggObject = JsObject()
+
+      al.aggregations.foreach(agg => {
+        aggObject = JsObject(aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson)))
+      })
+
+      aggObject.toJson
+    }
+  }
+
   implicit object PublicationListFormat extends RootJsonFormat[PublicationList] {
 
     def read(json: JsValue): PublicationList = {
@@ -83,17 +128,22 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         count = readInt(root, "hits", "total", "value"),
         limit = None,
         start = None,
-        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication])
+        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication]),
+        facets = readObject(root, "aggregations").map(_.toJson.convertTo[AggregationList])
       )
     }
 
-    def write(pl: PublicationList): JsValue =
+    def write(pl: PublicationList): JsValue = {
+      val facets: JsValue = if (pl.facets.nonEmpty) pl.facets.toJson else JsArray()
+
       JsObject(
         "count" -> pl.count.toJson,
         "start" -> pl.start.toJson,
         "limit" -> pl.limit.toJson,
-        "docs" -> pl.docs.toJson
+        "docs" -> pl.docs.toJson,
+        "facets" -> facets
       ).toJson
+    }
   }
 
   /** Methods for writing JSON **/
@@ -126,7 +176,8 @@ case class PublicationList(
                             count: Option[Int],
                             limit: Option[Int],
                             start: Option[Int],
-                            docs: Seq[Publication]
+                            docs: Seq[Publication],
+                            facets: Option[AggregationList]
                           )
 
 case class Publication(
@@ -144,3 +195,17 @@ case class Publication(
                         summary: Seq[String],
                         title: Seq[String]
                       )
+
+case class AggregationList(
+                            aggregations: Seq[Aggregation]
+                          )
+
+case class Aggregation(
+                        field: String,
+                        buckets: Seq[Bucket]
+                      )
+
+case class Bucket(
+                   key: Option[String],
+                   docCount: Option[Int]
+                 )
