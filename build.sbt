@@ -1,19 +1,6 @@
 lazy val akkaHttpVersion = "10.2.7"
 lazy val akkaVersion    = "2.6.17"
 
-enablePlugins(DockerPlugin)
-
-docker / dockerfile := {
-  val artifact: File = assembly.value
-  val artifactTargetPath = s"/app/${artifact.name}"
-
-  new Dockerfile {
-    from("openjdk:8-jre")
-    add(artifact, artifactTargetPath)
-    entryPoint("java", "-jar", artifactTargetPath)
-  }
-}
-
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
@@ -23,6 +10,7 @@ lazy val root = (project in file(".")).
 
     name := "ebook-api",
     assembly / mainClass := Some("dpla.publications.RunApp"),
+    assembly / assemblyJarName := "dpla-ebooks-api.jar",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"                % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json"     % akkaHttpVersion,
@@ -41,3 +29,4 @@ ThisBuild / assemblyMergeStrategy := {
   case "META-INF/MANIFEST.MF" => MergeStrategy.discard
   case x => MergeStrategy.first
 }
+
