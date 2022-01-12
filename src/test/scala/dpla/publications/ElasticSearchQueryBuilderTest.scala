@@ -20,7 +20,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   val detailQueryParams: SearchParams = SearchParams(
     facets = Some(Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
-    filters = Seq[FieldFilter](),
+    filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
     page = 3,
     pageSize = 20,
     q = Some("dogs")
@@ -44,7 +44,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   }
 
   "keyword query builder" should {
-    "handle missing q" in {
+    "handle missing q (no field search)" in {
       val expected = Some(JsObject())
       val traversed = readObject(minQuery, "query", "match_all")
       assert(traversed == expected)
@@ -52,18 +52,14 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
     "specify keyword" in {
       val expected = Some("dogs")
-      val params = minSearchParams.copy(q=Some("dogs"))
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readString(queryString, "query")
       assert(traversed == expected)
     }
 
     "specify fields to search" in {
-      val params = minSearchParams.copy(q=Some("dogs"))
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readStringArray(queryString, "fields")
       assert(traversed.nonEmpty)
@@ -71,9 +67,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
     "specify wildcard analyzer" in {
       val expected = Some(true)
-      val params = minSearchParams.copy(q=Some("dogs"))
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readBoolean(queryString, "analyze_wildcard")
       assert(traversed == expected)
@@ -81,9 +75,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
     "specify default operator" in {
       val expected = Some("AND")
-      val params = minSearchParams.copy(q=Some("dogs"))
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readString(queryString, "default_operator")
       assert(traversed == expected)
@@ -91,11 +83,48 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
     "specify lenient" in {
       val expected = Some(true)
-      val params = minSearchParams.copy(q=Some("dogs"))
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readBoolean(queryString, "lenient")
+      assert(traversed == expected)
+    }
+  }
+
+  "field search query builder" should {
+    "handle no field search with q" in {
+      val params = minSearchParams.copy(q=Some("dogs"))
+      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val boolMust = readObjectArray(minQuery, "query", "bool", "must")
+      val queryMatch = boolMust.flatMap(obj => readObject(obj, "match")).headOption
+      assert(queryMatch.isEmpty)
+    }
+
+    "handle field search with no q" in {
+      val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
+      val params = minSearchParams.copy(filters=filters)
+      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val queryMatch = boolMust.flatMap(obj => readObject(obj, "match")).headOption
+      assert(queryMatch.isDefined)
+    }
+
+    "handle multiple field searches" in {
+      val filters = Seq(
+        FieldFilter("sourceResource.subject.name", "london"),
+        FieldFilter("dataProvider", "http://standardebooks.org")
+      )
+      val params = minSearchParams.copy(filters=filters)
+      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val queryMatch = boolMust.flatMap(obj => readObject(obj, "match"))
+      assert(queryMatch.size == 2)
+    }
+
+    "specify field and term" in {
+      val expected = Some("adventure")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryMatch = boolMust.flatMap(obj => readObject(obj, "match")).head
+      val traversed = readString(queryMatch, "genre")
       assert(traversed == expected)
     }
   }
