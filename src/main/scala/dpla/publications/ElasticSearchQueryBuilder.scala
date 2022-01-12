@@ -63,27 +63,9 @@ object ElasticSearchQueryBuilder {
   private def singleFieldFilter(filter: FieldFilter): JsObject =
     JsObject(
       "match" -> JsObject(
-        filter.fieldName -> filter.value.toJson
+        dplaToElasticSearch(filter.fieldName) -> filter.value.toJson
       )
     )
-
-//  private def keywordQuery(q: Option[String]): JsObject =
-//    q match {
-//      case Some(keyword) =>
-//        JsObject(
-//          "query_string" -> JsObject(
-//            "fields" -> keywordQueryFields,
-//            "query" -> keyword.toJson,
-//            "analyze_wildcard" -> true.toJson,
-//            "default_operator" -> "AND".toJson,
-//            "lenient" -> true.toJson
-//          )
-//        )
-//      case None =>
-//        JsObject(
-//          "match_all" -> JsObject()
-//        )
-//    }
 
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields: JsArray = JsArray(
