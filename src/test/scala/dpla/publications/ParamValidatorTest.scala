@@ -33,6 +33,140 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       case Failure(_) => throw new RuntimeException("unexpected validation error")
     }
 
+  "dataProvider validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).dataProvider
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("https://standardebooks.org")
+      val expected = Some("https://standardebooks.org")
+      val raw = minRawParams.copy(dataProvider = given)
+      val validated = expectSuccess(raw).dataProvider
+      assert(validated == expected)
+    }
+
+    "handle invalid URL" in {
+      val given = Some("standardebooks")
+      val raw = minRawParams.copy(dataProvider = given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "creator validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).creator
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("Jules Verne")
+      val expected = Some("Jules Verne")
+      val raw = minRawParams.copy(creator = given)
+      val validated = expectSuccess(raw).creator
+      assert(validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(creator = given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(creator=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+    "date validator" should {
+      "handle empty param" in {
+        val expected = None
+        val validated = expectSuccess(minRawParams).date
+        assert (validated == expected)
+      }
+
+      "return valid param" in {
+        val given = Some("2002")
+        val expected = Some("2002")
+        val raw = minRawParams.copy(date=given)
+        val validated = expectSuccess(raw).date
+        assert (validated == expected)
+      }
+
+      "handle too-short param" in {
+        val given = Some("1")
+        val raw = minRawParams.copy(date=given)
+        val validated = ParamValidator.getSearchParams(raw)
+        assert (validated.isFailure)
+      }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(date=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+  "description validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).description
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("dogs")
+      val expected = Some("dogs")
+      val raw = minRawParams.copy(description=given)
+      val validated = expectSuccess(raw).description
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(description=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(description=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
   "facet validator" should {
     "handle empty param" in {
       val expected = None
@@ -81,6 +215,126 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     "handle out-of-range param" in {
       val given = Some("9999")
       val raw = minRawParams.copy(facetSize=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "format validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).format
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("article")
+      val expected = Some("article")
+      val raw = minRawParams.copy(format=given)
+      val validated = expectSuccess(raw).format
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(format=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(format=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+  "isShownAt validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).isShownAt
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery")
+      val expected = Some("https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery")
+      val raw = minRawParams.copy(isShownAt = given)
+      val validated = expectSuccess(raw).isShownAt
+      assert(validated == expected)
+    }
+
+    "handle invalid URL" in {
+      val given = Some("the-charing-cross-mystery")
+      val raw = minRawParams.copy(isShownAt = given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "language validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).language
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("fr")
+      val expected = Some("fr")
+      val raw = minRawParams.copy(language=given)
+      val validated = expectSuccess(raw).language
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(language=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(language=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+  "object validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).`object`
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("http://payload-permanent-address.dp.la")
+      val expected = Some("http://payload-permanent-address.dp.la")
+      val raw = minRawParams.copy(`object` = given)
+      val validated = expectSuccess(raw).`object`
+      assert(validated == expected)
+    }
+
+    "handle invalid URL" in {
+      val given = Some("http/payload-permanent-address.dp.la")
+      val raw = minRawParams.copy(`object` = given)
       val validated = ParamValidator.getSearchParams(raw)
       assert(validated.isFailure)
     }
@@ -146,6 +400,43 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "publisher validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).publisher
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("Penguin")
+      val expected = Some("Penguin")
+      val raw = minRawParams.copy(publisher=given)
+      val validated = expectSuccess(raw).publisher
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(publisher=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(publisher=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
   "q validator" should {
     "handle empty param" in {
       val expected = None
@@ -178,6 +469,117 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
           | mollit anim id est laborum.
           | """.stripMargin)
       val raw = minRawParams.copy(q=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+  "subject validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).subject
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("dogs")
+      val expected = Some("dogs")
+      val raw = minRawParams.copy(subject=given)
+      val validated = expectSuccess(raw).subject
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(subject=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(subject=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+  "subtitle validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).subtitle
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("A play in three acts")
+      val expected = Some("A play in three acts")
+      val raw = minRawParams.copy(subtitle=given)
+      val validated = expectSuccess(raw).subtitle
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(subtitle=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(subtitle=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
+
+  "title validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).title
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("The Scarlet Letter")
+      val expected = Some("The Scarlet Letter")
+      val raw = minRawParams.copy(title=given)
+      val validated = expectSuccess(raw).title
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(title=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(title=given)
       val validated = ParamValidator.getSearchParams(raw)
       assert (validated.isFailure)
     }
