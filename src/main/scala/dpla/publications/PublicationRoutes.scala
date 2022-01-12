@@ -57,10 +57,14 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
                       System.out.println(e)
                       complete(InternalServerError)
                   }
-                case Failure(e) =>
+                case Failure(e: ValidationException) =>
                   // The user submitted invalid parameters
                   System.out.println(e.getMessage)
                   complete(HttpResponse(BadRequest, entity = e.getMessage))
+                case Failure(e) =>
+                  // This shouldn't happen
+                  System.out.println(e.getMessage)
+                  complete(HttpResponse(InternalServerError, entity = e.getMessage))
               }
             }
           }

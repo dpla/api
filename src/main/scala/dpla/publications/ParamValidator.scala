@@ -1,6 +1,5 @@
 package dpla.publications
 
-import java.security.InvalidParameterException
 import scala.util.Try
 
 /**
@@ -32,7 +31,7 @@ object ParamValidator {
       case Some(f) =>
         val filtered = f.split(",").map(candidate => {
           if (facetableFields.contains(candidate)) candidate
-          else throw new InvalidParameterException(s"$candidate is not a facetable field")
+          else throw ValidationException(s"$candidate is not a facetable field")
         })
         if (filtered.nonEmpty) Some(filtered) else None
       case None => None
@@ -47,11 +46,11 @@ object ParamValidator {
       case Some(f) =>
         toIntOpt(f) match {
           case Some(int) =>
-            if (int > 2000) throw new InvalidParameterException(facetSizeRule)
+            if (int > 2000) throw ValidationException(facetSizeRule)
             else int
           case None =>
             // not an integer
-            throw new InvalidParameterException(facetSizeRule)
+            throw ValidationException(facetSizeRule)
         }
       case None => 50
     }
@@ -65,11 +64,11 @@ object ParamValidator {
       case Some(p) =>
         toIntOpt(p) match {
           case Some(int) =>
-            if (int == 0) throw new InvalidParameterException(pageRule)
+            if (int == 0) throw ValidationException(pageRule)
             else int
           case None =>
             // not an integer
-            throw new InvalidParameterException(pageRule)
+            throw new ValidationException()(pageRule)
         }
       case None => 1
     }
@@ -83,11 +82,11 @@ object ParamValidator {
       case Some(p) =>
         toIntOpt(p) match {
           case Some(int) =>
-            if (int > 1000) throw new InvalidParameterException(pageSizeRule)
+            if (int > 1000) throw new ValidationException(pageSizeRule)
             else int
           case None =>
             // not an integer
-            throw new InvalidParameterException(pageSizeRule)
+            throw new ValidationException(pageSizeRule)
         }
       case None => 10
     }
@@ -100,7 +99,7 @@ object ParamValidator {
         if (keyword.length < 2 || keyword.length > 200) {
           // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
           // For internal consistency, and exception is thrown here in both cases.
-          throw new InvalidParameterException("q must be between 2 and 200 characters")
+          throw ValidationException("q must be between 2 and 200 characters")
         } else Some(keyword)
       case None => None
     }
@@ -129,3 +128,5 @@ case class SearchParams(
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
   def start: Int = from+1
 }
+
+final case class ValidationException(private val message: String = "") extends Exception(message)
