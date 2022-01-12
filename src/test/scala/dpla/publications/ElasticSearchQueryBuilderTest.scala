@@ -8,15 +8,27 @@ import spray.json._
 class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader {
 
   val minSearchParams: SearchParams = SearchParams(
+    creator = None,
+    dataProvider = None,
+    date = None,
+    description = None,
     facets = None,
     facetSize = 100,
+    format = None,
+    isShownAt = None,
+    language = None,
+    `object` = None,
     page = 3,
     pageSize = 20,
-    q = None
+    publisher = None,
+    q = None,
+    subject = None,
+    subtitle = None,
+    title = None
   )
   val minQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(minSearchParams).asJsObject
 
-  val detailQueryParams: SearchParams = SearchParams(
+  val detailQueryParams: SearchParams = minSearchParams.copy(
     facets = Some(Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
     page = 3,
@@ -112,7 +124,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         "isShownAt",
         "object",
         "sourceResource.creator",
-        "sourceResource.date",
+        "sourceResource.date.displayDate",
         "sourceResource.description",
         "sourceResource.format",
         "sourceResource.language.name",

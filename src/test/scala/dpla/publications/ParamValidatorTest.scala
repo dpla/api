@@ -8,11 +8,23 @@ import scala.util.{Failure, Success}
 class ParamValidatorTest extends AnyWordSpec with Matchers {
 
   val minRawParams: RawParams = RawParams(
+    creator = None,
+    dataProvider = None,
+    date = None,
+    description = None,
     facets = None,
     facetSize = None,
+    format = None,
+    isShownAt = None,
+    language = None,
+    `object` = None,
     page = None,
     pageSize = None,
-    q = None
+    publisher = None,
+    q = None,
+    subject = None,
+    subtitle = None,
+    title = None
   )
 
   def expectSuccess(raw: RawParams): SearchParams =

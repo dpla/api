@@ -181,7 +181,7 @@ class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFi
     "ignore empty sourceUri" in {
       val parent = minFirstDoc
       val fieldNames = parent.fields.keys
-      fieldNames should not contain "dateProvider"
+      fieldNames should not contain "dataProvider"
     }
 
     "ignore empty subtitle" in {

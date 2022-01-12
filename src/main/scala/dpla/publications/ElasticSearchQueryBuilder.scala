@@ -20,7 +20,7 @@ object ElasticSearchQueryBuilder {
       "isShownAt" -> "itemUri",
       "object" -> "payloadUri",
       "sourceResource.creator" -> "author",
-      "sourceResource.date" -> "publicationDate",
+      "sourceResource.date.displayDate" -> "publicationDate",
       "sourceResource.description" -> "summary",
       "sourceResource.format" -> "medium",
       "sourceResource.language.name" -> "language",

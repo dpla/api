@@ -1,6 +1,7 @@
 package dpla.publications
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
+import java.net.URL
 
 /**
  * Validates user-supplied parameters and provides default values.
@@ -10,11 +11,23 @@ object ParamValidator {
   // Method returns Failure if any parameters are invalid
   def getSearchParams(raw: RawParams): Try[SearchParams] = Try(
     SearchParams(
+      creator = validText(raw.creator, "sourceResource.creator"),
+      dataProvider = validUrl(raw.dataProvider, "dataProvider"),
+      date = validText(raw.date, "sourceResource.date.displayDate"),
+      description = validText(raw.description, "sourceResource.description"),
       facets = validFacets(raw.facets),
       facetSize = validFacetSize(raw.facetSize),
+      format = validText(raw.format, "sourceResource.format"),
+      isShownAt = validUrl(raw.isShownAt, "isShownAt"),
+      language = validText(raw.language, "sourceResource.language"),
+      `object` = validUrl(raw.`object`, "object"),
       page = validPage(raw.page),
       pageSize = validPageSize(raw.pageSize),
-      q = validQ(raw.q)
+      publisher = validText(raw.publisher, "sourceResource.publisher"),
+      q = validText(raw.q, "q"),
+      subject = validText(raw.subject, "sourceResource.subject.name"),
+      subtitle = validText(raw.subtitle, "sourceResource.subtitle"),
+      title = validText(raw.title, "sourceResource.title")
     ))
 
   private def toIntOpt(str: String): Option[Int] =
@@ -93,14 +106,26 @@ object ParamValidator {
   }
 
   // Must be a string between 2 and 200 characters
-  private def validQ(q: Option[String]): Option[String] =
-    q  match {
+  private def validText(text: Option[String], label: String): Option[String] =
+    text match {
       case Some(keyword) =>
         if (keyword.length < 2 || keyword.length > 200) {
           // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
           // For internal consistency, and exception is thrown here in both cases.
-          throw ValidationException("q must be between 2 and 200 characters")
+          throw ValidationException(s"$label must be between 2 and 200 characters")
         } else Some(keyword)
+      case None => None
+    }
+
+  // Must be a valid URL
+  // TODO: Handle leading/trailing quotation marks?
+  private def validUrl(url: Option[String], label: String): Option[String] =
+    url match {
+      case Some(maybeUrl) =>
+        Try{new URL(maybeUrl)} match {
+          case Success(_) => url
+          case Failure(_) => throw ValidationException(s"$label must be a valid URL")
+        }
       case None => None
     }
 }
@@ -108,19 +133,44 @@ object ParamValidator {
 /** Case classes for search params */
 
 case class RawParams(
+                      creator: Option[String],
+                      dataProvider: Option[String],
+                      date: Option[String],
+                      description: Option[String],
                       facets: Option[String],
                       facetSize: Option[String],
+                      isShownAt: Option[String],
+                      format: Option[String],
+                      language: Option[String],
+                      `object`: Option[String],
                       page: Option[String],
                       pageSize: Option[String],
-                      q: Option[String]
-                    )
+                      publisher: Option[String],
+                      q: Option[String],
+                      subject: Option[String],
+                      subtitle: Option[String],
+                      title: Option[String]
+                    ) {
+}
 
 case class SearchParams(
+                         creator: Option[String],
+                         dataProvider: Option[String],
+                         date: Option[String],
+                         description: Option[String],
                          facets: Option[Seq[String]],
                          facetSize: Int,
+                         format: Option[String],
+                         isShownAt: Option[String],
+                         language: Option[String],
+                         `object`: Option[String],
                          page: Int,
                          pageSize: Int,
-                         q: Option[String]
+                         publisher: Option[String],
+                         q: Option[String],
+                         subject: Option[String],
+                         subtitle: Option[String],
+                         title: Option[String]
                        ) {
   // ElasticSearch param that defines the number of hits to skip
   def from: Int = (page-1)*pageSize
