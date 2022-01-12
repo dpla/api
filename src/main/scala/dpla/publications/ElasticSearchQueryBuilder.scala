@@ -10,7 +10,7 @@ object ElasticSearchQueryBuilder {
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
       "query" -> keywordQuery(params.q),
-      "aggs" -> aggsQuery(params.facets, params.facetSize)
+      "aggs" -> aggs(params.facets, params.facetSize)
     ).toJson
 
   // Map DPLA MAP fields to ElasticSearch fields
@@ -36,7 +36,7 @@ object ElasticSearchQueryBuilder {
     q match {
       case Some(keyword) =>
         JsObject(
-        "query_string" -> JsObject(
+          "query_string" -> JsObject(
             "fields" -> keywordQueryFields,
             "query" -> keyword.toJson,
             "analyze_wildcard" -> true.toJson,
@@ -49,6 +49,14 @@ object ElasticSearchQueryBuilder {
           "match_all" -> JsObject()
         )
     }
+
+  private def fieldFilter(fieldName: String, query: String): JsObject =
+    JsObject(
+      "match" -> JsObject(
+        fieldName -> query.toJson
+      )
+    )
+
 
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields: JsArray = JsArray(
@@ -63,7 +71,7 @@ object ElasticSearchQueryBuilder {
   )
 
   // Composes an aggregates (facets) query object
-  private def aggsQuery(facets: Option[Seq[String]], facetSize: Int): JsObject =
+  private def aggs(facets: Option[Seq[String]], facetSize: Int): JsObject =
     facets match {
       case Some(facetArray) =>
         var base = JsObject()

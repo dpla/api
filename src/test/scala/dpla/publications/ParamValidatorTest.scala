@@ -33,10 +33,13 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       case Failure(_) => throw new RuntimeException("unexpected validation error")
     }
 
+  def getFilterValue(raw: RawParams, fieldName: String): Option[String] =
+    expectSuccess(raw).filters.find(_.fieldName == fieldName).map(_.value)
+
   "dataProvider validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).dataProvider
+      val validated = getFilterValue(minRawParams, "dataProvider")
       assert(validated == expected)
     }
 
@@ -44,7 +47,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("https://standardebooks.org")
       val expected = Some("https://standardebooks.org")
       val raw = minRawParams.copy(dataProvider = given)
-      val validated = expectSuccess(raw).dataProvider
+      val validated = getFilterValue(raw, "dataProvider")
       assert(validated == expected)
     }
 
@@ -59,7 +62,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "creator validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).creator
+      val validated = getFilterValue(minRawParams, "sourceResource.creator")
       assert(validated == expected)
     }
 
@@ -67,7 +70,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("Jules Verne")
       val expected = Some("Jules Verne")
       val raw = minRawParams.copy(creator = given)
-      val validated = expectSuccess(raw).creator
+      val validated = getFilterValue(raw, "sourceResource.creator")
       assert(validated == expected)
     }
 
@@ -96,7 +99,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     "date validator" should {
       "handle empty param" in {
         val expected = None
-        val validated = expectSuccess(minRawParams).date
+        val validated = getFilterValue(minRawParams, "sourceResource.date.displayDate")
         assert (validated == expected)
       }
 
@@ -104,7 +107,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
         val given = Some("2002")
         val expected = Some("2002")
         val raw = minRawParams.copy(date=given)
-        val validated = expectSuccess(raw).date
+        val validated = getFilterValue(raw, "sourceResource.date.displayDate")
         assert (validated == expected)
       }
 
@@ -133,7 +136,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "description validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).description
+      val validated = getFilterValue(minRawParams, "sourceResource.description")
       assert (validated == expected)
     }
 
@@ -141,7 +144,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("dogs")
       val expected = Some("dogs")
       val raw = minRawParams.copy(description=given)
-      val validated = expectSuccess(raw).description
+      val validated = getFilterValue(raw, "sourceResource.description")
       assert (validated == expected)
     }
 
@@ -223,7 +226,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "format validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).format
+      val validated = getFilterValue(minRawParams, "sourceResource.format")
       assert (validated == expected)
     }
 
@@ -231,7 +234,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("article")
       val expected = Some("article")
       val raw = minRawParams.copy(format=given)
-      val validated = expectSuccess(raw).format
+      val validated = getFilterValue(raw, "sourceResource.format")
       assert (validated == expected)
     }
 
@@ -260,7 +263,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "isShownAt validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).isShownAt
+      val validated = getFilterValue(minRawParams, "isShownAt")
       assert(validated == expected)
     }
 
@@ -268,7 +271,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery")
       val expected = Some("https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery")
       val raw = minRawParams.copy(isShownAt = given)
-      val validated = expectSuccess(raw).isShownAt
+      val validated = getFilterValue(raw, "isShownAt")
       assert(validated == expected)
     }
 
@@ -283,7 +286,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "language validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).language
+      val validated = getFilterValue(minRawParams, "sourceResource.language.name")
       assert (validated == expected)
     }
 
@@ -291,7 +294,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("fr")
       val expected = Some("fr")
       val raw = minRawParams.copy(language=given)
-      val validated = expectSuccess(raw).language
+      val validated = getFilterValue(raw, "sourceResource.language.name")
       assert (validated == expected)
     }
 
@@ -320,7 +323,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "object validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).`object`
+      val validated = getFilterValue(minRawParams, "object")
       assert(validated == expected)
     }
 
@@ -328,7 +331,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("http://payload-permanent-address.dp.la")
       val expected = Some("http://payload-permanent-address.dp.la")
       val raw = minRawParams.copy(`object` = given)
-      val validated = expectSuccess(raw).`object`
+      val validated = getFilterValue(raw, "object")
       assert(validated == expected)
     }
 
@@ -403,7 +406,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "publisher validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).publisher
+      val validated = getFilterValue(minRawParams, "sourceResource.publisher")
       assert (validated == expected)
     }
 
@@ -411,7 +414,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("Penguin")
       val expected = Some("Penguin")
       val raw = minRawParams.copy(publisher=given)
-      val validated = expectSuccess(raw).publisher
+      val validated = getFilterValue(raw, "sourceResource.publisher")
       assert (validated == expected)
     }
 
@@ -477,7 +480,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "subject validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).subject
+      val validated = getFilterValue(minRawParams, "sourceResource.subject.name")
       assert (validated == expected)
     }
 
@@ -485,7 +488,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("dogs")
       val expected = Some("dogs")
       val raw = minRawParams.copy(subject=given)
-      val validated = expectSuccess(raw).subject
+      val validated = getFilterValue(raw, "sourceResource.subject.name")
       assert (validated == expected)
     }
 
@@ -514,7 +517,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "subtitle validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).subtitle
+      val validated = getFilterValue(minRawParams, "sourceResource.subtitle")
       assert (validated == expected)
     }
 
@@ -522,7 +525,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("A play in three acts")
       val expected = Some("A play in three acts")
       val raw = minRawParams.copy(subtitle=given)
-      val validated = expectSuccess(raw).subtitle
+      val validated = getFilterValue(raw, "sourceResource.subtitle")
       assert (validated == expected)
     }
 
@@ -551,7 +554,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "title validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).title
+      val validated = getFilterValue(minRawParams, "sourceResource.title")
       assert (validated == expected)
     }
 
@@ -559,7 +562,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       val given = Some("The Scarlet Letter")
       val expected = Some("The Scarlet Letter")
       val raw = minRawParams.copy(title=given)
-      val validated = expectSuccess(raw).title
+      val validated = getFilterValue(raw, "sourceResource.title")
       assert (validated == expected)
     }
 

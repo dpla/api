@@ -9,26 +9,69 @@ import java.net.URL
 object ParamValidator {
 
   // Method returns Failure if any parameters are invalid
-  def getSearchParams(raw: RawParams): Try[SearchParams] = Try(
+  def getSearchParams(raw: RawParams): Try[SearchParams] = Try{
+
+    // Get valid field values
+    // These methods will throw InvalidParameterException if the field is not valid
+    val creator: Option[String] = validText(raw.creator, getDplaField("creator"))
+    val dataProvider: Option[String] = validUrl(raw.dataProvider, getDplaField("dataProvider"))
+    val date: Option[String] = validText(raw.date, getDplaField("date"))
+    val description: Option[String] = validText(raw.description, getDplaField("description"))
+    val facets: Option[Seq[String]] = validFacets(raw.facets)
+    val facetSize: Int = validFacetSize(raw.facetSize)
+    val format: Option[String] = validText(raw.format, getDplaField("format"))
+    val isShownAt: Option[String] = validUrl(raw.isShownAt, getDplaField("isShownAt"))
+    val language: Option[String] = validText(raw.language, getDplaField("language"))
+    val `object`: Option[String] = validUrl(raw.`object`, getDplaField("object"))
+    val page: Int = validPage(raw.page)
+    val pageSize: Int = validPageSize(raw.pageSize)
+    val publisher: Option[String] = validText(raw.publisher, getDplaField("publisher"))
+    val q: Option[String] = validText(raw.q, "q")
+    val subject: Option[String] = validText(raw.subject, getDplaField("subject"))
+    val subtitle: Option[String] = validText(raw.subtitle, getDplaField("subtitle"))
+    val title: Option[String] = validText(raw.title, getDplaField("title"))
+
+    // Get all of the user-submitted field filters
+    val filters = Seq(
+      FieldFilter(getDplaField("creator"), creator.getOrElse("")),
+      FieldFilter(getDplaField("dataProvider"), dataProvider.getOrElse("")),
+      FieldFilter(getDplaField("date"), date.getOrElse("")),
+      FieldFilter(getDplaField("description"), description.getOrElse("")),
+      FieldFilter(getDplaField("format"), format.getOrElse("")),
+      FieldFilter(getDplaField("isShownAt"), isShownAt.getOrElse("")),
+      FieldFilter(getDplaField("language"), language.getOrElse("")),
+      FieldFilter(getDplaField("object"), `object`.getOrElse("")),
+      FieldFilter(getDplaField("publisher"), publisher.getOrElse("")),
+      FieldFilter(getDplaField("subject"), subject.getOrElse("")),
+      FieldFilter(getDplaField("subtitle"), subtitle.getOrElse("")),
+      FieldFilter(getDplaField("title"), title.getOrElse("")),
+    ).filter(_.value.nonEmpty)
+
     SearchParams(
-      creator = validText(raw.creator, "sourceResource.creator"),
-      dataProvider = validUrl(raw.dataProvider, "dataProvider"),
-      date = validText(raw.date, "sourceResource.date.displayDate"),
-      description = validText(raw.description, "sourceResource.description"),
-      facets = validFacets(raw.facets),
-      facetSize = validFacetSize(raw.facetSize),
-      format = validText(raw.format, "sourceResource.format"),
-      isShownAt = validUrl(raw.isShownAt, "isShownAt"),
-      language = validText(raw.language, "sourceResource.language"),
-      `object` = validUrl(raw.`object`, "object"),
-      page = validPage(raw.page),
-      pageSize = validPageSize(raw.pageSize),
-      publisher = validText(raw.publisher, "sourceResource.publisher"),
-      q = validText(raw.q, "q"),
-      subject = validText(raw.subject, "sourceResource.subject.name"),
-      subtitle = validText(raw.subtitle, "sourceResource.subtitle"),
-      title = validText(raw.title, "sourceResource.title")
-    ))
+      facets = facets,
+      facetSize = facetSize,
+      filters = filters,
+      page = page,
+      pageSize = pageSize,
+      q = q
+    )
+  }
+
+  private def getDplaField(label: String): String = label match {
+    case "creator" => "sourceResource.creator"
+    case "dataProvider" => "dataProvider"
+    case "date" => "sourceResource.date.displayDate"
+    case "description" => "sourceResource.description"
+    case "format" => "sourceResource.format"
+    case "isShownAt" => "isShownAt"
+    case "language" => "sourceResource.language.name"
+    case "object" => "object"
+    case "publisher" => "sourceResource.publisher"
+    case "subject" => "sourceResource.subject.name"
+    case "subtitle" => "sourceResource.subtitle"
+    case "title" => "sourceResource.title"
+    case _ => throw new RuntimeException("Unknown DPLA field")
+  }
 
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
@@ -154,23 +197,12 @@ case class RawParams(
 }
 
 case class SearchParams(
-                         creator: Option[String],
-                         dataProvider: Option[String],
-                         date: Option[String],
-                         description: Option[String],
                          facets: Option[Seq[String]],
                          facetSize: Int,
-                         format: Option[String],
-                         isShownAt: Option[String],
-                         language: Option[String],
-                         `object`: Option[String],
+                         filters: Seq[FieldFilter],
                          page: Int,
                          pageSize: Int,
-                         publisher: Option[String],
-                         q: Option[String],
-                         subject: Option[String],
-                         subtitle: Option[String],
-                         title: Option[String]
+                         q: Option[String]
                        ) {
   // ElasticSearch param that defines the number of hits to skip
   def from: Int = (page-1)*pageSize
@@ -178,5 +210,10 @@ case class SearchParams(
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
   def start: Int = from+1
 }
+
+case class FieldFilter(
+                        fieldName: String,
+                        value: String
+                      )
 
 final case class ValidationException(private val message: String = "") extends Exception(message)
