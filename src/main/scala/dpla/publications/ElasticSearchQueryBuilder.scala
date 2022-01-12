@@ -9,7 +9,7 @@ object ElasticSearchQueryBuilder {
     JsObject(
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> keywordQuery(params.q),
+      "query" -> query(params.q, params.filters),
       "aggs" -> aggs(params.facets, params.facetSize)
     ).toJson
 
@@ -32,31 +32,58 @@ object ElasticSearchQueryBuilder {
     fieldMap(dplaField)
   }
 
-  private def keywordQuery(q: Option[String]): JsObject =
-    q match {
-      case Some(keyword) =>
-        JsObject(
-          "query_string" -> JsObject(
-            "fields" -> keywordQueryFields,
-            "query" -> keyword.toJson,
-            "analyze_wildcard" -> true.toJson,
-            "default_operator" -> "AND".toJson,
-            "lenient" -> true.toJson
-          )
-        )
-      case None =>
-        JsObject(
-          "match_all" -> JsObject()
-        )
-    }
+  private def query(q: Option[String], fieldFilters: Seq[FieldFilter]) = {
+    val keyword: Seq[JsObject] = q.map(keywordQuery).toSeq
+    val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter)
+    val mustTerms: Seq[JsObject] = keyword ++ filters
 
-  private def fieldFilter(fieldName: String, query: String): JsObject =
+    if (mustTerms.isEmpty)
+      JsObject(
+        "match_all" -> JsObject()
+      )
+    else
+      JsObject(
+        "bool" -> JsObject(
+          "must" -> mustTerms.toJson
+        )
+      )
+  }
+
+  private def keywordQuery(q: String): JsObject =
     JsObject(
-      "match" -> JsObject(
-        fieldName -> query.toJson
+      "query_string" -> JsObject(
+        "fields" -> keywordQueryFields,
+        "query" -> q.toJson,
+        "analyze_wildcard" -> true.toJson,
+        "default_operator" -> "AND".toJson,
+        "lenient" -> true.toJson
       )
     )
 
+  private def singleFieldFilter(filter: FieldFilter): JsObject =
+    JsObject(
+      "match" -> JsObject(
+        filter.fieldName -> filter.value.toJson
+      )
+    )
+
+//  private def keywordQuery(q: Option[String]): JsObject =
+//    q match {
+//      case Some(keyword) =>
+//        JsObject(
+//          "query_string" -> JsObject(
+//            "fields" -> keywordQueryFields,
+//            "query" -> keyword.toJson,
+//            "analyze_wildcard" -> true.toJson,
+//            "default_operator" -> "AND".toJson,
+//            "lenient" -> true.toJson
+//          )
+//        )
+//      case None =>
+//        JsObject(
+//          "match_all" -> JsObject()
+//        )
+//    }
 
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields: JsArray = JsArray(
