@@ -40,6 +40,9 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
     val uri: String = s"$elasticSearchEndpoint/_search"
     val data: String = ElasticSearchQueryBuilder.composeQuery(params).toString
 
+    println(uri)
+    println(data)
+
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.GET,
       uri = uri,

@@ -17,9 +17,10 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   )
   val minQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(minSearchParams).asJsObject
 
-  val detailQueryParams: SearchParams = minSearchParams.copy(
+  val detailQueryParams: SearchParams = SearchParams(
     facets = Some(Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
+    filters = Seq[FieldFilter](),
     page = 3,
     pageSize = 20,
     q = Some("dogs")
@@ -51,30 +52,40 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
     "specify keyword" in {
       val expected = Some("dogs")
-      val traversed = readString(detailQuery, "query", "query_string", "query")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val traversed = readString(queryString, "query")
       assert(traversed == expected)
     }
 
     "specify fields to search" in {
-      val traversed = readStringArray(detailQuery, "query", "query_string", "fields")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val traversed = readStringArray(queryString, "fields")
       assert(traversed.nonEmpty)
     }
 
     "specify wildcard analyzer" in {
       val expected = Some(true)
-      val traversed = readBoolean(detailQuery, "query", "query_string", "analyze_wildcard")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val traversed = readBoolean(queryString, "analyze_wildcard")
       assert(traversed == expected)
     }
 
     "specify default operator" in {
       val expected = Some("AND")
-      val traversed = readString(detailQuery, "query", "query_string", "default_operator")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val traversed = readString(queryString, "default_operator")
       assert(traversed == expected)
     }
 
     "specify lenient" in {
       val expected = Some(true)
-      val traversed = readBoolean(detailQuery, "query", "query_string", "lenient")
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val traversed = readBoolean(queryString, "lenient")
       assert(traversed == expected)
     }
   }
