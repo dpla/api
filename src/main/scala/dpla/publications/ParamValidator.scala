@@ -68,7 +68,7 @@ object ParamValidator {
             else int
           case None =>
             // not an integer
-            throw new ValidationException()(pageRule)
+            throw new ValidationException(pageRule)
         }
       case None => 1
     }
