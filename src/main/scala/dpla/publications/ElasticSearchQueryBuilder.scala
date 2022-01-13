@@ -99,9 +99,11 @@ object ElasticSearchQueryBuilder {
   )
 
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
-    // "term" searches for an exact term. It is case-sensitive and does not analyze the search term.
-    //        You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
-    // "match" does a keyword search within the field.  It is case-insensitive and analyzes the search term.
+    // "term" searches for an exact term (with no additional text before or after).
+    //   It is case-sensitive and does not analyze the search term.
+    //   You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
+    // "match" does a keyword search within the field.
+    //   It is case-insensitive and analyzes the search term.
     val queryType: String = if (exactFieldMatch) "term" else "match"
 
     val field: String =

@@ -29,7 +29,11 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   )
   val detailQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(detailQueryParams).asJsObject
 
-  val elasticSearchField: PrivateMethod[String] = PrivateMethod[String](Symbol("elasticSearchField"))
+  val elasticSearchField: PrivateMethod[String] =
+    PrivateMethod[String](Symbol("elasticSearchField"))
+
+  val exactMatchElasticSearchField: PrivateMethod[String] =
+    PrivateMethod[String](Symbol("exactMatchElasticSearchField"))
 
   "query builder" should {
     "specify from" in {
@@ -189,6 +193,33 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         "title"
       )
       val mapped = dplaFields.map(field => ElasticSearchQueryBuilder invokePrivate elasticSearchField(field))
+      mapped should contain allElementsOf expected
+    }
+
+    "map dpla fields to non-analyzed ElasticSearch fields" in {
+      val dplaFields = Seq(
+        "dataProvider",
+        "sourceResource.creator",
+        "sourceResource.date.displayDate",
+        "sourceResource.format",
+        "sourceResource.language.name",
+        "sourceResource.publisher",
+        "sourceResource.subject.name",
+        "sourceResource.subtitle",
+        "sourceResource.title"
+      )
+      val expected = Seq(
+        "sourceUri",
+        "author.not_analyzed",
+        "publicationDate.not_analyzed",
+        "medium.not_analyzed",
+        "language.not_analyzed",
+        "publisher.not_analyzed",
+        "genre.not_analyzed",
+        "subtitle.not_analyzed",
+        "title.not_analyzed"
+      )
+      val mapped = dplaFields.map(field => ElasticSearchQueryBuilder invokePrivate exactMatchElasticSearchField(field))
       mapped should contain allElementsOf expected
     }
   }
