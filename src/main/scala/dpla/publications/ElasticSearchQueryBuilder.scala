@@ -9,7 +9,7 @@ object ElasticSearchQueryBuilder {
     JsObject(
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> query(params.q, params.filters),
+      "query" -> query(params.q, params.filters, params.exactFieldMatch),
       "aggs" -> aggs(params.facets, params.facetSize)
     ).toJson
 
@@ -32,9 +32,9 @@ object ElasticSearchQueryBuilder {
     fieldMap(dplaField)
   }
 
-  private def query(q: Option[String], fieldFilters: Seq[FieldFilter]) = {
+  private def query(q: Option[String], fieldFilters: Seq[FieldFilter], exactFieldMatch: Boolean) = {
     val keyword: Seq[JsObject] = q.map(keywordQuery).toSeq
-    val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter)
+    val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
     val mustTerms: Seq[JsObject] = keyword ++ filters
 
     if (mustTerms.isEmpty)
@@ -60,13 +60,6 @@ object ElasticSearchQueryBuilder {
       )
     )
 
-  private def singleFieldFilter(filter: FieldFilter): JsObject =
-    JsObject(
-      "match" -> JsObject(
-        dplaToElasticSearch(filter.fieldName) -> filter.value.toJson
-      )
-    )
-
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields: JsArray = JsArray(
     "author^1".toJson,
@@ -78,6 +71,17 @@ object ElasticSearchQueryBuilder {
     "summary^0.75".toJson,
     "title^2".toJson
   )
+
+  private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
+    // "term" searches for an exact term.  "match" does a keyword search within the field.
+    val queryType = if (exactFieldMatch) "term" else "match"
+
+    JsObject(
+      queryType -> JsObject(
+        dplaToElasticSearch(filter.fieldName) -> filter.value.toJson
+      )
+    )
+  }
 
   // Composes an aggregates (facets) query object
   private def aggs(facets: Option[Seq[String]], facetSize: Int): JsObject =
