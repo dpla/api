@@ -13,8 +13,10 @@ object ElasticSearchQueryBuilder {
       "aggs" -> aggs(params.facets, params.facetSize)
     ).toJson
 
-  // Map DPLA MAP fields to ElasticSearch fields
-  // Fields are either analyzed (i.e. tokenized) or not as is their default in the index
+  /**
+   *  Map DPLA MAP fields to ElasticSearch fields
+   *  Fields are either analyzed (text) or not (keyword) as is their default in the index
+   */
   private def elasticSearchField(dplaField: String): String = {
     val fieldMap = Map(
       "dataProvider" -> "sourceUri",
@@ -33,8 +35,11 @@ object ElasticSearchQueryBuilder {
     fieldMap(dplaField)
   }
 
-  // Map DPLA MAP fields to ElasticSearch non-analyzed fields for exact field match searches
-  // If a field is only indexed as analyzed, then return the analyzed field.
+  /**
+   * Map DPLA MAP fields to ElasticSearch non-analyzed fields.
+   * If a field is only indexed as analyzed (text), then return the analyzed field.
+   * Used for exact field matches and facets.
+   */
   private def exactMatchElasticSearchField(dplaField: String): String = {
     val fieldMap = Map(
       "dataProvider" -> "sourceUri",
