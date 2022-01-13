@@ -75,6 +75,19 @@ object ParamValidator {
     case _ => throw new RuntimeException("Unknown DPLA field")
   }
 
+  // Facetable fields must be indexed as type "keyword" in ElasticSearch
+  val facetableFields: Seq[String] = Seq(
+    "dataProvider",
+    "sourceResource.creator",
+    "sourceResource.date",
+    "sourceResource.format",
+    "sourceResource.language.name",
+    "sourceResource.publisher",
+    "sourceResource.subject.name",
+    "sourceResource.subtitle",
+    "sourceResource.title"
+  )
+
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
 
@@ -91,12 +104,7 @@ object ParamValidator {
     }
 
   // Must be a facetable field
-  // Facetable fields must be indexed as type "keyword" in ElasticSearch
-  private def validFacets(facets: Option[String]): Option[Seq[String]] = {
-    val facetableFields: Seq[String] = Seq(
-      "dataProvider"
-    )
-
+  private def validFacets(facets: Option[String]): Option[Seq[String]] =
     facets match {
       case Some(f) =>
         val filtered = f.split(",").map(candidate => {
@@ -106,7 +114,6 @@ object ParamValidator {
         if (filtered.nonEmpty) Some(filtered) else None
       case None => None
     }
-  }
 
   // Must be an integer between 0 and 2000, defaults to 50
   def validFacetSize(facetSize: Option[String]): Int = {

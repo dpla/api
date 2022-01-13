@@ -14,7 +14,8 @@ object ElasticSearchQueryBuilder {
     ).toJson
 
   // Map DPLA MAP fields to ElasticSearch fields
-  private def dplaToElasticSearch(dplaField: String): String = {
+  // Fields are either analyzed (i.e. tokenized) or not as is their default in the index
+  private def elasticSearchField(dplaField: String): String = {
     val fieldMap = Map(
       "dataProvider" -> "sourceUri",
       "isShownAt" -> "itemUri",
@@ -28,6 +29,26 @@ object ElasticSearchQueryBuilder {
       "sourceResource.subject.name" -> "genre",
       "sourceResource.subtitle" -> "subtitle",
       "sourceResource.title" -> "title"
+    )
+    fieldMap(dplaField)
+  }
+
+  // Map DPLA MAP fields to ElasticSearch non-analyzed fields for exact field match searches
+  // If a field is only indexed as analyzed, then return the analyzed field.
+  private def exactMatchElasticSearchField(dplaField: String): String = {
+    val fieldMap = Map(
+      "dataProvider" -> "sourceUri",
+      "isShownAt" -> "itemUri",
+      "object" -> "payloadUri",
+      "sourceResource.creator" -> "author.not_analyzed",
+      "sourceResource.date.displayDate" -> "publicationDate.not_analyzed",
+      "sourceResource.description" -> "summary",
+      "sourceResource.format" -> "medium.not_analyzed",
+      "sourceResource.language.name" -> "language.not_analyzed",
+      "sourceResource.publisher" -> "publisher.not_analyzed",
+      "sourceResource.subject.name" -> "genre.not_analyzed",
+      "sourceResource.subtitle" -> "subtitle.not_analyzed",
+      "sourceResource.title" -> "title.not_analyzed"
     )
     fieldMap(dplaField)
   }
@@ -73,12 +94,18 @@ object ElasticSearchQueryBuilder {
   )
 
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
-    // "term" searches for an exact term.  "match" does a keyword search within the field.
-    val queryType = if (exactFieldMatch) "term" else "match"
+    // "term" searches for an exact term. It is case-sensitive and does not analyze the search term.
+    //        You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
+    // "match" does a keyword search within the field.  It is case-insensitive and analyzes the search term.
+    val queryType: String = if (exactFieldMatch) "term" else "match"
+
+    val field: String =
+      if (exactFieldMatch) exactMatchElasticSearchField(filter.fieldName)
+      else elasticSearchField(filter.fieldName)
 
     JsObject(
       queryType -> JsObject(
-        dplaToElasticSearch(filter.fieldName) -> filter.value.toJson
+         field -> filter.value.toJson
       )
     )
   }
@@ -92,7 +119,7 @@ object ElasticSearchQueryBuilder {
         facetArray.foreach(facet => {
           val terms = JsObject(
             "terms" -> JsObject(
-              "field" -> dplaToElasticSearch(facet).toJson,
+              "field" -> exactMatchElasticSearchField(facet).toJson,
               "size" -> facetSize.toJson
             )
           )
