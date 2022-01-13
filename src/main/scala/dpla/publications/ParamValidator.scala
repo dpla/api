@@ -7,38 +7,117 @@ import scala.util.Try
  */
 object ParamValidator {
 
-  def getSearchParams(page: Option[String], pageSize: Option[String], q: Option[String]): SearchParams =
+  // Method returns Failure if any parameters are invalid
+  def getSearchParams(raw: RawParams): Try[SearchParams] = Try(
     SearchParams(
-      page = validPage(page),
-      pageSize = validPageSize(pageSize),
-      q = validQ(q)
-    )
+      facets = validFacets(raw.facets),
+      facetSize = validFacetSize(raw.facetSize),
+      page = validPage(raw.page),
+      pageSize = validPageSize(raw.pageSize),
+      q = validQ(raw.q)
+    ))
 
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
 
+  // Must be a facetable field
+  // Facetable fields must be indexed as type "keyword" in ElasticSearch
+  private def validFacets(facets: Option[String]): Option[Seq[String]] = {
+    val facetableFields: Seq[String] = Seq(
+      "dataProvider"
+    )
+
+    facets match {
+      case Some(f) =>
+        val filtered = f.split(",").map(candidate => {
+          if (facetableFields.contains(candidate)) candidate
+          else throw ValidationException(s"$candidate is not a facetable field")
+        })
+        if (filtered.nonEmpty) Some(filtered) else None
+      case None => None
+    }
+  }
+
+  // Must be an integer between 0 and 2000, defaults to 50
+  def validFacetSize(facetSize: Option[String]): Int = {
+    val facetSizeRule = "facet_size must be an integer between 0 and 2000"
+
+    facetSize match {
+      case Some(f) =>
+        toIntOpt(f) match {
+          case Some(int) =>
+            if (int > 2000) throw ValidationException(facetSizeRule)
+            else int
+          case None =>
+            // not an integer
+            throw ValidationException(facetSizeRule)
+        }
+      case None => 50
+    }
+  }
+
   // Must be an integer greater than 0, defaults to 1
-  private def validPage(page: Option[String]): Int =
-    page.flatMap(toIntOpt) match {
-      case Some(int) =>
-        if (int == 0) 1 else int
+  private def validPage(page: Option[String]): Int = {
+    val pageRule = "page must be an integer greater than 0"
+
+    page match {
+      case Some(p) =>
+        toIntOpt(p) match {
+          case Some(int) =>
+            if (int == 0) throw ValidationException(pageRule)
+            else int
+          case None =>
+            // not an integer
+            throw new ValidationException(pageRule)
+        }
       case None => 1
     }
+  }
 
   // Must be an integer between 0 and 1000, defaults to 10
-  private def validPageSize(pageSize: Option[String]): Int =
-    pageSize.flatMap(toIntOpt) match {
-      case Some(int) =>
-        if (int > 1000) 1000 else int
+  private def validPageSize(pageSize: Option[String]): Int = {
+    val pageSizeRule = "page_size must be an integer between 0 an 1000"
+
+    pageSize match {
+      case Some(p) =>
+        toIntOpt(p) match {
+          case Some(int) =>
+            if (int > 1000) throw new ValidationException(pageSizeRule)
+            else int
+          case None =>
+            // not an integer
+            throw new ValidationException(pageSizeRule)
+        }
       case None => 10
     }
+  }
 
   // Must be a string between 2 and 200 characters
   private def validQ(q: Option[String]): Option[String] =
-    q.flatMap(keyword => if (keyword.length < 2 || keyword.length > 200) None else Some(keyword))
+    q  match {
+      case Some(keyword) =>
+        if (keyword.length < 2 || keyword.length > 200) {
+          // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
+          // For internal consistency, and exception is thrown here in both cases.
+          throw ValidationException("q must be between 2 and 200 characters")
+        } else Some(keyword)
+      case None => None
+    }
 }
 
+/** Case classes for search params */
+
+case class RawParams(
+                      facets: Option[String],
+                      facetSize: Option[String],
+                      page: Option[String],
+                      pageSize: Option[String],
+                      q: Option[String]
+                    )
+
 case class SearchParams(
+                         facets: Option[Seq[String]],
+                         facetSize: Int,
                          page: Int,
                          pageSize: Int,
                          q: Option[String]
@@ -49,3 +128,5 @@ case class SearchParams(
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
   def start: Int = from+1
 }
+
+final case class ValidationException(private val message: String = "") extends Exception(message)

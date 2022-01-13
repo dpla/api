@@ -9,8 +9,28 @@ object ElasticSearchQueryBuilder {
     JsObject(
       "from" -> params.from.toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> keywordQuery(params.q)
+      "query" -> keywordQuery(params.q),
+      "aggs" -> aggsQuery(params.facets, params.facetSize)
     ).toJson
+
+  // Map DPLA MAP fields to ElasticSearch fields
+  private def dplaToElasticSearch(dplaField: String): String = {
+    val fieldMap = Map(
+      "dataProvider" -> "sourceUri",
+      "isShownAt" -> "itemUri",
+      "object" -> "payloadUri",
+      "sourceResource.creator" -> "author",
+      "sourceResource.date" -> "publicationDate",
+      "sourceResource.description" -> "summary",
+      "sourceResource.format" -> "medium",
+      "sourceResource.language.name" -> "language",
+      "sourceResource.publisher" -> "publisher",
+      "sourceResource.subject.name" -> "genre",
+      "sourceResource.subtitle" -> "subtitle",
+      "sourceResource.title" -> "title"
+    )
+    fieldMap(dplaField)
+  }
 
   private def keywordQuery(q: Option[String]): JsObject =
     q match {
@@ -41,4 +61,23 @@ object ElasticSearchQueryBuilder {
     "summary^0.75".toJson,
     "title^2".toJson
   )
+
+  // Composes an aggregates (facets) query object
+  private def aggsQuery(facets: Option[Seq[String]], facetSize: Int): JsObject =
+    facets match {
+      case Some(facetArray) =>
+        var base = JsObject()
+        // Iterate through each facet and add a field to the base JsObject
+        facetArray.foreach(facet => {
+          val terms = JsObject(
+            "terms" -> JsObject(
+              "field" -> dplaToElasticSearch(facet).toJson,
+              "size" -> facetSize.toJson
+            )
+          )
+          base = JsObject(base.fields + (facet -> terms))
+        })
+        base
+      case None => JsObject()
+    }
 }

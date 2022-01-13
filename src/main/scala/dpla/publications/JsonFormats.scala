@@ -73,27 +73,93 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
   }
 
+  implicit object BucketFormat extends RootJsonFormat[Bucket] {
+
+    def read(json: JsValue): Bucket = {
+      val root = json.asJsObject
+
+      Bucket(
+        key = readString(root, "key"),
+        docCount = readInt(root, "doc_count")
+      )
+    }
+
+    def write(b: Bucket): JsValue =
+      JsObject(
+        "term" -> b.key.toJson,
+        "count" -> b.docCount.toJson
+      ).toJson
+  }
+
+  /** In an ElasticSearch response, facets look something like this:
+   *  {"aggregations": {"dataProvider": {"buckets": [...]}}, "sourceResource.publisher": {"buckets": [...]}}}
+   *  You therefore have to read the keys of the "aggregation" object to get the facet field names.
+   */
+  implicit object FacetListFormat extends RootJsonFormat[FacetList] {
+
+    def read(json: JsValue): FacetList = {
+      val root: JsObject = json.asJsObject
+
+      readObject(root) match {
+        case Some(obj) =>
+          val fieldNames: Seq[String] = obj.fields.keys.toSeq
+
+          val facets: Seq[Facet] = fieldNames.map(fieldName =>
+            Facet(
+              field = fieldName,
+              buckets = readObjectArray(root, fieldName, "buckets").map(_.toJson.convertTo[Bucket])
+            )
+          )
+
+          FacetList(facets)
+
+        case None =>
+          // This should never happen
+          FacetList(Seq[Facet]())
+      }
+    }
+
+    def write(al: FacetList): JsValue = {
+      var aggObject = JsObject()
+
+      // Add a field to aggObject for each facet field
+      al.facets.foreach(agg => {
+        aggObject = JsObject(aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson)))
+      })
+
+      aggObject.toJson
+    }
+  }
+
   implicit object PublicationListFormat extends RootJsonFormat[PublicationList] {
 
     def read(json: JsValue): PublicationList = {
       val root = json.asJsObject
 
-      // TODO add limit and start when working on pagination ticket
       PublicationList(
         count = readInt(root, "hits", "total", "value"),
         limit = None,
         start = None,
-        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication])
+        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication]),
+        facets = readObject(root, "aggregations").map(_.toJson.convertTo[FacetList])
       )
     }
 
-    def write(pl: PublicationList): JsValue =
-      JsObject(
+    def write(pl: PublicationList): JsValue = {
+      val base: JsObject = JsObject(
         "count" -> pl.count.toJson,
         "start" -> pl.start.toJson,
         "limit" -> pl.limit.toJson,
         "docs" -> pl.docs.toJson
-      ).toJson
+      )
+
+      // Add facets if there are any
+      val complete: JsObject =
+        if (pl.facets.nonEmpty) JsObject(base.fields + ("facets" -> pl.facets.toJson))
+        else base
+
+      complete.toJson
+    }
   }
 
   /** Methods for writing JSON **/
@@ -126,7 +192,8 @@ case class PublicationList(
                             count: Option[Int],
                             limit: Option[Int],
                             start: Option[Int],
-                            docs: Seq[Publication]
+                            docs: Seq[Publication],
+                            facets: Option[FacetList]
                           )
 
 case class Publication(
@@ -144,3 +211,17 @@ case class Publication(
                         summary: Seq[String],
                         title: Seq[String]
                       )
+
+case class FacetList(
+                      facets: Seq[Facet]
+                    )
+
+case class Facet(
+                  field: String,
+                  buckets: Seq[Bucket]
+                )
+
+case class Bucket(
+                   key: Option[String],
+                   docCount: Option[Int]
+                 )

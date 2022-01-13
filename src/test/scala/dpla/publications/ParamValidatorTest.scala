@@ -3,88 +3,171 @@ package dpla.publications
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.util.{Failure, Success}
+
 class ParamValidatorTest extends AnyWordSpec with Matchers {
 
-    "page validator" should {
-      "return valid param" in {
-        val given = Some("27")
-        val expected = 27
-        val validated = ParamValidator.getSearchParams(given, None, None).page
-        assert(validated == expected)
-      }
+  val minRawParams: RawParams = RawParams(
+    facets = None,
+    facetSize = None,
+    page = None,
+    pageSize = None,
+    q = None
+  )
 
-      "handle empty param" in {
-        val given = None
-        val expected = 1
-        val validated = ParamValidator.getSearchParams(given, None, None).page
-        assert(validated == expected)
-      }
-
-      "handle non-int param" in {
-        val given = Some("foo")
-        val expected = 1
-        val validated = ParamValidator.getSearchParams(given, None, None).page
-        assert(validated == expected)
-      }
-
-      "handle out-of range-param" in {
-        val given = Some("0")
-        val expected = 1
-        val validated = ParamValidator.getSearchParams(given, None, None).page
-        assert(validated == expected)
-      }
+  def expectSuccess(raw: RawParams): SearchParams =
+    ParamValidator.getSearchParams(raw) match {
+      case Success(p) => p
+      case Failure(_) => throw new RuntimeException("unexpected validation error")
     }
 
-    "page size validator" should {
-      "return valid param" in {
-        val given = Some("27")
-        val expected = 27
-        val validated = ParamValidator.getSearchParams(None, given, None).pageSize
-        assert(validated == expected)
-      }
-
-      "handle empty param" in {
-        val given = None
-        val expected = 10
-        val validated = ParamValidator.getSearchParams(None, given, None).pageSize
-        assert(validated == expected)
-      }
-
-      "handle non-int param" in {
-        val given = Some("foo")
-        val expected = 10
-        val validated = ParamValidator.getSearchParams(None, given, None).pageSize
-        assert(validated == expected)
-      }
-
-      "handle out-of-range param" in {
-        val given = Some("999999")
-        val expected = 1000
-        val validated = ParamValidator.getSearchParams(None, given, None).pageSize
-        assert(validated == expected)
-      }
+  "facet validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).facets
+      assert(validated == expected)
     }
 
-    "q validator" should {
-      "return valid param" in {
-        val given = Some("dogs")
-        val expected = Some("dogs")
-        val validated = ParamValidator.getSearchParams(None, None, given).q
-        assert (validated == expected)
-      }
-
-      "handle empty param" in {
-        val given = None
-        val expected = None
-        val validated = ParamValidator.getSearchParams(None, None, given).q
-        assert (validated == expected)
-      }
-
-      "hand out-of-range param" in {
-        val given = Some("d")
-        val expected = None
-        val validated = ParamValidator.getSearchParams(None, None, given).q
-        assert (validated == expected)
-      }
+    "handle valid param" in {
+      val given = Some("dataProvider")
+      val expected = Some(Seq("dataProvider"))
+      val raw = minRawParams.copy(facets=given)
+      val validated = expectSuccess(raw).facets
+      assert(validated == expected)
     }
+
+    "handle unfacetable field" in {
+      val given = Some("sourceResource.title")
+      val raw = minRawParams.copy(facets=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "facet size validator" should {
+    "handle empty param" in {
+      val expected = 50
+      val validated = expectSuccess(minRawParams).facetSize
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("30")
+      val expected = 30
+      val raw = minRawParams.copy(facetSize=given)
+      val validated = expectSuccess(raw).facetSize
+      assert(validated == expected)
+    }
+
+    "handle non-int param" in {
+      val given = Some("foo")
+      val raw = minRawParams.copy(page=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+
+    "handle out-of-range param" in {
+      val given = Some("9999")
+      val raw = minRawParams.copy(facetSize=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "page validator" should {
+    "handle empty param" in {
+      val expected = 1
+      val validated = expectSuccess(minRawParams).page
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("27")
+      val expected = 27
+      val raw = minRawParams.copy(page=given)
+      val validated = expectSuccess(raw).page
+      assert(validated == expected)
+    }
+
+    "handle non-int param" in {
+      val given = Some("foo")
+      val raw = minRawParams.copy(page=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+
+    "handle out-of-range param" in {
+      val given = Some("0")
+      val raw = minRawParams.copy(page=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "page size validator" should {
+    "handle empty param" in {
+      val expected = 10
+      val validated = expectSuccess(minRawParams).pageSize
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("50")
+      val expected = 50
+      val raw = minRawParams.copy(pageSize=given)
+      val validated = expectSuccess(raw).pageSize
+      assert(validated == expected)
+    }
+
+    "handle non-int param" in {
+      val given = Some("foo")
+      val raw = minRawParams.copy(pageSize=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+
+    "handle out-of-range param" in {
+      val given = Some("999999")
+      val raw = minRawParams.copy(pageSize=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "q validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = expectSuccess(minRawParams).q
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("dogs")
+      val expected = Some("dogs")
+      val raw = minRawParams.copy(q=given)
+      val validated = expectSuccess(raw).q
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("d")
+      val raw = minRawParams.copy(q=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+
+    "handle too-long param" in {
+      val given = Some(
+        """
+          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+          | mollit anim id est laborum.
+          | """.stripMargin)
+      val raw = minRawParams.copy(q=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
+  }
 }

@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Route
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
 import akka.util.Timeout
 
@@ -26,30 +27,44 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
       concat(
         pathEnd {
           get {
-            parameters("page".optional, "page_size".optional, "q".optional) { (page, pageSize, q) =>
-              val params = ParamValidator.getSearchParams(page, pageSize, q)
-              onComplete(elasticSearchClient.search(params)) {
-                case Success(response) => response match {
-                  case Right(pubsFuture) =>
-                    onComplete(pubsFuture) {
-                      case Success(pubs) =>
-                        complete(pubs)
-                      case Failure(e) =>
-                        // Failure to parse ElasticSearch response
-                        System.out.println(s"Error: $e")
+            parameters("facets".optional, "facet_size".optional, "page".optional, "page_size".optional, "q".optional) {
+              (facets, facetSize, page, pageSize, q) =>
+
+              val rawParams = RawParams(facets, facetSize, page, pageSize, q)
+
+              ParamValidator.getSearchParams(rawParams) match {
+                case Success(validParams) =>
+                  onComplete(elasticSearchClient.search(validParams)) {
+                    case Success(response) => response match {
+                      case Right(pubsFuture) =>
+                        onComplete(pubsFuture) {
+                          case Success(pubs) =>
+                            complete(pubs)
+                          case Failure(e) =>
+                            // Failure to parse ElasticSearch response
+                            System.out.println(s"Error: $e")
+                            complete(InternalServerError)
+                        }
+                      case Left(status) =>
+                        // ElasticSearch returned an error
+                        val code = status.value
+                        val msg = status.reason
+                        System.out.println(s"Error: $code: $msg")
                         complete(InternalServerError)
                     }
-                  case Left(status) =>
-                    // ElasticSearch returned an error
-                    val code = status.value
-                    val msg = status.reason
-                    System.out.println(s"Error: $code: $msg")
-                    complete(InternalServerError)
-                }
+                    case Failure(e) =>
+                      // The call to the ElasticSearch API failed
+                      System.out.println(e)
+                      complete(InternalServerError)
+                  }
+                case Failure(e: ValidationException) =>
+                  // The user submitted invalid parameters
+                  System.out.println(e.getMessage)
+                  complete(HttpResponse(BadRequest, entity = e.getMessage))
                 case Failure(e) =>
-                  // The call to the ElasticSearch API failed
-                  System.out.println(e)
-                  complete(InternalServerError)
+                  // This shouldn't happen
+                  System.out.println(e.getMessage)
+                  complete(HttpResponse(InternalServerError, entity = e.getMessage))
               }
             }
           }
