@@ -41,25 +41,15 @@ jobs:
     - name: Build JAR
       run: sbt assembly
 
-    - name: Build and push
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: latest
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ebook-api
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --platform linux/amd64,linux/arm64 .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-#    - name: Build, tag, and push image to Amazon ECR
-#      id: build-image
-#      env:
-#        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-#        ECR_REPOSITORY: ebook-api
-#        IMAGE_TAG: ${{ github.sha }}
-#      run: |
-#        # Build a docker container and
-#        # push it to ECR so that it can
-#        # be deployed to ECS.
-#        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --build-arg ARCH=amd64 .
-#        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-#        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-#
+# --iidfile /tmp/docker-build-push-CKIkrH/iidfile --metadata-file /tmp/docker-build-push-CKIkrH/metadata-file
