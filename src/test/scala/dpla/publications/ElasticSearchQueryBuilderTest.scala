@@ -29,7 +29,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   )
   val detailQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(detailQueryParams).asJsObject
 
-  val dplaToElasticSearch: PrivateMethod[String] = PrivateMethod[String](Symbol("dplaToElasticSearch"))
+  val elasticSearchField: PrivateMethod[String] = PrivateMethod[String](Symbol("elasticSearchField"))
 
   "query builder" should {
     "specify from" in {
@@ -146,7 +146,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
 
     "specify facet field" in {
-      val expected = Some("genre")
+      val expected = Some("genre.not_analyzed")
       val traversed = readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
       assert(traversed == expected)
     }
@@ -188,7 +188,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         "subtitle",
         "title"
       )
-      val mapped = dplaFields.map(field => ElasticSearchQueryBuilder invokePrivate dplaToElasticSearch(field))
+      val mapped = dplaFields.map(field => ElasticSearchQueryBuilder invokePrivate elasticSearchField(field))
       mapped should contain allElementsOf expected
     }
   }

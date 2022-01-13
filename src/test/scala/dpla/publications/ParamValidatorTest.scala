@@ -210,7 +210,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     }
 
     "handle unfacetable field" in {
-      val given = Some("sourceResource.title")
+      val given = Some("sourceResource.description")
       val raw = minRawParams.copy(facets=given)
       val validated = ParamValidator.getSearchParams(raw)
       assert(validated.isFailure)
