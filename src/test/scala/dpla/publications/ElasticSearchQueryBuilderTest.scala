@@ -8,6 +8,7 @@ import spray.json._
 class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader {
 
   val minSearchParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
     facets = None,
     facetSize = 100,
     filters = Seq[FieldFilter](),
@@ -18,6 +19,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   val minQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(minSearchParams).asJsObject
 
   val detailQueryParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
     facets = Some(Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
     filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
@@ -90,7 +92,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
   }
 
-  "field search query builder" should {
+  "field filter query builder" should {
     "handle no field search with q" in {
       val params = minSearchParams.copy(q=Some("dogs"))
       val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject

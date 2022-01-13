@@ -17,6 +17,7 @@ object ParamValidator {
     val dataProvider: Option[String] = validUrl(raw.dataProvider, getDplaField("dataProvider"))
     val date: Option[String] = validText(raw.date, getDplaField("date"))
     val description: Option[String] = validText(raw.description, getDplaField("description"))
+    val exactFieldMatch: Boolean = validExactFieldMatch(raw.exactFieldMatch)
     val facets: Option[Seq[String]] = validFacets(raw.facets)
     val facetSize: Int = validFacetSize(raw.facetSize)
     val format: Option[String] = validText(raw.format, getDplaField("format"))
@@ -48,6 +49,7 @@ object ParamValidator {
     ).filter(_.value.nonEmpty)
 
     SearchParams(
+      exactFieldMatch = exactFieldMatch,
       facets = facets,
       facetSize = facetSize,
       filters = filters,
@@ -75,6 +77,18 @@ object ParamValidator {
 
   private def toIntOpt(str: String): Option[Int] =
     Try(str.toInt).toOption
+
+  // Must be a Boolean value. Default is false.
+  private def validExactFieldMatch(exactFieldMatch: Option[String]): Boolean =
+    exactFieldMatch match {
+      case Some(efm) =>
+        efm.toBooleanOption match {
+          case Some(bool) => bool
+          case None => throw ValidationException("exact_field_match must be a Boolean value")
+        }
+      case None =>
+        false
+    }
 
   // Must be a facetable field
   // Facetable fields must be indexed as type "keyword" in ElasticSearch
@@ -180,6 +194,7 @@ case class RawParams(
                       dataProvider: Option[String],
                       date: Option[String],
                       description: Option[String],
+                      exactFieldMatch: Option[String],
                       facets: Option[String],
                       facetSize: Option[String],
                       isShownAt: Option[String],
@@ -197,6 +212,7 @@ case class RawParams(
 }
 
 case class SearchParams(
+                         exactFieldMatch: Boolean,
                          facets: Option[Seq[String]],
                          facetSize: Int,
                          filters: Seq[FieldFilter],

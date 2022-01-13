@@ -12,6 +12,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     dataProvider = None,
     date = None,
     description = None,
+    exactFieldMatch = None,
     facets = None,
     facetSize = None,
     format = None,

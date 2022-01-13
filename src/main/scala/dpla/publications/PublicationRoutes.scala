@@ -29,6 +29,7 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
           get {
             parameters(
               "dataProvider".optional,
+              "exact_field_match".optional,
               "facets".optional,
               "facet_size".optional,
               "isShownAt".optional,
@@ -47,6 +48,7 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
               "sourceResource.title".optional) {
 
               (dataProvider,
+               exactFieldMatch,
                facets,
                facetSize,
                isShownAt,
@@ -66,6 +68,7 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
 
               val rawParams = RawParams(
                 dataProvider=dataProvider,
+                exactFieldMatch=exactFieldMatch,
                 facets=facets,
                 facetSize=facetSize,
                 isShownAt=isShownAt,
