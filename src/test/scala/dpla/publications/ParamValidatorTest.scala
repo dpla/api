@@ -37,29 +37,6 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   def getFilterValue(raw: RawParams, fieldName: String): Option[String] =
     expectSuccess(raw).filters.find(_.fieldName == fieldName).map(_.value)
 
-  "dataProvider validator" should {
-    "handle empty param" in {
-      val expected = None
-      val validated = getFilterValue(minRawParams, "dataProvider")
-      assert(validated == expected)
-    }
-
-    "return valid param" in {
-      val given = Some("https://standardebooks.org")
-      val expected = Some("https://standardebooks.org")
-      val raw = minRawParams.copy(dataProvider = given)
-      val validated = getFilterValue(raw, "dataProvider")
-      assert(validated == expected)
-    }
-
-    "handle invalid URL" in {
-      val given = Some("standardebooks")
-      val raw = minRawParams.copy(dataProvider = given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
-    }
-  }
-
   "creator validator" should {
     "handle empty param" in {
       val expected = None
@@ -97,27 +74,50 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     }
   }
 
-    "date validator" should {
-      "handle empty param" in {
-        val expected = None
-        val validated = getFilterValue(minRawParams, "sourceResource.date.displayDate")
-        assert (validated == expected)
-      }
+  "dataProvider validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = getFilterValue(minRawParams, "dataProvider")
+      assert(validated == expected)
+    }
 
-      "return valid param" in {
-        val given = Some("2002")
-        val expected = Some("2002")
-        val raw = minRawParams.copy(date=given)
-        val validated = getFilterValue(raw, "sourceResource.date.displayDate")
-        assert (validated == expected)
-      }
+    "return valid param" in {
+      val given = Some("https://standardebooks.org")
+      val expected = Some("https://standardebooks.org")
+      val raw = minRawParams.copy(dataProvider = given)
+      val validated = getFilterValue(raw, "dataProvider")
+      assert(validated == expected)
+    }
 
-      "handle too-short param" in {
-        val given = Some("1")
-        val raw = minRawParams.copy(date=given)
-        val validated = ParamValidator.getSearchParams(raw)
-        assert (validated.isFailure)
-      }
+    "handle invalid URL" in {
+      val given = Some("standardebooks")
+      val raw = minRawParams.copy(dataProvider = given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
+  "date validator" should {
+    "handle empty param" in {
+      val expected = None
+      val validated = getFilterValue(minRawParams, "sourceResource.date.displayDate")
+      assert (validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("2002")
+      val expected = Some("2002")
+      val raw = minRawParams.copy(date=given)
+      val validated = getFilterValue(raw, "sourceResource.date.displayDate")
+      assert (validated == expected)
+    }
+
+    "handle too-short param" in {
+      val given = Some("1")
+      val raw = minRawParams.copy(date=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert (validated.isFailure)
+    }
 
     "handle too-long param" in {
       val given = Some(
@@ -171,6 +171,29 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "exact_field_match validator" should {
+    "handle empty param" in {
+      val expected = false
+      val validated = expectSuccess(minRawParams).exactFieldMatch
+      assert(validated == expected)
+    }
+
+    "return valid param" in {
+      val given = Some("true")
+      val expected = true
+      val raw = minRawParams.copy(exactFieldMatch=given)
+      val validated = expectSuccess(raw).exactFieldMatch
+      assert(validated == expected)
+    }
+
+    "handle non-boolean param" in {
+      val given = Some("foo")
+      val raw = minRawParams.copy(exactFieldMatch=given)
+      val validated = ParamValidator.getSearchParams(raw)
+      assert(validated.isFailure)
+    }
+  }
+
   "facet validator" should {
     "handle empty param" in {
       val expected = None
@@ -178,7 +201,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
       assert(validated == expected)
     }
 
-    "handle valid param" in {
+    "return valid param" in {
       val given = Some("dataProvider")
       val expected = Some(Seq("dataProvider"))
       val raw = minRawParams.copy(facets=given)
