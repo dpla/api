@@ -58,8 +58,20 @@ object ElasticSearchQueryBuilder {
     fieldMap(dplaField)
   }
 
+  // Fields to search in a keyword query and their boost values
+  private val keywordQueryFields= Seq(
+    "author^1",
+    "genre^1",
+    "medium^1",
+    "language^1",
+    "publisher^1",
+    "subtitle^2",
+    "summary^0.75",
+    "title^2"
+  )
+
   private def query(q: Option[String], fieldFilters: Seq[FieldFilter], exactFieldMatch: Boolean) = {
-    val keyword: Seq[JsObject] = q.map(keywordQuery).toSeq
+    val keyword: Seq[JsObject] = q.map(keywordQuery(_, keywordQueryFields)).toSeq
     val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
     val mustTerms: Seq[JsObject] = keyword ++ filters
 
@@ -75,10 +87,15 @@ object ElasticSearchQueryBuilder {
       )
   }
 
-  private def keywordQuery(q: String): JsObject =
+  /**
+   * A general keyword query on the given fields.
+   *   "query_string" does a keyword search within the given fields.
+   *   It is case-insensitive and analyzes the search term.
+   */
+  private def keywordQuery(q: String, fields: Seq[String]): JsObject =
     JsObject(
       "query_string" -> JsObject(
-        "fields" -> keywordQueryFields,
+        "fields" -> fields.toJson,
         "query" -> q.toJson,
         "analyze_wildcard" -> true.toJson,
         "default_operator" -> "AND".toJson,
@@ -86,35 +103,25 @@ object ElasticSearchQueryBuilder {
       )
     )
 
-  // Fields to search in a keyword query and their boost values
-  private val keywordQueryFields: JsArray = JsArray(
-    "author^1".toJson,
-    "genre^1".toJson,
-    "medium^1".toJson,
-    "language^1".toJson,
-    "publisher^1".toJson,
-    "subtitle^2".toJson,
-    "summary^0.75".toJson,
-    "title^2".toJson
-  )
-
+  /**
+   * For general field filter, use a keyword (i.e. "query_string") query.
+   * For exact field match, use "term" query.
+   *   "term" searches for an exact term (with no additional text before or after).
+   *   It is case-sensitive and does not analyze the search term.
+   *   You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
+   *   It is only for fields that non-analyzed (i.e. indexed as "keyword")
+   */
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
-    // "term" searches for an exact term (with no additional text before or after).
-    //   It is case-sensitive and does not analyze the search term.
-    //   You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
-    // "match" does a keyword search within the field.
-    //   It is case-insensitive and analyzes the search term.
-    val queryType: String = if (exactFieldMatch) "term" else "match"
-
-    val field: String =
-      if (exactFieldMatch) exactMatchElasticSearchField(filter.fieldName)
-      else elasticSearchField(filter.fieldName)
-
-    JsObject(
-      queryType -> JsObject(
-         field -> filter.value.toJson
+    if (exactFieldMatch)
+      JsObject(
+        "term" -> JsObject(
+          exactMatchElasticSearchField(filter.fieldName) -> filter.value.toJson
+        )
       )
-    )
+    else {
+      val fields: Seq[String] = Seq(elasticSearchField(filter.fieldName))
+      keywordQuery(filter.value, fields)
+    }
   }
 
   // Composes an aggregates (facets) query object
