@@ -32,7 +32,7 @@ object ParamValidator {
     val subtitle: Option[String] = validText(raw.subtitle, getDplaField("subtitle"))
     val title: Option[String] = validText(raw.title, getDplaField("title"))
 
-    // Get all of the user-submitted field filters
+    // Collect all of the user-submitted field filters
     val filters = Seq(
       FieldFilter(getDplaField("creator"), creator.getOrElse("")),
       FieldFilter(getDplaField("dataProvider"), dataProvider.getOrElse("")),
@@ -59,6 +59,7 @@ object ParamValidator {
     )
   }
 
+  // This is a helper method that translates from the RawParams fields to the DPLA MAP fields
   private def getDplaField(label: String): String = label match {
     case "creator" => "sourceResource.creator"
     case "dataProvider" => "dataProvider"
@@ -72,7 +73,7 @@ object ParamValidator {
     case "subject" => "sourceResource.subject.name"
     case "subtitle" => "sourceResource.subtitle"
     case "title" => "sourceResource.title"
-    case _ => throw new RuntimeException("Unknown DPLA field")
+    case _ => throw new RuntimeException("Unknown DPLA field") // This should not happen
   }
 
   // Facetable fields must be indexed as type "keyword" in ElasticSearch
@@ -182,7 +183,6 @@ object ParamValidator {
     }
 
   // Must be a valid URL
-  //
   private def validUrl(url: Option[String], label: String): Option[String] =
     url match {
       case Some(maybeUrl) =>

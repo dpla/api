@@ -73,16 +73,16 @@ object ElasticSearchQueryBuilder {
   private def query(q: Option[String], fieldFilters: Seq[FieldFilter], exactFieldMatch: Boolean) = {
     val keyword: Seq[JsObject] = q.map(keywordQuery(_, keywordQueryFields)).toSeq
     val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
-    val mustTerms: Seq[JsObject] = keyword ++ filters
+    val queryTerms: Seq[JsObject] = keyword ++ filters
 
-    if (mustTerms.isEmpty)
+    if (queryTerms.isEmpty)
       JsObject(
         "match_all" -> JsObject()
       )
     else
       JsObject(
         "bool" -> JsObject(
-          "must" -> mustTerms.toJson
+          "must" -> queryTerms.toJson
         )
       )
   }
@@ -131,7 +131,10 @@ object ElasticSearchQueryBuilder {
     }
   }
 
-  // Composes an aggregates (facets) query object
+  /**
+   * Composes an aggregates (facets) query object.
+   * Fields must be non-analyzed (i.e. indexed as keyword)
+   */
   private def aggs(facets: Option[Seq[String]], facetSize: Int): JsObject =
     facets match {
       case Some(facetArray) =>
