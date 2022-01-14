@@ -100,7 +100,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "handle no field search with q" in {
       val params = minSearchParams.copy(q=Some("dogs"))
       val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(minQuery, "query", "bool", "must")
+      val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryMatch = boolMust.flatMap(obj => readObject(obj, "match")).headOption
       assert(queryMatch.isEmpty)
     }
@@ -126,11 +126,35 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       assert(queryMatch.size == 2)
     }
 
+    "use 'match' for general field search" in {
+      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
+      val queryMatch = boolMust.flatMap(obj => readObject(obj, "match"))
+      assert(queryMatch.size == 1)
+    }
+
+    "use 'term' for exact field match" in {
+      val params = detailQueryParams.copy(exactFieldMatch=true)
+      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val queryTerm = boolMust.flatMap(obj => readObject(obj, "term"))
+      assert(queryTerm.size == 1)
+    }
+
     "specify field and term" in {
       val expected = Some("adventure")
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryMatch = boolMust.flatMap(obj => readObject(obj, "match")).head
       val traversed = readString(queryMatch, "genre")
+      assert(traversed == expected)
+    }
+
+    "specify exact field match field and term" in {
+      val expected = Some("adventure")
+      val params = detailQueryParams.copy(exactFieldMatch=true)
+      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val boolMust = readObjectArray(query, "query", "bool", "must")
+      val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
+      val traversed = readString(queryTerm, "genre.not_analyzed")
       assert(traversed == expected)
     }
   }
