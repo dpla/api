@@ -112,13 +112,20 @@ object ElasticSearchQueryBuilder {
    *   It is only for fields that non-analyzed (i.e. indexed as "keyword")
    */
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
-    if (exactFieldMatch)
+    if (exactFieldMatch) {
+      val field: String = exactMatchElasticSearchField(filter.fieldName)
+      // Strip leading and trailing quotation marks
+      val value: String =
+        if (filter.value.startsWith("\"") && filter.value.endsWith("\""))
+          filter.value.stripPrefix("\"").stripSuffix("\"")
+        else filter.value
+
       JsObject(
         "term" -> JsObject(
-          exactMatchElasticSearchField(filter.fieldName) -> filter.value.toJson
+          field -> value.toJson
         )
       )
-    else {
+    } else {
       val fields: Seq[String] = Seq(elasticSearchField(filter.fieldName))
       keywordQuery(filter.value, fields)
     }

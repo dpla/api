@@ -148,22 +148,36 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       assert(traversed == expected)
     }
 
-    "use 'term' for exact field match" in {
-      val params = detailQueryParams.copy(exactFieldMatch=true)
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryTerm = boolMust.flatMap(obj => readObject(obj, "term"))
-      assert(queryTerm.size == 1)
-    }
+    "exact term match" should {
 
-    "specify exact field match field and term" in {
-      val expected = Some("adventure")
-      val params = detailQueryParams.copy(exactFieldMatch=true)
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
-      val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
-      val traversed = readString(queryTerm, "genre.not_analyzed")
-      assert(traversed == expected)
+      "use 'term' query" in {
+        val params = detailQueryParams.copy(exactFieldMatch = true)
+        val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm = boolMust.flatMap(obj => readObject(obj, "term"))
+        assert(queryTerm.size == 1)
+      }
+
+      "specify exact field match field and term" in {
+        val expected = Some("adventure")
+        val params = detailQueryParams.copy(exactFieldMatch = true)
+        val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed = readString(queryTerm, "genre.not_analyzed")
+        assert(traversed == expected)
+      }
+
+      "strip leading and trailing quotation marks from term" in {
+        val expected = Some("Mystery fiction")
+        val filters = Seq(FieldFilter("sourceResource.subject.name", "\"Mystery fiction\""))
+        val params = minSearchParams.copy(filters=filters, exactFieldMatch=true)
+        val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed = readString(queryTerm, "genre.not_analyzed")
+        assert(traversed == expected)
+      }
     }
   }
 

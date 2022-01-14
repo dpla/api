@@ -182,12 +182,21 @@ object ParamValidator {
     }
 
   // Must be a valid URL
-  // TODO: Handle leading/trailing quotation marks?
+  //
   private def validUrl(url: Option[String], label: String): Option[String] =
     url match {
       case Some(maybeUrl) =>
-        Try{new URL(maybeUrl)} match {
-          case Success(_) => url
+        val clean: String = {
+          // Strip leading & trailing quotation marks for the purpose of checking for valid URL
+          if (maybeUrl.startsWith("\"") && maybeUrl.endsWith("\""))
+            maybeUrl.stripSuffix("\"").stripPrefix("\"")
+          else maybeUrl
+        }
+
+        Try {
+          new URL(clean)
+        } match {
+          case Success(_) => url // return value with leading & trailing quotation marks in tact
           case Failure(_) => throw ValidationException(s"$label must be a valid URL")
         }
       case None => None
