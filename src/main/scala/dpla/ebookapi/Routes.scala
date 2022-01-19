@@ -88,9 +88,7 @@ class Routes(elasticSearchClient: ElasticSearchClient)(implicit val system: Acto
               },
               path(Segment) { id =>
                 get {
-                  rejectEmptyResponse {
-                    ebooksController.fetch(id)
-                  }
+                  ebooksController.fetch(id)
                 }
               }
             )

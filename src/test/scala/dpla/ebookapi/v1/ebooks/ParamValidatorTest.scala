@@ -37,6 +37,27 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   def getFilterValue(raw: RawParams, fieldName: String): Option[String] =
     expectSuccess(raw).filters.find(_.fieldName == fieldName).map(_.value)
 
+  "ebook ID validator" should {
+    "return valid ID" in {
+      val given = "R0VfVX4BfY91SSpFGqxt"
+      val expected = Success("R0VfVX4BfY91SSpFGqxt")
+      val validated = ParamValidator.getValidId(given)
+      assert(validated == expected)
+    }
+
+    "handle ID with special characters" in {
+      val given = "<foo>"
+      val validated = ParamValidator.getValidId(given)
+      assert(validated.isFailure)
+    }
+
+    "handle too-long ID" in {
+      val given = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
+      val validated = ParamValidator.getValidId(given)
+      assert(validated.isFailure)
+    }
+  }
+
   "creator validator" should {
     "handle empty param" in {
       val expected = None

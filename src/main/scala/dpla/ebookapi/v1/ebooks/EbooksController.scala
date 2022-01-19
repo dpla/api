@@ -43,10 +43,10 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
             System.out.println(e)
             complete(InternalServerError)
         }
-      case Failure(e: ValidationException) =>
-        // The user submitted invalid parameters
-        System.out.println(e.getMessage)
-        complete(HttpResponse(BadRequest, entity = e.getMessage))
+        case Failure(e: ValidationException) =>
+          // The user submitted invalid parameters
+          System.out.println(e.getMessage)
+          complete(HttpResponse(BadRequest, entity = e.getMessage))
       case Failure(e) =>
         // This shouldn't happen
         System.out.println(e.getMessage)
@@ -55,28 +55,36 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
   }
 
   def fetch(id: String): Route = {
-    onComplete(elasticSearchClient.fetch(id)) {
-      case Success(response) => response match {
-        case Right(pubFuture) =>
-          onComplete(pubFuture) {
-            case Success(pub) =>
-              complete(pub)
-            case Failure(e) =>
-              // Failure to parse ElasticSearch response
-              System.out.println(s"Error: $e")
-              complete(InternalServerError)
-          }
-        case Left(status) =>
-          // ElasticSearch returned an error
-          val code = status.value
-          val msg = status.reason
-          System.out.println(s"Error: $code: $msg")
-          complete(InternalServerError)
-      }
+    ParamValidator.getValidId(id) match {
+      case Success(validId) =>
+        onComplete (elasticSearchClient.fetch (validId) ) {
+          case Success (response) => response match {
+            case Right (pubFuture) =>
+              onComplete (pubFuture) {
+                case Success (pub) =>
+                  //Success
+                  complete (pub)
+                case Failure (e) =>
+                  // Failure to parse ElasticSearch response
+                  System.out.println (s"Error: $e")
+                  complete (InternalServerError)
+              }
+            case Left (status) =>
+              // ElasticSearch returned an error
+              val code = status.value
+              val msg = status.reason
+              System.out.println (s"Error: $code: $msg")
+              complete (InternalServerError)
+            }
+          case Failure (e) =>
+            // The call to the ElasticSearch API failed
+            System.out.println(e)
+            complete (InternalServerError)
+        }
       case Failure(e) =>
-        // The call to the ElasticSearch API failed
-        System.out.println(e)
-        complete(InternalServerError)
+        // User submitted an invalid ID
+        System.out.println (e)
+        complete(BadRequest, e.getMessage)
     }
   }
 }

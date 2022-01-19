@@ -9,6 +9,16 @@ import scala.util.{Failure, Success, Try}
 object ParamValidator extends MappingHelper {
 
   // Method returns Failure if any parameters are invalid
+  // Ebook ID must be a non-empty String comprised of letters and numbers
+  def getValidId(id: String): Try[String] = Try {
+    val rule = "ID must be a String comprised of letters and numbers between 1 and 32 characters long"
+
+    if (id.length < 1 || id.length > 32) throw ValidationException(rule)
+    else if (id.matches("[a-zA-Z0-9]*")) id
+    else throw ValidationException(rule)
+  }
+
+  // Method returns Failure if any parameters are invalid
   def getSearchParams(raw: RawParams): Try[SearchParams] = Try{
 
     // Get valid field values
