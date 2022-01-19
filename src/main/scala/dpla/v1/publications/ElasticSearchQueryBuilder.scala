@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.v1.publications
 
 import JsonFormats._
 import spray.json._

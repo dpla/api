@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.v1.publications
 
 import scala.util.{Failure, Success, Try}
 import java.net.URL

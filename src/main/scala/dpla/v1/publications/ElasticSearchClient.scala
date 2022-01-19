@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.v1.publications
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors

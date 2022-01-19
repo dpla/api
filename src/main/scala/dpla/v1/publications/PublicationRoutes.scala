@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.v1.publications
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route

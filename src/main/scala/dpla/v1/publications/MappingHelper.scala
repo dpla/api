@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.v1.publications
 
 /**
  * Maps between RawParams field names and DPLA MAP field names.

@@ -1,5 +1,6 @@
-package dpla.publications
+package dpla.v1.publications
 
+import dpla.v1.publications.{ParamValidator, RawParams, SearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

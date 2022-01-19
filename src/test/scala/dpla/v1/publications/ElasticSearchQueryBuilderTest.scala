@@ -1,5 +1,7 @@
-package dpla.publications
+package dpla.v1.publications
 
+import dpla.v1.publications
+import dpla.v1.publications.{ElasticSearchQueryBuilder, FieldFilter, JsonFieldReader, SearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.PrivateMethodTester
@@ -7,7 +9,7 @@ import spray.json._
 
 class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader {
 
-  val minSearchParams: SearchParams = SearchParams(
+  val minSearchParams: SearchParams = publications.SearchParams(
     exactFieldMatch = false,
     facets = None,
     facetSize = 100,

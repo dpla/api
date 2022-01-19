@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.v1.publications
 
 import spray.json.DefaultJsonProtocol
 import spray.json._
