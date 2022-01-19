@@ -102,41 +102,6 @@ class MappingHelperTest extends AnyWordSpec with Matchers {
       mapped should contain allElementsOf expected
     }
 
-    "map ElasticSearch fields to DPLA MAP fields" in {
-      val esFields = Seq(
-        "sourceUri",
-        "itemUri",
-        "payloadUri",
-        "author",
-        "publicationDate",
-        "summary",
-        "medium",
-        "language",
-        "publisher",
-        "genre",
-        "subtitle",
-        "title"
-      )
-
-      val expected = Seq(
-        "dataProvider",
-        "isShownAt",
-        "object",
-        "sourceResource.creator",
-        "sourceResource.date.displayDate",
-        "sourceResource.description",
-        "sourceResource.format",
-        "sourceResource.language.name",
-        "sourceResource.publisher",
-        "sourceResource.subject.name",
-        "sourceResource.subtitle",
-        "sourceResource.title"
-      )
-
-      val mapped = esFields.map(Tester.elasticSearchToDpla)
-      mapped should contain allElementsOf expected
-    }
-
     "map facetable fields" in {
       val expected = Seq(
         "dataProvider",

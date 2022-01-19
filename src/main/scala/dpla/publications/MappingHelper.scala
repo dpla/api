@@ -28,15 +28,12 @@ trait MappingHelper {
   def dplaToElasticSearchExactMatch(dplaField: String): String =
     mapDplaToEsExactMatch(dplaField)
 
-  def elasticSearchToDpla(esField: String): String =
-    mapDplaToEs.find(_._2 == esField).map(_._1).get
-
   /**
    * Get the names of facetable fields in DPLA MAP
    * Facetable fields must be indexed as type "keyword" in ElasticSearch
    */
   def facetableDplaFields: Seq[String] =
-    facetableEsFields.map(elasticSearchToDpla)
+    facetableEsFields.map(esField => mapDplaToEsExactMatch.find(_._2 == esField).map(_._1).get)
 
   private val mapRawParamToDpla = Map(
     "creator" -> "sourceResource.creator",
@@ -84,14 +81,14 @@ trait MappingHelper {
   )
 
   private val facetableEsFields = Seq(
-    "author",
-    "genre",
-    "language",
-    "medium",
-    "publisher",
-    "publicationDate",
+    "author.not_analyzed",
+    "genre.not_analyzed",
+    "language.not_analyzed",
+    "medium.not_analyzed",
+    "publisher.not_analyzed",
+    "publicationDate.not_analyzed",
     "sourceUri",
-    "subtitle",
-    "title"
+    "subtitle.not_analyzed",
+    "title.not_analyzed"
   )
 }
