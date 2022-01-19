@@ -4,13 +4,13 @@ import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString}
 
 import scala.annotation.tailrec
 
-/** Methods for reading JSON * */
+/** Methods for reading JSON */
 trait JsonFieldReader {
 
   /** Public methods
    * These methods take a root JsObject and a path of zero to many children
    * They return the specified type of JsValue
-   * */
+   */
 
   def readObject(root: JsObject, path: String*): Option[JsObject] = {
 

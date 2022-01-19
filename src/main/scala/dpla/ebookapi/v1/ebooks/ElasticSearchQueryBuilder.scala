@@ -44,7 +44,7 @@ object ElasticSearchQueryBuilder extends MappingHelper {
 
   /**
    * A general keyword query on the given fields.
-   * "query_string" does a keyword search within the given fields.
+   *   "query_string" does a keyword search within the given fields.
    * It is case-insensitive and analyzes the search term.
    */
   private def keywordQuery(q: String, fields: Seq[String]): JsObject =
@@ -61,10 +61,10 @@ object ElasticSearchQueryBuilder extends MappingHelper {
   /**
    * For general field filter, use a keyword (i.e. "query_string") query.
    * For exact field match, use "term" query.
-   * "term" searches for an exact term (with no additional text before or after).
-   * It is case-sensitive and does not analyze the search term.
-   * You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
-   * It is only for fields that non-analyzed (i.e. indexed as "keyword")
+   *   "term" searches for an exact term (with no additional text before or after).
+   *   It is case-sensitive and does not analyze the search term.
+   *   You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
+   *   It is only for fields that non-analyzed (i.e. indexed as "keyword")
    */
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
     if (exactFieldMatch) {
