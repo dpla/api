@@ -5,16 +5,15 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.util.Timeout
 import dpla.ebookapi.v1.ebooks.{ElasticSearchClient, ParamValidator, RawParams, ValidationException}
+import dpla.ebookapi.v1.ebooks.JsonFormats._
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
 class Routes(elasticSearchClient: ElasticSearchClient)(implicit val system: ActorSystem[_]) {
-
-  import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-  import dpla.ebookapi.v1.ebooks.JsonFormats._
 
   // If ask takes more time than this to complete the request is failed
   private implicit val timeout: Timeout = Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
