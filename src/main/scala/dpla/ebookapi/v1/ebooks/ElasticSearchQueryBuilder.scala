@@ -45,7 +45,7 @@ object ElasticSearchQueryBuilder extends MappingHelper {
   /**
    * A general keyword query on the given fields.
    *   "query_string" does a keyword search within the given fields.
-   * It is case-insensitive and analyzes the search term.
+   *   It is case-insensitive and analyzes the search term.
    */
   private def keywordQuery(q: String, fields: Seq[String]): JsObject =
     JsObject(
