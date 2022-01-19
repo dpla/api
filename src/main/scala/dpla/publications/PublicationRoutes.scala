@@ -23,7 +23,7 @@ class PublicationRoutes(elasticSearchClient: ElasticSearchClient)(implicit val s
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
   val publicationRoutes: Route =
-    pathPrefix("publications") {
+    pathPrefix("ebooks") {
       concat(
         pathEnd {
           get {
