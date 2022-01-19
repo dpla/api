@@ -1,16 +1,16 @@
-package dpla.v1.publications
+package dpla.ebookapi.v1.ebooks
 
 import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString}
 
 import scala.annotation.tailrec
 
-/** Methods for reading JSON **/
+/** Methods for reading JSON * */
 trait JsonFieldReader {
 
   /** Public methods
-   *  These methods take a root JsObject and a path of zero to many children
-   *  They return the specified type of JsValue
-   *  */
+   * These methods take a root JsObject and a path of zero to many children
+   * They return the specified type of JsValue
+   * */
 
   def readObject(root: JsObject, path: String*): Option[JsObject] = {
 
@@ -48,7 +48,7 @@ trait JsonFieldReader {
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 
-    readObject(root, nestedObjects:_*) match {
+    readObject(root, nestedObjects: _*) match {
       case Some(parent) => lastField match {
         case Some(child) => getMethod(parent, child)
         case _ => None // no children were provided in method parameters
@@ -58,9 +58,9 @@ trait JsonFieldReader {
   }
 
   /**
-  *  These methods take a parent JsObject and a single child
-  *  They return the specified type of JsObject
-  */
+   * These methods take a parent JsObject and a single child
+   * They return the specified type of JsObject
+   */
 
   private def getObjectOpt(parent: JsObject, child: String): Option[JsObject] = {
     parent.getFields(child) match {
@@ -69,7 +69,7 @@ trait JsonFieldReader {
     }
   }
 
-  private def getObjectSeq(parent: JsObject, child: String): Option[Seq[JsObject]]=
+  private def getObjectSeq(parent: JsObject, child: String): Option[Seq[JsObject]] =
     parent.getFields(child) match {
       case Seq(JsArray(vector)) => Some(vector.flatMap(_ match {
         case JsObject(value) => Some(JsObject(value))
@@ -104,7 +104,7 @@ trait JsonFieldReader {
     }
 
   private def getBooleanOpt(parent: JsObject, child: String): Option[Boolean] =
-    parent.getFields(child ) match {
+    parent.getFields(child) match {
       case Seq(JsBoolean(value)) => Some(value.booleanValue)
       case _ => None
     }

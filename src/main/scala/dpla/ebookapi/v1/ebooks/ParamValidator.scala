@@ -1,7 +1,7 @@
-package dpla.v1.publications
+package dpla.ebookapi.v1.ebooks
 
-import scala.util.{Failure, Success, Try}
 import java.net.URL
+import scala.util.{Failure, Success, Try}
 
 /**
  * Validates user-supplied parameters and provides default values.

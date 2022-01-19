@@ -1,8 +1,8 @@
-package dpla.v1.publications
+package dpla.ebookapi.v1.ebooks
 
 /**
  * Maps between RawParams field names and DPLA MAP field names.
- *    (RawParams holds user-submitted parameters)
+ * (RawParams holds user-submitted parameters)
  * Maps between DPLA MAP field names and ElasticSearch field names.
  */
 trait MappingHelper {
@@ -14,8 +14,8 @@ trait MappingHelper {
     mapRawParamToDpla(rawParam)
 
   /**
-   *  Map DPLA MAP fields to ElasticSearch fields
-   *  Fields are either analyzed (text) or not (keyword) as is their default in the index
+   * Map DPLA MAP fields to ElasticSearch fields
+   * Fields are either analyzed (text) or not (keyword) as is their default in the index
    */
   def dplaToElasticSearch(dplaField: String): String =
     mapDplaToEs(dplaField)

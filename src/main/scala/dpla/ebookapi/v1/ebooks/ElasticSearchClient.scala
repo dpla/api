@@ -1,13 +1,14 @@
-package dpla.v1.publications
+package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import spray.json._
-import JsonFormats._
 import akka.http.scaladsl.unmarshalling._
+import dpla.ebookapi.v1.ebooks.JsonFormats._
+import spray.json._
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 

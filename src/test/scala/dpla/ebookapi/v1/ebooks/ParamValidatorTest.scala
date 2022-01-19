@@ -1,6 +1,5 @@
-package dpla.v1.publications
+package dpla.ebookapi.v1.ebooks
 
-import dpla.v1.publications.{ParamValidator, RawParams, SearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
