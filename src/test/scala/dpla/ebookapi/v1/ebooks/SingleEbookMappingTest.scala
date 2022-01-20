@@ -7,7 +7,7 @@ import JsonFormats._
 
 import scala.io.{BufferedSource, Source}
 
-class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
+class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
 
   def readFile(filePath: String): String = {
     val source: String = getClass.getResource(filePath).getPath
@@ -15,20 +15,20 @@ class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFi
     buffered.getLines.mkString
   }
 
-  val esPub: String = readFile("/elasticSearchPublication.json")
-  val pub: JsObject = esPub.parseJson.convertTo[SinglePublication].toJson.asJsObject
-  val firstDoc: JsObject = readObjectArray(pub,"docs").headOption
+  val esEbook: String = readFile("/elasticSearchEbook.json")
+  val ebook: JsObject = esEbook.parseJson.convertTo[SingleEbook].toJson.asJsObject
+  val firstDoc: JsObject = readObjectArray(ebook,"docs").headOption
     .getOrElse(throw new RuntimeException("Failed to parse 'docs'"))
 
-  val esMinPub: String = readFile("/elasticSearchMinimalPublication.json")
-  val minPub: JsObject = esMinPub.parseJson.convertTo[SinglePublication].toJson.asJsObject
-  val minFirstDoc: JsObject = readObjectArray(minPub,"docs").headOption
+  val esMinEbook: String = readFile("/elasticSearchMinimalEbook.json")
+  val minEbook: JsObject = esMinEbook.parseJson.convertTo[SingleEbook].toJson.asJsObject
+  val minFirstDoc: JsObject = readObjectArray(minEbook,"docs").headOption
     .getOrElse(throw new RuntimeException("Failed to parse 'docs'"))
 
   "a single ebook record" should {
     "generate count" in {
       val expected = 1
-      val traversed = readInt(pub, "count").getOrElse("NOT FOUND")
+      val traversed = readInt(ebook, "count").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 

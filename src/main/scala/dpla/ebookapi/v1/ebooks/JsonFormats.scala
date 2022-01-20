@@ -4,12 +4,12 @@ import spray.json.{DefaultJsonProtocol, _}
 
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
-  implicit object PublicationFormat extends RootJsonFormat[Publication] {
+  implicit object EbookFormat extends RootJsonFormat[Ebook] {
 
-    def read(json: JsValue): Publication = {
+    def read(json: JsValue): Ebook = {
       val root: JsObject = json.asJsObject
 
-      Publication(
+      Ebook(
         author = readStringArray(root, "_source", "author"),
         genre = readStringArray(root, "_source", "genre"),
         id = readString(root, "_id"),
@@ -26,48 +26,48 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       )
     }
 
-    def write(pub: Publication): JsValue = {
+    def write(ebook: Ebook): JsValue = {
 
       filterIfEmpty(JsObject(
-        "id" -> pub.id.toJson,
-        "dataProvider" -> pub.sourceUri.toJson,
+        "id" -> ebook.id.toJson,
+        "dataProvider" -> ebook.sourceUri.toJson,
         "ingestType" -> JsString("ebook"),
-        "isShownAt" -> pub.itemUri.toJson,
-        "object" -> pub.payloadUri.toJson,
+        "isShownAt" -> ebook.itemUri.toJson,
+        "object" -> ebook.payloadUri.toJson,
         "sourceResource" -> filterIfEmpty(JsObject(
-          "creator" -> pub.author.toJson,
+          "creator" -> ebook.author.toJson,
           "date" -> filterIfEmpty(JsObject(
-            "displayDate" -> pub.publicationDate.toJson
+            "displayDate" -> ebook.publicationDate.toJson
           )),
-          "description" -> pub.summary.toJson,
-          "format" -> pub.medium.toJson,
+          "description" -> ebook.summary.toJson,
+          "format" -> ebook.medium.toJson,
           "language" -> filterIfEmpty(JsObject(
-            "name" -> pub.language.toJson,
+            "name" -> ebook.language.toJson,
           )),
-          "publisher" -> pub.publisher.toJson,
+          "publisher" -> ebook.publisher.toJson,
           "subject" -> filterIfEmpty(JsObject(
-            "name" -> pub.genre.toJson
+            "name" -> ebook.genre.toJson
           )),
-          "subtitle" -> pub.subtitle.toJson,
-          "title" -> pub.title.toJson,
+          "subtitle" -> ebook.subtitle.toJson,
+          "title" -> ebook.title.toJson,
           "type" -> JsString("ebook")
         ))
       )).toJson
     }
   }
 
-  implicit object SinglePublicationFormat extends RootJsonFormat[SinglePublication] {
+  implicit object SingleEbookFormat extends RootJsonFormat[SingleEbook] {
 
-    def read(json: JsValue): SinglePublication = {
-      SinglePublication(
-        docs = Seq(json.convertTo[Publication])
+    def read(json: JsValue): SingleEbook = {
+      SingleEbook(
+        docs = Seq(json.convertTo[Ebook])
       )
     }
 
-    def write(sp: SinglePublication): JsValue = {
+    def write(singleEbook: SingleEbook): JsValue = {
       JsObject(
         "count" -> JsNumber(1),
-        "docs" -> sp.docs.toJson
+        "docs" -> singleEbook.docs.toJson
       ).toJson
     }
   }
@@ -83,10 +83,10 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       )
     }
 
-    def write(b: Bucket): JsValue =
+    def write(bucket: Bucket): JsValue =
       JsObject(
-        "term" -> b.key.toJson,
-        "count" -> b.docCount.toJson
+        "term" -> bucket.key.toJson,
+        "count" -> bucket.docCount.toJson
       ).toJson
   }
 
@@ -118,11 +118,11 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       }
     }
 
-    def write(al: FacetList): JsValue = {
+    def write(facetList: FacetList): JsValue = {
       var aggObject = JsObject()
 
       // Add a field to aggObject for each facet field
-      al.facets.foreach(agg => {
+      facetList.facets.foreach(agg => {
         aggObject = JsObject(aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson)))
       })
 
@@ -130,31 +130,31 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
   }
 
-  implicit object PublicationListFormat extends RootJsonFormat[PublicationList] {
+  implicit object EbookListFormat extends RootJsonFormat[EbookList] {
 
-    def read(json: JsValue): PublicationList = {
+    def read(json: JsValue): EbookList = {
       val root = json.asJsObject
 
-      PublicationList(
+      EbookList(
         count = readInt(root, "hits", "total", "value"),
         limit = None,
         start = None,
-        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Publication]),
+        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Ebook]),
         facets = readObject(root, "aggregations").map(_.toJson.convertTo[FacetList])
       )
     }
 
-    def write(pl: PublicationList): JsValue = {
+    def write(ebookList: EbookList): JsValue = {
       val base: JsObject = JsObject(
-        "count" -> pl.count.toJson,
-        "start" -> pl.start.toJson,
-        "limit" -> pl.limit.toJson,
-        "docs" -> pl.docs.toJson
+        "count" -> ebookList.count.toJson,
+        "start" -> ebookList.start.toJson,
+        "limit" -> ebookList.limit.toJson,
+        "docs" -> ebookList.docs.toJson
       )
 
       // Add facets if there are any
       val complete: JsObject =
-        if (pl.facets.nonEmpty) JsObject(base.fields + ("facets" -> pl.facets.toJson))
+        if (ebookList.facets.nonEmpty) JsObject(base.fields + ("facets" -> ebookList.facets.toJson))
         else base
 
       complete.toJson
@@ -180,47 +180,3 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     JsObject(filtered)
   }
 }
-
-/** Case classes for reading ElasticSearch responses **/
-
-case class SinglePublication(
-                              docs: Seq[Publication]
-                            )
-
-case class PublicationList(
-                            count: Option[Int],
-                            limit: Option[Int],
-                            start: Option[Int],
-                            docs: Seq[Publication],
-                            facets: Option[FacetList]
-                          )
-
-case class Publication(
-                        author: Seq[String],
-                        genre: Seq[String],
-                        id: Option[String],
-                        itemUri: Option[String],
-                        language: Seq[String],
-                        medium: Seq[String],
-                        payloadUri: Seq[String],
-                        publisher: Seq[String],
-                        publicationDate: Seq[String],
-                        sourceUri: Option[String],
-                        subtitle: Seq[String],
-                        summary: Seq[String],
-                        title: Seq[String]
-                      )
-
-case class FacetList(
-                      facets: Seq[Facet]
-                    )
-
-case class Facet(
-                  field: String,
-                  buckets: Seq[Bucket]
-                )
-
-case class Bucket(
-                   key: Option[String],
-                   docCount: Option[Int]
-                 )

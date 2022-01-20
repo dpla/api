@@ -21,11 +21,11 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
       case Success(validParams) =>
         onComplete(elasticSearchClient.search(validParams)) {
           case Success(response) => response match {
-            case Right(pubsFuture) =>
-              onComplete(pubsFuture) {
-                case Success(pubs) =>
+            case Right(ebooksFuture) =>
+              onComplete(ebooksFuture) {
+                case Success(ebooks) =>
                   // Success
-                  complete(pubs)
+                  complete(ebooks)
                 case Failure(e) =>
                   // Failure to parse ElasticSearch response
                   System.out.println(s"Error: $e")
@@ -59,11 +59,11 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
       case Success(validId) =>
         onComplete (elasticSearchClient.fetch (validId) ) {
           case Success (response) => response match {
-            case Right (pubFuture) =>
-              onComplete (pubFuture) {
-                case Success (pub) =>
+            case Right (ebookFuture) =>
+              onComplete (ebookFuture) {
+                case Success (ebook) =>
                   //Success
-                  complete (pub)
+                  complete (ebook)
                 case Failure (e) =>
                   // Failure to parse ElasticSearch response
                   System.out.println (s"Error: $e")

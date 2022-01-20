@@ -101,7 +101,7 @@ class Routes(elasticSearchClient: ElasticSearchClient)(implicit val system: Acto
     )
 
   lazy val healthCheckRoute: Route =
-      get {
-        complete(OK)
-      }
+    get {
+      complete(OK)
+    }
 }
