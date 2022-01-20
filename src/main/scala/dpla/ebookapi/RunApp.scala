@@ -1,12 +1,12 @@
-package dpla.publications
+package dpla.ebookapi
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient
 
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 //#main-class
 object RunApp {
@@ -25,6 +25,7 @@ object RunApp {
         system.terminate()
     }
   }
+
   //#start-http-server
   def main(args: Array[String]): Unit = {
 
@@ -37,8 +38,8 @@ object RunApp {
 
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val routes = new PublicationRoutes(elasticSearchClient)(context.system)
-      startHttpServer(routes.publicationRoutes)(context.system)
+      val routes = new Routes(elasticSearchClient)(context.system)
+      startHttpServer(routes.applicationRoutes)(context.system)
 
       Behaviors.empty
     }
@@ -46,4 +47,3 @@ object RunApp {
     //#server-bootstrapping
   }
 }
-//#main-class

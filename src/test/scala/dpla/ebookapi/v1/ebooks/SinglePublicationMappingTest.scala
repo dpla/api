@@ -1,10 +1,11 @@
-package dpla.publications
+package dpla.ebookapi.v1.ebooks
 
-import scala.io.{BufferedSource, Source}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 import JsonFormats._
+
+import scala.io.{BufferedSource, Source}
 
 class SinglePublicationMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
 

@@ -1,8 +1,8 @@
-package dpla.publications
+package dpla.ebookapi.v1.ebooks
 
+import org.scalatest.PrivateMethodTester
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.PrivateMethodTester
 import spray.json._
 
 class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader {

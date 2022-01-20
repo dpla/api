@@ -1,7 +1,7 @@
-package dpla.publications
+package dpla.ebookapi.v1.ebooks
 
-import JsonFormats._
 import spray.json._
+import JsonFormats._
 
 object ElasticSearchQueryBuilder extends MappingHelper {
 
@@ -14,7 +14,7 @@ object ElasticSearchQueryBuilder extends MappingHelper {
     ).toJson
 
   // Fields to search in a keyword query and their boost values
-  private val keywordQueryFields= Seq(
+  private val keywordQueryFields = Seq(
     "author^1",
     "genre^1",
     "medium^1",

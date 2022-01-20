@@ -9,7 +9,7 @@ lazy val root = (project in file(".")).
     )),
 
     name := "ebook-api",
-    assembly / mainClass := Some("dpla.publications.RunApp"),
+    assembly / mainClass := Some("dpla.ebookapi.RunApp"),
     assembly / assemblyJarName := "dpla-ebooks-api.jar",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"                % akkaHttpVersion,

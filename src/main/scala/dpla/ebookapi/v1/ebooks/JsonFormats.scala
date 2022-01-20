@@ -1,7 +1,6 @@
-package dpla.publications
+package dpla.ebookapi.v1.ebooks
 
-import spray.json.DefaultJsonProtocol
-import spray.json._
+import spray.json.{DefaultJsonProtocol, _}
 
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 

@@ -1,4 +1,4 @@
-package dpla.publications
+package dpla.ebookapi.v1.ebooks
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
