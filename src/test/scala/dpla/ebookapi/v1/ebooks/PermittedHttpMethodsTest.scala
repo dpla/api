@@ -1,13 +1,13 @@
-package dpla.ebookapi
+package dpla.ebookapi.v1.ebooks
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import dpla.ebookapi.Routes
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.ebookapi.v1.ebooks.ElasticSearchClient
 
 class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
@@ -18,10 +18,10 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
   val elasticSearchClient = new ElasticSearchClient("http://es-endpoint.com")
   lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
 
-  "/ebooks route" should {
+  "/v1/ebooks route" should {
     "handle invalid HTTP methods" should {
       "reject DELETE" in {
-        val request = Delete("/ebooks")
+        val request = Delete("/v1/ebooks")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -29,7 +29,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
       }
 
       "reject PATCH" in {
-        val request = Patch("/ebooks")
+        val request = Patch("/v1/ebooks")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -37,7 +37,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
       }
 
       "reject POST" in {
-        val request = Post("/ebooks")
+        val request = Post("/v1/ebooks")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -45,7 +45,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
       }
 
       "reject PUT" in {
-        val request = Put("/ebooks")
+        val request = Put("/v1/ebooks")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -54,10 +54,10 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
     }
   }
 
-  "/ebooks/[id] route" should {
+  "/v1/ebooks/[id] route" should {
     "handle invalid HTTP methods" should {
       "reject DELETE" in {
-        val request = Delete("/ebooks/R0VfVX4BfY91SSpFGqxt")
+        val request = Delete("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -65,7 +65,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
       }
 
       "reject PATCH" in {
-        val request = Patch("/ebooks/R0VfVX4BfY91SSpFGqxt")
+        val request = Patch("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -73,7 +73,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
       }
 
       "reject POST" in {
-        val request = Post("/ebooks/R0VfVX4BfY91SSpFGqxt")
+        val request = Post("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
@@ -81,7 +81,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
       }
 
       "reject PUT" in {
-        val request = Put("/ebooks/R0VfVX4BfY91SSpFGqxt")
+        val request = Put("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
 
         request ~> Route.seal(routes) ~> check {
           status shouldEqual StatusCodes.MethodNotAllowed
