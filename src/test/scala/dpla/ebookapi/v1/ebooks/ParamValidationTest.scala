@@ -10,42 +10,9 @@ import dpla.ebookapi.helpers.Mocks
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.util.{Failure, Random, Success}
+import scala.util.Random
 
 class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteTest with Mocks {
-
-  val minRawParams: RawParams = RawParams(
-    creator = None,
-    dataProvider = None,
-    date = None,
-    description = None,
-    exactFieldMatch = None,
-    facets = None,
-    facetSize = None,
-    format = None,
-    isShownAt = None,
-    language = None,
-    `object` = None,
-    page = None,
-    pageSize = None,
-    publisher = None,
-    q = None,
-    subject = None,
-    subtitle = None,
-    title = None
-  )
-
-  def expectSuccess(raw: RawParams): SearchParams =
-    ParamValidator.getSearchParams(raw) match {
-      case Success(p) => p
-      case Failure(_) => throw new RuntimeException("unexpected validation error")
-    }
-
-  def getFilterValue(raw: RawParams, fieldName: String): Option[String] =
-    expectSuccess(raw).filters.find(_.fieldName == fieldName).map(_.value)
-
-
-
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
@@ -113,7 +80,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-long param" in {
+    "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val request = Get(s"/v1/ebooks?sourceResource.creator=$given")
 
@@ -144,11 +111,13 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle invalid URL" in {
-      val given = Some("standardebooks")
-      val raw = minRawParams.copy(dataProvider = given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject invalid URL" in {
+      val given = "standardebooks"
+      val request = Get(s"/v1/ebooks?dataProvider=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -174,25 +143,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("1")
-      val raw = minRawParams.copy(date=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "1"
+      val request = Get(s"/v1/ebooks?sourceResource.date.displayDate=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(date=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.date.displayDate=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -217,25 +183,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(description=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.description=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(description=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.description=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -259,11 +222,13 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle non-boolean param" in {
-      val given = Some("foo")
-      val raw = minRawParams.copy(exactFieldMatch=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject non-boolean param" in {
+      val given = "foo"
+      val request = Get(s"/v1/ebooks?exact_field_match=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -287,11 +252,13 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle unfacetable field" in {
-      val given = Some("sourceResource.description")
-      val raw = minRawParams.copy(facets=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject unfacetable field" in {
+      val given = "sourceResource.description"
+      val request = Get(s"/v1/ebooks?facets=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -315,18 +282,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle non-int param" in {
-      val given = Some("foo")
-      val raw = minRawParams.copy(page=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject non-int param" in {
+      val given = "foo"
+      val request = Get(s"/v1/ebooks?facet_size=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle out-of-range param" in {
-      val given = Some("9999")
-      val raw = minRawParams.copy(facetSize=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject out-of-range param" in {
+      val given = "9999"
+      val request = Get(s"/v1/ebooks?facet_size=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -351,25 +322,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(format=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.format=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(format=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.format=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -394,11 +362,13 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle invalid URL" in {
-      val given = Some("the-charing-cross-mystery")
-      val raw = minRawParams.copy(isShownAt = given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject invalid URL" in {
+      val given = "the-charing-cross-mystery"
+      val request = Get(s"/v1/ebooks?isShownAt=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -423,25 +393,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(language=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.language.name=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(language=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.language.name=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -456,8 +423,8 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
     }
 
     "accept valid param" in {
-      val given = "\"http://payload-permanent-address.dp.la\""
-      val expected = Some("\"http://payload-permanent-address.dp.la\"")
+      val given = "http://payload-permanent-address.dp.la"
+      val expected = Some("http://payload-permanent-address.dp.la")
       val request = Get(s"/v1/ebooks?object=$given")
 
       request ~> Route.seal(routes) ~> check {
@@ -465,11 +432,13 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle invalid URL" in {
-      val given = Some("http/payload-permanent-address.dp.la")
-      val raw = minRawParams.copy(`object` = given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject invalid URL" in {
+      val given = "http/payload-permanent-address.dp.la"
+      val request = Get(s"/v1/ebooks?object=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -493,18 +462,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle non-int param" in {
-      val given = Some("foo")
-      val raw = minRawParams.copy(page=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject non-int param" in {
+      val given = "foo"
+      val request = Get(s"/v1/ebooks?page=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle out-of-range param" in {
-      val given = Some("0")
-      val raw = minRawParams.copy(page=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject out-of-range param" in {
+      val given = "0"
+      val request = Get(s"/v1/ebooks?page=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -528,18 +501,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle non-int param" in {
-      val given = Some("foo")
-      val raw = minRawParams.copy(pageSize=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject non-int param" in {
+      val given = "foo"
+      val request = Get(s"/v1/ebooks?page_size=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle out-of-range param" in {
-      val given = Some("999999")
-      val raw = minRawParams.copy(pageSize=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject out-of-range param" in {
+      val given = "999999"
+      val request = Get(s"/v1/ebooks?page_size=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -564,25 +541,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(publisher=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.publisher=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(publisher=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.publisher=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -606,25 +580,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(q=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?q=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(q=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?q=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -650,25 +621,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(subject=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.subject.name=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(subject=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.subject.name=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -693,25 +661,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(subtitle=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.subtitle=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(subtitle=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.subtitle=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
@@ -736,25 +701,22 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(title=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.title=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(title=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+    "reject too-long param" in {
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.title=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 }
