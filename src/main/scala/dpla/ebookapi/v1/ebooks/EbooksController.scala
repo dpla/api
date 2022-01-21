@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, BandwidthLimitExceeded, ImATeapot, InternalServerError, MethodNotAllowed, NotFound}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, ImATeapot, NotFound}
 import akka.http.scaladsl.server.Directives.{complete, onComplete}
 
 import scala.concurrent.ExecutionContextExecutor
