@@ -1,17 +1,9 @@
 package dpla.ebookapi.v1.ebooks
 
 /**
- * Maps between RawParams field names and DPLA MAP field names.
- *   (RawParams holds user-submitted parameters)
  * Maps between DPLA MAP field names and ElasticSearch field names.
  */
 trait MappingHelper {
-
-  /**
-   * Map RawParams fields to DPLA MAP
-   */
-  def rawParamToDpla(rawParam: String): String =
-    mapRawParamToDpla(rawParam)
 
   /**
    * Map DPLA MAP fields to ElasticSearch fields
@@ -32,6 +24,8 @@ trait MappingHelper {
    * Get the names of facetable fields in DPLA MAP
    * Facetable fields must be indexed as type "keyword" in ElasticSearch
    */
+
+    // TODO move to param validator
   def facetableDplaFields: Seq[String] =
     facetableEsFields.map(esField => mapDplaToEsExactMatch.find(_._2 == esField).map(_._1).get)
 

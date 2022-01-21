@@ -20,8 +20,8 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
   // needed for the future map/onComplete
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
-  def search(rawParams: RawParams): Route = {
-    ParamValidator.getSearchParams(rawParams) match {
+  def search(params: Map[String, String]): Route = {
+    ParamValidator.getSearchParams(params) match {
       case Success(validParams) =>
         onComplete(elasticSearchClient.search(validParams)) {
           case Success(response) => response match {
@@ -70,7 +70,7 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
                   complete(ebook)
                 case Failure(e) =>
                   // Failure to parse ElasticSearch response
-                  System.out.println (s"Error: $e")
+                  System.out.println(s"Error: $e")
                   complete(HttpResponse(ImATeapot, entity = teapotMessage))
               }
             case Left(status) =>
@@ -91,7 +91,7 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
         }
       case Failure(e) =>
         // User submitted an invalid ID
-        System.out.println (e)
+        System.out.println(e)
         complete(BadRequest, e.getMessage)
     }
   }

@@ -3,7 +3,7 @@ package dpla.ebookapi.helpers
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import dpla.ebookapi.v1.ebooks.{Ebook, EbookList, ElasticSearchClient, FieldFilter, RawParams, SearchParams, SingleEbook}
+import dpla.ebookapi.v1.ebooks.{Ebook, EbookList, ElasticSearchClient, FieldFilter, SearchParams, SingleEbook}
 import spray.json.DeserializationException
 
 import java.net.UnknownHostException

@@ -8,39 +8,6 @@ class MappingHelperTest extends AnyWordSpec with Matchers {
   object Tester extends MappingHelper
 
   "MappingHelper" should {
-    "map RawParams fields to DPLA MAP fields" in {
-      val rawParamsFields = Seq(
-        "creator",
-        "dataProvider",
-        "date",
-        "description",
-        "format",
-        "isShownAt",
-        "language",
-        "object",
-        "publisher",
-        "subject",
-        "subtitle",
-        "title"
-      )
-
-      val expected = Seq(
-        "dataProvider",
-        "isShownAt",
-        "object",
-        "sourceResource.creator",
-        "sourceResource.date.displayDate",
-        "sourceResource.description",
-        "sourceResource.format",
-        "sourceResource.language.name",
-        "sourceResource.publisher",
-        "sourceResource.subject.name",
-        "sourceResource.subtitle",
-        "sourceResource.title"
-      )
-      val mapped = rawParamsFields.map(Tester.rawParamToDpla)
-      mapped should contain allElementsOf expected
-    }
 
     "map DPLA MAP fields to ElasticSearch fields" in {
       val dplaFields = Seq(
