@@ -7,7 +7,7 @@ import JsonFormats._
 
 import scala.io.{BufferedSource, Source}
 
-class PublicationListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
+class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
 
   def readFile(filePath: String): String = {
     val source: String = getClass.getResource(filePath).getPath
@@ -15,27 +15,27 @@ class PublicationListMappingTest extends AnyWordSpec with Matchers with JsonFiel
     buffered.getLines.mkString
   }
 
-  val esPubList: String = readFile("/elasticSearchPublicationList.json")
-  val pubList: JsObject = esPubList.parseJson.convertTo[PublicationList].toJson.asJsObject
+  val esEbookList: String = readFile("/elasticSearchEbookList.json")
+  val ebookList: JsObject = esEbookList.parseJson.convertTo[EbookList].toJson.asJsObject
 
-  val minEsPubList: String = readFile("/elasticSearchMinimalPublicationList.json")
-  val minPubList: JsObject = minEsPubList.parseJson.convertTo[PublicationList].toJson.asJsObject
+  val minEsEbookList: String = readFile("/elasticSearchMinimalEbookList.json")
+  val minEbookList: JsObject = minEsEbookList.parseJson.convertTo[EbookList].toJson.asJsObject
 
   "a list of ebook records" should {
     "map count" in {
       val expected = 590
-      val traversed = readInt(pubList, "count").getOrElse("NOT FOUND")
+      val traversed = readInt(ebookList, "count").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
     "handle empty docs" in {
-      val traversed = readObjectArray(minPubList, "docs")
+      val traversed = readObjectArray(minEbookList, "docs")
       assert(traversed.isEmpty)
     }
 
     "map all docs" in {
       val expected = 10
-      val docCount = readObjectArray(pubList, "docs").size
+      val docCount = readObjectArray(ebookList, "docs").size
       assert(docCount == expected)
     }
 
@@ -52,33 +52,33 @@ class PublicationListMappingTest extends AnyWordSpec with Matchers with JsonFiel
         "wfwPJ34Bj-MaVWqX9Kac",
         "wvwPJ34Bj-MaVWqX9Kac"
       )
-      val ids = readObjectArray(pubList, "docs").flatMap(readString(_, "id"))
+      val ids = readObjectArray(ebookList, "docs").flatMap(readString(_, "id"))
       ids should contain allElementsOf expected
     }
 
     "handle empty facets" in {
-      val parent = readObject(minPubList)
+      val parent = readObject(minEbookList)
       val children = parent.get.fields.keys
       children should not contain "facets"
     }
 
     "map all facets" in {
       val expected = Seq("dataProvider", "sourceResource.creator")
-      val parent = readObject(pubList, "facets")
+      val parent = readObject(ebookList, "facets")
       val children = parent.get.fields.keys
       children should contain allElementsOf expected
     }
 
     "map facet terms" in {
       val expected = Some("http://standardebooks.org")
-      val firstTerm = readObjectArray(pubList, "facets", "dataProvider", "terms").head
+      val firstTerm = readObjectArray(ebookList, "facets", "dataProvider", "terms").head
       val traversed = readString(firstTerm, "term")
       assert(traversed == expected)
     }
 
     "map facet counts" in {
       val expected = Some(590)
-      val firstTerm = readObjectArray(pubList, "facets", "dataProvider", "terms").head
+      val firstTerm = readObjectArray(ebookList, "facets", "dataProvider", "terms").head
       val traversed = readInt(firstTerm, "count")
       assert(traversed == expected)
     }

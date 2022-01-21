@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 
 class ElasticSearchClient(elasticSearchEndpoint: String) {
 
-  def fetch(id: String): Future[Either[StatusCode, Future[SinglePublication]]] = {
+  def fetch(id: String): Future[Either[StatusCode, Future[SingleEbook]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -26,14 +26,14 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
       res.status.intValue match {
         case 200 =>
           val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val pub: Future[SinglePublication] = body.map(_.parseJson.convertTo[SinglePublication])
-          Right(pub)
+          val ebook: Future[SingleEbook] = body.map(_.parseJson.convertTo[SingleEbook])
+          Right(ebook)
         case _ => Left(res.status)
       }
     })
   }
 
-  def search(params: SearchParams): Future[Either[StatusCode, Future[PublicationList]]] = {
+  def search(params: SearchParams): Future[Either[StatusCode, Future[EbookList]]] = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future map
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -53,9 +53,9 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
       res.status.intValue match {
         case 200 =>
           val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val pubs: Future[PublicationList] =
-            body.map(_.parseJson.convertTo[PublicationList].copy(limit=Some(params.pageSize), start=Some(params.start)))
-          Right(pubs)
+          val ebooks: Future[EbookList] =
+            body.map(_.parseJson.convertTo[EbookList].copy(limit=Some(params.pageSize), start=Some(params.start)))
+          Right(ebooks)
         case _ =>
           Left(res.status)
       }
