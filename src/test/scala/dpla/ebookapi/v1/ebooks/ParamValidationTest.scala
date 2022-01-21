@@ -1,11 +1,18 @@
 package dpla.ebookapi.v1.ebooks
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import dpla.ebookapi.Routes
+import dpla.ebookapi.helpers.Mocks
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
-class ParamValidatorTest extends AnyWordSpec with Matchers {
+class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteTest with Mocks {
 
   val minRawParams: RawParams = RawParams(
     creator = None,
@@ -37,77 +44,104 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   def getFilterValue(raw: RawParams, fieldName: String): Option[String] =
     expectSuccess(raw).filters.find(_.fieldName == fieldName).map(_.value)
 
+
+
+
+  lazy val testKit: ActorTestKit = ActorTestKit()
+  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
+  override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
+
+  val elasticSearchClient: MockElasticSearchClient = getMockElasticSearchClient
+  lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
+
   "ebook ID validator" should {
-    "return valid ID" in {
+    "accept valid ID" in {
       val given = "R0VfVX4BfY91SSpFGqxt"
-      val expected = Success("R0VfVX4BfY91SSpFGqxt")
-      val validated = ParamValidator.getValidId(given)
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks/$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastId shouldEqual given
+      }
     }
 
-    "handle ID with special characters" in {
+    "reject ID with special characters" in {
       val given = "<foo>"
-      val validated = ParamValidator.getValidId(given)
-      assert(validated.isFailure)
+      val request = Get(s"/v1/ebooks/$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
-    "handle too-long ID" in {
+    "reject too-long ID" in {
       val given = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
-      val validated = ParamValidator.getValidId(given)
-      assert(validated.isFailure)
+      val request = Get(s"/v1/ebooks/$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
   "creator validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.creator")
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.creator") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("Jules Verne")
+    "accept valid param" in {
+      val given = "Jules%20Verne"
       val expected = Some("Jules Verne")
-      val raw = minRawParams.copy(creator = given)
-      val validated = getFilterValue(raw, "sourceResource.creator")
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.creator=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.creator")
+          .map(_.value) shouldEqual expected
+      }
     }
 
-    "handle too-short param" in {
-      val given = Some("d")
-      val raw = minRawParams.copy(creator = given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert(validated.isFailure)
+    "reject too-short param" in {
+      val given = "d"
+      val request = Get(s"/v1/ebooks?sourceResource.creator=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
 
     "handle too-long param" in {
-      val given = Some(
-        """
-          |"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          | dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-          | ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-          | fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-          | mollit anim id est laborum.
-          | """.stripMargin)
-      val raw = minRawParams.copy(creator=given)
-      val validated = ParamValidator.getSearchParams(raw)
-      assert (validated.isFailure)
+      val given: String = Random.alphanumeric.take(201).mkString
+      val request = Get(s"/v1/ebooks?sourceResource.creator=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
     }
   }
 
   "dataProvider validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "dataProvider")
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "dataProvider") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("https://standardebooks.org")
+    "accept valid param" in {
+      val given = "https://standardebooks.org"
       val expected = Some("https://standardebooks.org")
-      val raw = minRawParams.copy(dataProvider = given)
-      val validated = getFilterValue(raw, "dataProvider")
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks?dataProvider=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "dataProvider")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle invalid URL" in {
@@ -121,16 +155,23 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "date validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.date.displayDate")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters
+          .find(_.fieldName == "sourceResource.date.displayDate") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("2002")
+    "accept valid param" in {
+      val given = "2002"
       val expected = Some("2002")
-      val raw = minRawParams.copy(date=given)
-      val validated = getFilterValue(raw, "sourceResource.date.displayDate")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.date.displayDate=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.date.displayDate")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -158,16 +199,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "description validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.description")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.description") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("dogs")
+    "accept valid param" in {
+      val given = "dogs"
       val expected = Some("dogs")
-      val raw = minRawParams.copy(description=given)
-      val validated = getFilterValue(raw, "sourceResource.description")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.description=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.description")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -195,16 +242,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "exact_field_match validator" should {
     "handle empty param" in {
       val expected = false
-      val validated = expectSuccess(minRawParams).exactFieldMatch
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.exactFieldMatch shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("true")
+    "accept valid param" in {
+      val given = "true"
       val expected = true
-      val raw = minRawParams.copy(exactFieldMatch=given)
-      val validated = expectSuccess(raw).exactFieldMatch
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks?exact_field_match=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.exactFieldMatch shouldEqual expected
+      }
     }
 
     "handle non-boolean param" in {
@@ -218,16 +270,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "facet validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).facets
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.facets shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("dataProvider")
-      val expected = Some(Seq("dataProvider"))
-      val raw = minRawParams.copy(facets=given)
-      val validated = expectSuccess(raw).facets
-      assert(validated == expected)
+    "accept valid param" in {
+      val given = "dataProvider,sourceResource.creator"
+      val expected = Some(Seq("dataProvider", "sourceResource.creator"))
+      val request = Get(s"/v1/ebooks?facets=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.facets shouldEqual expected
+      }
     }
 
     "handle unfacetable field" in {
@@ -241,16 +298,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "facet size validator" should {
     "handle empty param" in {
       val expected = 50
-      val validated = expectSuccess(minRawParams).facetSize
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.facetSize shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("30")
+    "accept valid param" in {
+      val given = "30"
       val expected = 30
-      val raw = minRawParams.copy(facetSize=given)
-      val validated = expectSuccess(raw).facetSize
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks?facet_size=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.facetSize shouldEqual expected
+      }
     }
 
     "handle non-int param" in {
@@ -271,16 +333,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "format validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.format")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.format") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("article")
+    "accept valid param" in {
+      val given = "article"
       val expected = Some("article")
-      val raw = minRawParams.copy(format=given)
-      val validated = getFilterValue(raw, "sourceResource.format")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.format=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.format")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -308,16 +376,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "isShownAt validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "isShownAt")
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "isShownAt") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery")
-      val expected = Some("https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery")
-      val raw = minRawParams.copy(isShownAt = given)
-      val validated = getFilterValue(raw, "isShownAt")
-      assert(validated == expected)
+    "accept valid param" in {
+      val given = "\"https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery\""
+      val expected = Some("\"https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery\"")
+      val request = Get(s"/v1/ebooks?isShownAt=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "isShownAt")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle invalid URL" in {
@@ -331,16 +405,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "language validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.language.name")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.language.name") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("fr")
+    "accept valid param" in {
+      val given = "fr"
       val expected = Some("fr")
-      val raw = minRawParams.copy(language=given)
-      val validated = getFilterValue(raw, "sourceResource.language.name")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.language.name=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.language.name")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -368,16 +448,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "object validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "object")
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "object") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("http://payload-permanent-address.dp.la")
-      val expected = Some("http://payload-permanent-address.dp.la")
-      val raw = minRawParams.copy(`object` = given)
-      val validated = getFilterValue(raw, "object")
-      assert(validated == expected)
+    "accept valid param" in {
+      val given = "\"http://payload-permanent-address.dp.la\""
+      val expected = Some("\"http://payload-permanent-address.dp.la\"")
+      val request = Get(s"/v1/ebooks?object=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "object").map(_.value) shouldEqual expected
+      }
     }
 
     "handle invalid URL" in {
@@ -391,16 +476,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "page validator" should {
     "handle empty param" in {
       val expected = 1
-      val validated = expectSuccess(minRawParams).page
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.page shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("27")
+    "accept valid param" in {
+      val given = "27"
       val expected = 27
-      val raw = minRawParams.copy(page=given)
-      val validated = expectSuccess(raw).page
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks?page=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.page shouldEqual expected
+      }
     }
 
     "handle non-int param" in {
@@ -421,16 +511,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "page size validator" should {
     "handle empty param" in {
       val expected = 10
-      val validated = expectSuccess(minRawParams).pageSize
-      assert(validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.pageSize shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("50")
+    "accept valid param" in {
+      val given = "50"
       val expected = 50
-      val raw = minRawParams.copy(pageSize=given)
-      val validated = expectSuccess(raw).pageSize
-      assert(validated == expected)
+      val request = Get(s"/v1/ebooks?page_size=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.pageSize shouldEqual expected
+      }
     }
 
     "handle non-int param" in {
@@ -451,16 +546,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "publisher validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.publisher")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.publisher") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("Penguin")
+    "accept valid param" in {
+      val given = "Penguin"
       val expected = Some("Penguin")
-      val raw = minRawParams.copy(publisher=given)
-      val validated = getFilterValue(raw, "sourceResource.publisher")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.publisher=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.publisher")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -488,16 +589,21 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "q validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = expectSuccess(minRawParams).q
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.q shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("dogs")
+    "accept valid param" in {
+      val given = "dogs"
       val expected = Some("dogs")
-      val raw = minRawParams.copy(q=given)
-      val validated = expectSuccess(raw).q
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?q=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.q shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -525,16 +631,23 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "subject validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.subject.name")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters
+          .find(_.fieldName == "sourceResource.subject.name") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("dogs")
+    "accept valid param" in {
+      val given = "dogs"
       val expected = Some("dogs")
-      val raw = minRawParams.copy(subject=given)
-      val validated = getFilterValue(raw, "sourceResource.subject.name")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.subject.name=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.subject.name")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -562,16 +675,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "subtitle validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.subtitle")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.subtitle") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("A play in three acts")
+    "accept valid param" in {
+      val given = "A play in three acts".replace(" ", "%20")
       val expected = Some("A play in three acts")
-      val raw = minRawParams.copy(subtitle=given)
-      val validated = getFilterValue(raw, "sourceResource.subtitle")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.subtitle=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.subtitle")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
@@ -599,16 +718,22 @@ class ParamValidatorTest extends AnyWordSpec with Matchers {
   "title validator" should {
     "handle empty param" in {
       val expected = None
-      val validated = getFilterValue(minRawParams, "sourceResource.title")
-      assert (validated == expected)
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.title") shouldEqual expected
+      }
     }
 
-    "return valid param" in {
-      val given = Some("The Scarlet Letter")
+    "accept valid param" in {
+      val given = "The Scarlet Letter".replace(" ", "%20")
       val expected = Some("The Scarlet Letter")
-      val raw = minRawParams.copy(title=given)
-      val validated = getFilterValue(raw, "sourceResource.title")
-      assert (validated == expected)
+      val request = Get(s"/v1/ebooks?sourceResource.title=$given")
+
+      request ~> Route.seal(routes) ~> check {
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "sourceResource.title")
+          .map(_.value) shouldEqual expected
+      }
     }
 
     "handle too-short param" in {
