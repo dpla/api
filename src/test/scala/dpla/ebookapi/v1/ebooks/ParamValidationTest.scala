@@ -23,7 +23,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
   "ebook ID validator" should {
     "accept valid ID" in {
-      val given = "R0VfVX4BfY91SSpFGqxt"
+      val given = "ufwPJ34Bj-MaVWqX9KZL"
       val request = Get(s"/v1/ebooks/$given")
 
       request ~> Route.seal(routes) ~> check {
