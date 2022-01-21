@@ -57,29 +57,29 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
   def fetch(id: String): Route = {
     ParamValidator.getValidId(id) match {
       case Success(validId) =>
-        onComplete (elasticSearchClient.fetch (validId) ) {
-          case Success (response) => response match {
-            case Right (ebookFuture) =>
-              onComplete (ebookFuture) {
-                case Success (ebook) =>
+        onComplete(elasticSearchClient.fetch (validId) ) {
+          case Success(response) => response match {
+            case Right(ebookFuture) =>
+              onComplete(ebookFuture) {
+                case Success(ebook) =>
                   //Success
-                  complete (ebook)
-                case Failure (e) =>
+                  complete(ebook)
+                case Failure(e) =>
                   // Failure to parse ElasticSearch response
                   System.out.println (s"Error: $e")
-                  complete (InternalServerError)
+                  complete(InternalServerError)
               }
-            case Left (status) =>
+            case Left(status) =>
               // ElasticSearch returned an error
               val code = status.value
               val msg = status.reason
               System.out.println (s"Error: $code: $msg")
-              complete (InternalServerError)
+              complete(InternalServerError)
             }
-          case Failure (e) =>
+          case Failure(e) =>
             // The call to the ElasticSearch API failed
             System.out.println(e)
-            complete (InternalServerError)
+            complete(InternalServerError)
         }
       case Failure(e) =>
         // User submitted an invalid ID
