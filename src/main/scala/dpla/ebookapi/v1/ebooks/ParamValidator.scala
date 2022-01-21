@@ -1,12 +1,14 @@
 package dpla.ebookapi.v1.ebooks
 
+import dpla.ebookapi.v1.ebooks.DplaMapFields.{TextField, URLField}
+
 import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 /**
  * Validates user-supplied parameters and provides default values.
  */
-object ParamValidator extends MappingHelper {
+object ParamValidator {
 
   private val defaultExactFieldMatch: Boolean = false
   private val defaultFacetSize: Int = 50
@@ -19,27 +21,15 @@ object ParamValidator extends MappingHelper {
   private val minPageSize: Int = 1
   private val maxPageSize: Int = 1000
 
-  // All valid user-submitted parameters for a search query
-  private val acceptedSearchParams = Seq(
-    "dataProvider",
-    "exact_field_match",
-    "facets",
-    "facet_size",
-    "isShownAt",
-    "object",
-    "page",
-    "page_size",
-    "q",
-    "sourceResource.creator",
-    "sourceResource.date.displayDate",
-    "sourceResource.description",
-    "sourceResource.format",
-    "sourceResource.language.name",
-    "sourceResource.publisher",
-    "sourceResource.subject.name",
-    "sourceResource.subtitle",
-    "sourceResource.title"
-  )
+  private val acceptedSearchParams: Seq[String] =
+    DplaMapFields.searchableFields ++ Seq(
+      "exact_field_match",
+      "facets",
+      "facet_size",
+      "page",
+      "page_size",
+      "q"
+    )
 
   // Method returns Failure if any parameters are invalid
   // Ebook ID must be a non-empty String comprised of letters, numbers, and hyphens
@@ -64,20 +54,7 @@ object ParamValidator extends MappingHelper {
       throw ValidationException("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
 
     // Collect all the user-submitted field filters.
-    val filters: Seq[FieldFilter] = Seq(
-      getValidFieldFilter(rawParams, "dataProvider", validUrl),
-      getValidFieldFilter(rawParams, "isShownAt", validUrl),
-      getValidFieldFilter(rawParams, "object", validUrl),
-      getValidFieldFilter(rawParams, "sourceResource.creator", validText),
-      getValidFieldFilter(rawParams, "sourceResource.date.displayDate", validText),
-      getValidFieldFilter(rawParams, "sourceResource.description", validText),
-      getValidFieldFilter(rawParams, "sourceResource.format", validText),
-      getValidFieldFilter(rawParams, "sourceResource.language.name", validText),
-      getValidFieldFilter(rawParams, "sourceResource.publisher", validText),
-      getValidFieldFilter(rawParams, "sourceResource.subject.name", validText),
-      getValidFieldFilter(rawParams, "sourceResource.subtitle", validText),
-      getValidFieldFilter(rawParams, "sourceResource.title", validText)
-    ).flatten
+    val filters: Seq[FieldFilter] = DplaMapFields.searchableFields.flatMap(getValidFieldFilter(rawParams, _))
 
     // Return valid field values. Provide defaults when appropriate.
     SearchParams(
@@ -92,17 +69,33 @@ object ParamValidator extends MappingHelper {
     )
   }
 
-  // Finds the raw parameter with the given name. Then validates with the given method.
+  /**
+   * Find the raw parameter with the given name. Then validates with the given method.
+   */
   private def getValid[T](rawParams: Map[String, String],
                           paramName: String,
                           validationMethod: (String, String) => T): Option[T] =
     rawParams.find(_._1 == paramName).map{case (k,v) => validationMethod(v,k)}
 
-  // Gets a valid value for a field filter.
-  private def getValidFieldFilter(rawParams: Map[String, String],
-                                  paramName: String,
-                                  validationMethod: (String, String) => String): Option[FieldFilter] =
+  /**
+   * Get a valid value for a field filter.
+   */
+  private def getValidFieldFilter(rawParams: Map[String, String], paramName: String): Option[FieldFilter] = {
+
+    // Look up the parameter's field type. Use this to determine the appropriate validation method.
+    val validationMethod: (String, String) => String =
+      DplaMapFields.getFieldType(paramName) match {
+        case Some(fieldType) =>
+          fieldType match {
+            case TextField => validText
+            case URLField => validUrl
+            case _ => validText // This should not happen
+          }
+        case None => throw ValidationException(s"Unrecognized parameter: $paramName")
+    }
+
     getValid(rawParams, paramName, validationMethod).map(FieldFilter(paramName, _))
+  }
 
   // Must be a Boolean value.
   private def validBoolean(boolString: String, param: String): Boolean =
@@ -114,7 +107,7 @@ object ParamValidator extends MappingHelper {
   // Must be in the list of accepted fields for the given param
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
-      case "facets" => facetableDplaFields
+      case "facets" => DplaMapFields.facetableFields
       case _ => Seq[String]()
     }
 
