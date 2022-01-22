@@ -21,6 +21,7 @@ object ParamValidator {
   private val minPageSize: Int = 0
   private val maxPageSize: Int = 1000
 
+  // A user can give any of the following parameters in a search request.
   private val acceptedSearchParams: Seq[String] =
     DplaMapFields.searchableFields ++ Seq(
       "exact_field_match",
@@ -31,11 +32,11 @@ object ParamValidator {
       "q"
     )
 
-  // Method returns Failure if any parameters are invalid
-  // Ebook ID must be a non-empty String comprised of letters, numbers, and hyphens
+  /**
+   * Method returns Failure if any parameters are invalid.
+   * Ebook ID must be a non-empty String comprised of letters, numbers, and hyphens.
+   */
   def getValidId(id: String): Try[String] = Try {
-    // TODO TEST PARAMS
-
     val rule = "ID must be a String comprised of letters, numbers, and hyphens between 1 and 32 characters long"
 
     if (id.length < 1 || id.length > 32) throw ValidationException(rule)
@@ -45,9 +46,16 @@ object ParamValidator {
 
   /**
    * Method returns Failure if any parameters are invalid.
+   * There are not currently any acceptable parameters for a fetch request.
+   */
+  def getFetchParams(rawParams: Map[String, String]): Try[Unit] = Try {
+    if (rawParams.nonEmpty) throw ValidationException("Unrecognized parameter: " + rawParams.keys.mkString(", "))
+  }
+
+  /**
+   * Method returns Failure if any parameters are invalid.
    */
   def getSearchParams(rawParams: Map[String, String]): Try[SearchParams] = Try {
-    // TODO TEST ME
     // Check for unrecognized params
     val unrecognizedParams = rawParams.keys.toSeq diff acceptedSearchParams
     if (unrecognizedParams.nonEmpty)
@@ -56,7 +64,7 @@ object ParamValidator {
     // Collect all the user-submitted field filters.
     val filters: Seq[FieldFilter] = DplaMapFields.searchableFields.flatMap(getValidFieldFilter(rawParams, _))
 
-    // Return valid field values. Provide defaults when appropriate.
+    // Return valid search params. Provide defaults when appropriate.
     SearchParams(
       exactFieldMatch = getValid(rawParams, "exact_field_match", validBoolean)
         .getOrElse(defaultExactFieldMatch),
@@ -70,7 +78,7 @@ object ParamValidator {
   }
 
   /**
-   * Find the raw parameter with the given name. Then validates with the given method.
+   * Find the raw parameter with the given name. Then validate with the given method.
    */
   private def getValid[T](rawParams: Map[String, String],
                           paramName: String,
@@ -104,7 +112,7 @@ object ParamValidator {
       case None => throw ValidationException(s"$param must be a Boolean value")
     }
 
-  // Must be in the list of accepted fields for the given param
+  // Must be in the list of accepted fields for the given param.
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
       case "facets" => DplaMapFields.facetableFields
@@ -141,7 +149,7 @@ object ParamValidator {
     }
   }
 
-  // Must be a string between 2 and 200 characters
+  // Must be a string between 2 and 200 characters.
   private def validText(text: String, param: String): String =
     if (text.length < 2 || text.length > 200)
       // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
@@ -149,7 +157,7 @@ object ParamValidator {
       throw ValidationException(s"$param must be between 2 and 200 characters")
     else text
 
-  // Must be a valid URL
+  // Must be a valid URL.
   private def validUrl(url: String, param: String): String = {
     val clean: String = {
       // Strip leading & trailing quotation marks for the purpose of checking for valid URL

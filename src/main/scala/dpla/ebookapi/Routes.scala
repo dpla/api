@@ -36,7 +36,9 @@ class Routes(elasticSearchClient: ElasticSearchClient)(implicit val system: Acto
       },
       path(Segment) { id =>
         get {
-          ebooksController.fetch(id)
+          parameterMap { params =>
+            ebooksController.fetch(id, params)
+          }
         }
       }
     )

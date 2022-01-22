@@ -58,39 +58,46 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
     }
   }
 
-  def fetch(id: String): Route = {
+  def fetch(id: String, params: Map[String, String]): Route = {
     ParamValidator.getValidId(id) match {
       case Success(validId) =>
-        onComplete(elasticSearchClient.fetch (validId) ) {
-          case Success(response) => response match {
-            case Right(ebookFuture) =>
-              onComplete(ebookFuture) {
-                case Success(ebook) =>
-                  //Success
-                  complete(ebook)
-                case Failure(e) =>
-                  // Failure to parse ElasticSearch response
-                  System.out.println(s"Error: $e")
-                  complete(HttpResponse(ImATeapot, entity = teapotMessage))
+        ParamValidator.getFetchParams(params) match {
+          case Success(_) =>
+            onComplete(elasticSearchClient.fetch(validId)) {
+              case Success(response) => response match {
+                case Right(ebookFuture) =>
+                  onComplete(ebookFuture) {
+                    case Success(ebook) =>
+                      //Success
+                      complete(ebook)
+                    case Failure(e) =>
+                      // Failure to parse ElasticSearch response
+                      System.out.println(s"Error: $e")
+                      complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                  }
+                case Left(status) =>
+                  if (status.intValue == 404) {
+                    // Ebook not found
+                    System.out.println("Error: " + status.value)
+                    complete(NotFound)
+                  } else {
+                    // ElasticSearch returned an unexpected error
+                    System.out.println("Error: " + status.value)
+                    complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                  }
               }
-            case Left(status) =>
-              if (status.intValue == 404) {
-                // Ebook not found
-                System.out.println("Error: " + status.value)
-                complete(NotFound)
-              } else {
-                // ElasticSearch returned an unexpected error
-                System.out.println("Error: " + status.value)
+              case Failure(e) =>
+                // The call to the ElasticSearch API failed
+                System.out.println(e)
                 complete(HttpResponse(ImATeapot, entity = teapotMessage))
-              }
             }
           case Failure(e) =>
-            // The call to the ElasticSearch API failed
+            // The user submitted invalid parameters
             System.out.println(e)
-            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+            complete(BadRequest, e.getMessage)
         }
       case Failure(e) =>
-        // User submitted an invalid ID
+        // The user submitted an invalid ID
         System.out.println(e)
         complete(BadRequest, e.getMessage)
     }

@@ -21,6 +21,26 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
   val elasticSearchClient: MockElasticSearchClient = getMockElasticSearchClient
   lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
 
+  "search param validator" should {
+    "reject unrecognized params" in {
+      val request = Get("/v1/ebooks?foo=bar")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "fetch param validator" should {
+    "reject unrecognized params" in {
+      val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt?foo=bar")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
   "ebook ID validator" should {
     "accept valid ID" in {
       val given = "ufwPJ34Bj-MaVWqX9KZL"
