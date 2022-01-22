@@ -121,7 +121,7 @@ object ParamValidator {
 
     val filtered = fieldString.split(",").map(candidate => {
       if (acceptedFields.contains(candidate)) candidate
-      else throw ValidationException(s"$candidate is not a recognized field for $param")
+      else throw ValidationException(s"'$candidate' is not an allowable field for $param")
     })
 
     if (filtered.nonEmpty) filtered
