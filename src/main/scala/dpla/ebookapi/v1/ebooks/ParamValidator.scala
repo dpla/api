@@ -18,7 +18,7 @@ object ParamValidator {
   private val minPage: Int = 1
   private val maxPage: Int = 1000
   private val defaultPageSize: Int = 10
-  private val minPageSize: Int = 1
+  private val minPageSize: Int = 0
   private val maxPageSize: Int = 1000
 
   private val acceptedSearchParams: Seq[String] =
