@@ -22,7 +22,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
 
   "/v1/ebooks route" should {
     "reject invalid media types" in {
-
       val request = Get("/v1/ebooks")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/xml`))))
 
@@ -32,19 +31,25 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
     }
 
     "allow valid media type" in {
-
       val request = Get("/v1/ebooks")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "include correct media type in response header" in {
+      val request = Get("/v1/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        contentType.mediaType shouldEqual MediaTypes.`application/json`
       }
     }
   }
 
   "/v1/ebooks[id] route" should {
     "reject invalid media types" in {
-
       val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/xml`))))
 
@@ -54,12 +59,19 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
     }
 
     "allow valid media type" in {
-
       val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "include correct media type in response header" in {
+      val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
+
+      request ~> Route.seal(routes) ~> check {
+        contentType.mediaType shouldEqual MediaTypes.`application/json`
       }
     }
   }
