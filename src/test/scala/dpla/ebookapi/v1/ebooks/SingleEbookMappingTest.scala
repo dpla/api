@@ -100,7 +100,7 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
 
     "map sourceUri" in {
       val expected = "http://standardebooks.org"
-      val traversed = readString(firstDoc, "dataProvider").getOrElse("NOT FOUND")
+      val traversed = readString(firstDoc, "provider", "@id").getOrElse("NOT FOUND")
       assert(traversed == expected)
     }
 
@@ -175,7 +175,7 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
     "ignore empty sourceUri" in {
       val parent = minFirstDoc
       val fieldNames = parent.fields.keys
-      fieldNames should not contain "dataProvider"
+      fieldNames should not contain "provider.@id"
     }
 
     "ignore empty subtitle" in {

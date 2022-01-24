@@ -27,7 +27,7 @@
   "timed_out":false,
   "took":6,
   "aggregations" : {
-    "dataProvider": {
+    "provider.@id": {
       "doc_count_error_upper_bound": 0,
       "sum_other_doc_count": 0,
       "buckets": [

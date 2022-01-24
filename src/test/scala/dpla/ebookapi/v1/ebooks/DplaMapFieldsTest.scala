@@ -8,9 +8,9 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
   "DplaMapFieldsTest" should {
     "map DPLA MAP fields to ElasticSearch fields" in {
       val dplaFields = Seq(
-        "dataProvider",
         "isShownAt",
         "object",
+        "provider.@id",
         "sourceResource.creator",
         "sourceResource.date.displayDate",
         "sourceResource.description",
@@ -41,9 +41,9 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
 
     "map DPLA MAP fields to exact match ElasticSearch fields" in {
       val dplaFields = Seq(
-        "dataProvider",
         "isShownAt",
         "object",
+        "provider.@id",
         "sourceResource.creator",
         "sourceResource.date.displayDate",
         "sourceResource.description",
