@@ -22,7 +22,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
 
   "/v1/ebooks route" should {
     "reject invalid media types" in {
-
       val request = Get("/v1/ebooks")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/xml`))))
 
@@ -32,7 +31,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
     }
 
     "allow valid media type" in {
-
       val request = Get("/v1/ebooks")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
@@ -44,7 +42,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
 
   "/v1/ebooks[id] route" should {
     "reject invalid media types" in {
-
       val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/xml`))))
 
@@ -54,7 +51,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
     }
 
     "allow valid media type" in {
-
       val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
