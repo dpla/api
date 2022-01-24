@@ -20,7 +20,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   val detailQueryParams: SearchParams = SearchParams(
     exactFieldMatch = false,
-    facets = Some(Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")),
+    facets = Some(Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
     filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
     page = 3,
@@ -117,7 +117,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "handle multiple field searches" in {
       val filters = Seq(
         FieldFilter("sourceResource.subject.name", "london"),
-        FieldFilter("dataProvider", "http://standardebooks.org")
+        FieldFilter("provider.@id", "http://standardebooks.org")
       )
       val params = minSearchParams.copy(filters=filters)
       val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
@@ -189,7 +189,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
 
     "include all facets" in {
-      val expected = Seq("dataProvider", "sourceResource.publisher", "sourceResource.subject.name")
+      val expected = Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")
       val parent = readObject(detailQuery, "aggs")
       val fieldNames = parent.get.fields.keys
       fieldNames should contain allElementsOf expected

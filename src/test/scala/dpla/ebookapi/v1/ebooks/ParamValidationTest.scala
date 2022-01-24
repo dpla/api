@@ -110,30 +110,30 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
     }
   }
 
-  "dataProvider validator" should {
+  "provider id validator" should {
     "handle empty param" in {
       val expected = None
       val request = Get("/v1/ebooks")
 
       request ~> Route.seal(routes) ~> check {
-        elasticSearchClient.getLastParams.filters.find(_.fieldName == "dataProvider") shouldEqual expected
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "provider.@id") shouldEqual expected
       }
     }
 
     "accept valid param" in {
       val given = "https://standardebooks.org"
       val expected = Some("https://standardebooks.org")
-      val request = Get(s"/v1/ebooks?dataProvider=$given")
+      val request = Get(s"/v1/ebooks?provider.@id=$given")
 
       request ~> Route.seal(routes) ~> check {
-        elasticSearchClient.getLastParams.filters.find(_.fieldName == "dataProvider")
+        elasticSearchClient.getLastParams.filters.find(_.fieldName == "provider.@id")
           .map(_.value) shouldEqual expected
       }
     }
 
     "reject invalid URL" in {
       val given = "standardebooks"
-      val request = Get(s"/v1/ebooks?dataProvider=$given")
+      val request = Get(s"/v1/ebooks?provider.@id=$given")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -263,8 +263,8 @@ class ParamValidationTest extends AnyWordSpec with Matchers with ScalatestRouteT
     }
 
     "accept valid param" in {
-      val given = "dataProvider,sourceResource.creator"
-      val expected = Some(Seq("dataProvider", "sourceResource.creator"))
+      val given = "provider.@id,sourceResource.creator"
+      val expected = Some(Seq("provider.@id", "sourceResource.creator"))
       val request = Get(s"/v1/ebooks?facets=$given")
 
       request ~> Route.seal(routes) ~> check {

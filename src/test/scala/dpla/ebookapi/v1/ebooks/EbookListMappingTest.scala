@@ -56,7 +56,7 @@ class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReade
     }
 
     "map all facets" in {
-      val expected = Seq("dataProvider", "sourceResource.creator")
+      val expected = Seq("provider.@id", "sourceResource.creator")
       val parent = readObject(ebookList, "facets")
       val children = parent.get.fields.keys
       children should contain allElementsOf expected
@@ -64,14 +64,14 @@ class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReade
 
     "map facet terms" in {
       val expected = Some("http://standardebooks.org")
-      val firstTerm = readObjectArray(ebookList, "facets", "dataProvider", "terms").head
+      val firstTerm = readObjectArray(ebookList, "facets", "provider.@id", "terms").head
       val traversed = readString(firstTerm, "term")
       assert(traversed == expected)
     }
 
     "map facet counts" in {
       val expected = Some(590)
-      val firstTerm = readObjectArray(ebookList, "facets", "dataProvider", "terms").head
+      val firstTerm = readObjectArray(ebookList, "facets", "provider.@id", "terms").head
       val traversed = readInt(firstTerm, "count")
       assert(traversed == expected)
     }

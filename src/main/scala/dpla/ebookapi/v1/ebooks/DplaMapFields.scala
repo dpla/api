@@ -20,14 +20,6 @@ object DplaMapFields {
 
   private final val fields = Seq(
     DplaField(
-      name = "dataProvider",
-      fieldType = URLField,
-      searchable = true,
-      facetable = true,
-      elasticSearchDefault = "sourceUri",
-      elasticSearchNotAnalyzed = Some("sourceUri")
-    ),
-    DplaField(
       name = "isShownAt",
       fieldType = URLField,
       searchable = true,
@@ -42,6 +34,14 @@ object DplaMapFields {
       facetable = false,
       elasticSearchDefault = "payloadUri",
       elasticSearchNotAnalyzed = Some("payloadUri")
+    ),
+    DplaField(
+      name = "provider.@id",
+      fieldType = URLField,
+      searchable = true,
+      facetable = true,
+      elasticSearchDefault = "sourceUri",
+      elasticSearchNotAnalyzed = Some("sourceUri")
     ),
     DplaField(
       name = "sourceResource.creator",

@@ -30,10 +30,12 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
       filterIfEmpty(JsObject(
         "id" -> ebook.id.toJson,
-        "dataProvider" -> ebook.sourceUri.toJson,
         "ingestType" -> JsString("ebook"),
         "isShownAt" -> ebook.itemUri.toJson,
         "object" -> ebook.payloadUri.toJson,
+        "provider" -> filterIfEmpty(JsObject(
+          "@id" -> ebook.sourceUri.toJson,
+        )),
         "sourceResource" -> filterIfEmpty(JsObject(
           "creator" -> ebook.author.toJson,
           "date" -> filterIfEmpty(JsObject(
@@ -91,7 +93,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
   }
 
   /** In an ElasticSearch response, facets look something like this:
-   *  {"aggregations": {"dataProvider": {"buckets": [...]}}, "sourceResource.publisher": {"buckets": [...]}}}
+   *  {"aggregations": {"provider.@id": {"buckets": [...]}}, "sourceResource.publisher": {"buckets": [...]}}}
    *  You therefore have to read the keys of the "aggregation" object to get the facet field names.
    */
   implicit object FacetListFormat extends RootJsonFormat[FacetList] {
