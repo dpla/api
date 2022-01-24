@@ -28,7 +28,8 @@ class ElasticSearchClient(elasticSearchEndpoint: String) {
           val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
           val ebook: Future[SingleEbook] = body.map(_.parseJson.convertTo[SingleEbook])
           Right(ebook)
-        case _ => Left(res.status)
+        case _ =>
+          Left(res.status)
       }
     })
   }

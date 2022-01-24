@@ -2,27 +2,6 @@ package dpla.ebookapi.v1.ebooks
 
 /** Case classes for search params */
 
-case class RawParams(
-                      creator: Option[String],
-                      dataProvider: Option[String],
-                      date: Option[String],
-                      description: Option[String],
-                      exactFieldMatch: Option[String],
-                      facets: Option[String],
-                      facetSize: Option[String],
-                      isShownAt: Option[String],
-                      format: Option[String],
-                      language: Option[String],
-                      `object`: Option[String],
-                      page: Option[String],
-                      pageSize: Option[String],
-                      publisher: Option[String],
-                      q: Option[String],
-                      subject: Option[String],
-                      subtitle: Option[String],
-                      title: Option[String]
-                    )
-
 case class SearchParams(
                          exactFieldMatch: Boolean,
                          facets: Option[Seq[String]],

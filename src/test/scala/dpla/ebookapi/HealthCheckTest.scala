@@ -20,10 +20,10 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
 
   "Health check" should {
     "return OK" in {
-      val request = HttpRequest(uri="/health-check")
+      val request = Get("/health-check")
 
       request ~> routes ~> check {
-        status should === (StatusCodes.OK)
+        status shouldEqual StatusCodes.OK
       }
     }
   }

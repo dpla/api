@@ -4,16 +4,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 import JsonFormats._
+import dpla.ebookapi.helpers.FileReader
 
-import scala.io.{BufferedSource, Source}
-
-class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader {
-
-  def readFile(filePath: String): String = {
-    val source: String = getClass.getResource(filePath).getPath
-    val buffered: BufferedSource = Source.fromFile(source)
-    buffered.getLines.mkString
-  }
+class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader with FileReader {
 
   val esEbookList: String = readFile("/elasticSearchEbookList.json")
   val ebookList: JsObject = esEbookList.parseJson.convertTo[EbookList].toJson.asJsObject

@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks
 import spray.json._
 import JsonFormats._
 
-object ElasticSearchQueryBuilder extends MappingHelper {
+object ElasticSearchQueryBuilder {
 
   def composeQuery(params: SearchParams): JsValue =
     JsObject(
@@ -68,7 +68,9 @@ object ElasticSearchQueryBuilder extends MappingHelper {
    */
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
     if (exactFieldMatch) {
-      val field: String = dplaToElasticSearchExactMatch(filter.fieldName)
+      val field: String = DplaMapFields.getElasticSearchExactMatchField(filter.fieldName)
+        .getOrElse(throw new RuntimeException("Unrecognized field name: " + filter.fieldName)) // This should not happen
+
       // Strip leading and trailing quotation marks
       val value: String =
         if (filter.value.startsWith("\"") && filter.value.endsWith("\""))
@@ -81,7 +83,7 @@ object ElasticSearchQueryBuilder extends MappingHelper {
         )
       )
     } else {
-      val fields: Seq[String] = Seq(dplaToElasticSearch(filter.fieldName))
+      val fields: Seq[String] = Seq(DplaMapFields.getElasticSearchField(filter.fieldName)).flatten
       keywordQuery(filter.value, fields)
     }
   }
@@ -98,7 +100,7 @@ object ElasticSearchQueryBuilder extends MappingHelper {
         facetArray.foreach(facet => {
           val terms = JsObject(
             "terms" -> JsObject(
-              "field" -> dplaToElasticSearchExactMatch(facet).toJson,
+              "field" -> DplaMapFields.getElasticSearchExactMatchField(facet).toJson,
               "size" -> facetSize.toJson
             )
           )
