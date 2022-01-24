@@ -3,11 +3,12 @@ package dpla.ebookapi.v1.ebooks
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, ImATeapot, NotFound}
-import akka.http.scaladsl.server.Directives.{complete, onComplete}
+import akka.http.scaladsl.server.Directives.{complete, onComplete, respondWithHeaders}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Route
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 
@@ -29,7 +30,9 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
               onComplete(ebooksFuture) {
                 case Success(ebooks) =>
                   // Success
-                  complete(ebooks)
+                  respondWithHeaders(securityResponseHeaders) {
+                    complete(ebooks)
+                  }
                 case Failure(e) =>
                   // Failure to parse ElasticSearch response
                   System.out.println(s"Error: $e")
@@ -69,7 +72,9 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
                   onComplete(ebookFuture) {
                     case Success(ebook) =>
                       //Success
-                      complete(ebook)
+                      respondWithHeaders(securityResponseHeaders) {
+                        complete(ebook)
+                      }
                     case Failure(e) =>
                       // Failure to parse ElasticSearch response
                       System.out.println(s"Error: $e")
@@ -104,4 +109,13 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
   }
 
   private val teapotMessage: String = "There was an unexpected internal error. Please try again later."
+
+  // @see https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+  // @see https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+  private val securityResponseHeaders = Seq(
+    RawHeader("Content-Security-Policy",
+      "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"),
+    RawHeader("X-Content-Type-Options", "nosniff"),
+    RawHeader("X-Frame-Options", "DENY")
+  )
 }

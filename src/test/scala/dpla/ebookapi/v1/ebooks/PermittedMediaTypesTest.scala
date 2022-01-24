@@ -38,14 +38,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
         status shouldEqual StatusCodes.OK
       }
     }
-
-    "include correct media type in response header" in {
-      val request = Get("/v1/ebooks")
-
-      request ~> Route.seal(routes) ~> check {
-        contentType.mediaType shouldEqual MediaTypes.`application/json`
-      }
-    }
   }
 
   "/v1/ebooks[id] route" should {
@@ -64,14 +56,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRo
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "include correct media type in response header" in {
-      val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
-
-      request ~> Route.seal(routes) ~> check {
-        contentType.mediaType shouldEqual MediaTypes.`application/json`
       }
     }
   }
