@@ -79,7 +79,8 @@ object ElasticSearchResponseParser {
         case ParseSearchResponse(httpResponse, replyTo) =>
           httpResponse.status.intValue match {
             case 200 =>
-
+              // TODO
+              Behaviors.same
             case _ =>
 
 
