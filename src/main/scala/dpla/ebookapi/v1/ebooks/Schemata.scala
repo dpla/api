@@ -25,46 +25,6 @@ case class FieldFilter(
 
 final case class ValidationException(private val message: String = "") extends Exception(message)
 
-/** Case classes for reading ElasticSearch responses **/
 
-case class SingleEbook(
-                        docs: Seq[Ebook]
-                      )
 
-case class EbookList(
-                      count: Option[Int],
-                      limit: Option[Int],
-                      start: Option[Int],
-                      docs: Seq[Ebook],
-                      facets: Option[FacetList]
-                    )
 
-case class Ebook(
-                  author: Seq[String],
-                  genre: Seq[String],
-                  id: Option[String],
-                  itemUri: Option[String],
-                  language: Seq[String],
-                  medium: Seq[String],
-                  payloadUri: Seq[String],
-                  publisher: Seq[String],
-                  publicationDate: Seq[String],
-                  sourceUri: Option[String],
-                  subtitle: Seq[String],
-                  summary: Seq[String],
-                  title: Seq[String]
-                )
-
-case class FacetList(
-                      facets: Seq[Facet]
-                    )
-
-case class Facet(
-                  field: String,
-                  buckets: Seq[Bucket]
-                )
-
-case class Bucket(
-                   key: Option[String],
-                   docCount: Option[Int]
-                 )
