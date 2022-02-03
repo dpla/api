@@ -1,5 +1,6 @@
 package dpla.ebookapi.v1.ebooks
 
+import akka.Done
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
@@ -10,11 +11,11 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 
-sealed trait EsResponse
-case class EsSuccess(body: String) extends EsResponse
-case class EsHttpFailure(statusCode: StatusCode) extends EsResponse
-case class EsBodyParseFailure(message: String) extends EsResponse
-case class EsUnreachable(message: String) extends EsResponse
+sealed trait EsClientResponse
+case class EsSuccess(body: String) extends EsClientResponse
+case class EsHttpFailure(statusCode: StatusCode) extends EsClientResponse
+case class EsBodyParseFailure(message: String) extends EsClientResponse
+case class EsUnreachable(message: String) extends EsClientResponse
 
 object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
 
@@ -22,22 +23,22 @@ object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
 
   final case class EsSearch(
                              params: SearchParams,
-                             replyTo: ActorRef[EsResponse]
+                             replyTo: ActorRef[EsClientResponse]
                            ) extends EsCommand
 
   final case class EsFetch(
                             id: String,
-                            replyTo: ActorRef[EsResponse]
+                            replyTo: ActorRef[EsClientResponse]
                           ) extends EsCommand
 
   private final case class ProcessHttpResponse(
                                                 httpResponse: HttpResponse,
-                                                replyTo: ActorRef[EsResponse]
+                                                replyTo: ActorRef[EsClientResponse]
                                               ) extends EsCommand
 
   private final case class WrappedResponse(
-                                            response: EsResponse,
-                                            replyTo: ActorRef[EsResponse]
+                                            response: EsClientResponse,
+                                            replyTo: ActorRef[EsClientResponse]
                                           ) extends EsCommand
 
   val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
@@ -88,9 +89,20 @@ object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
               }
 
               Behaviors.same
+
             case _ =>
-              // Map the HTTP response status to a message, handled by this actor
-              context.self ! WrappedResponse(EsHttpFailure(httpResponse.status), replyTo)
+              // The entity must be discarded, or the data will remain back-pressured.
+              implicit val system: ActorSystem[Nothing] = context.system
+              val futureDiscarded: Future[Done] = httpResponse.discardEntityBytes.future // pipes data to a sink
+
+              // Map the Future value to a message, handled by this actor
+              context.pipeToSelf(futureDiscarded) {
+                case Success(_) =>
+                  WrappedResponse(EsHttpFailure(httpResponse.status), replyTo)
+                case Failure(e) =>
+                  WrappedResponse(EsBodyParseFailure(e.getMessage), replyTo)
+              }
+
               Behaviors.same
           }
 
