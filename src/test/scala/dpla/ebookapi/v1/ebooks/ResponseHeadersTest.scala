@@ -16,7 +16,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers with ScalatestRouteT
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
 
-  val elasticSearchClient: ElasticSearchClient = getMockElasticSearchClient
+  val elasticSearchClient: OldElasticSearchClient = getMockElasticSearchClient
   lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
 
   "/v1/ebooks response header" should {

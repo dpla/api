@@ -19,7 +19,7 @@ import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 
-class Routes(ebookRegistry: ActorRef[EbookRegistry.Command])(implicit val system: ActorSystem[_]) {
+class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit val system: ActorSystem[_]) {
 
   // needed for the future map/onComplete
   implicit val executionContext: ExecutionContextExecutor = system.executionContext

@@ -75,37 +75,34 @@ object EbookMapper {
 
   def apply(): Behavior[MapperCommand] =
     Behaviors.receiveMessage {
-
       case MapSearchResponse(body, page, pageSize, replyTo) =>
-        val response = mapEbookList(body, page, pageSize) match {
-          case Success(ebookList) =>
-            MapSuccess(ebookList)
-          case Failure(e) =>
-            MapFailure(e.getMessage)
-        }
-        replyTo ! response
+        replyTo ! mapEbookList(body, page, pageSize)
         Behaviors.same
-
-      case MapFetchResponse(body, replyTo) => {
-        val response = mapSingleEbook(body) match {
-          case Success(singleEbook) => 
-            MapSuccess(singleEbook)
-          case Failure(e) =>
-            MapFailure(e.getMessage)
-        }
-        replyTo ! response
+      case MapFetchResponse(body, replyTo) =>
+        replyTo ! mapSingleEbook(body)
         Behaviors.same
-      }
     }
 
-  private def mapEbookList(body: String, page: Int, pageSize: Int): Try[EbookList] = Try {
-    val start = getStart(page, pageSize)
-    body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
-  }
+  private def mapEbookList(body: String, page: Int, pageSize: Int): MapperResponse =
+    Try {
+      val start = getStart(page, pageSize)
+      body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
+    } match {
+      case Success(ebookList) =>
+        MapSuccess(ebookList)
+      case Failure(e) =>
+        MapFailure(e.getMessage)
+    }
 
-  private def mapSingleEbook(body: String): Try[SingleEbook] = Try {
-    body.parseJson.convertTo[SingleEbook]
-  }
+  private def mapSingleEbook(body: String): MapperResponse =
+    Try {
+      body.parseJson.convertTo[SingleEbook]
+    } match {
+      case Success(singleEbook) =>
+        MapSuccess(singleEbook)
+      case Failure(e) =>
+        MapFailure(e.getMessage)
+    }
 
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
   private def getStart(page: Int, pageSize: Int): Int = ((page-1)*pageSize)+1

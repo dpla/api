@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.ebookapi.v1.ebooks.ElasticSearchClient
+import dpla.ebookapi.v1.ebooks.OldElasticSearchClient
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
@@ -15,7 +15,7 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
 
-  val elasticSearchClient = new ElasticSearchClient("http://es-endpoint.com")
+  val elasticSearchClient = new OldElasticSearchClient("http://es-endpoint.com")
   lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
 
   "Health check" should {

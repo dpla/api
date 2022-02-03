@@ -16,13 +16,13 @@ import dpla.ebookapi.v1.ebooks.JsonFormats._
  * Resolve routes for ebooks queries.
  * ImATeapot errors are given in place of InternalServerErrors to avoid making the load balancer sad.
  */
-class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val system: ActorSystem[_]) {
+class EbooksController(elasticSearchClient: OldElasticSearchClient)(implicit val system: ActorSystem[_]) {
 
   // needed for the future map/onComplete
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
   def search(params: Map[String, String]): Route = {
-    ParamValidator.getSearchParams(params) match {
+    OldParamValidator.getSearchParams(params) match {
       case Success(validParams) =>
         onComplete(elasticSearchClient.search(validParams)) {
           case Success(response) => response match {
@@ -62,9 +62,9 @@ class EbooksController(elasticSearchClient: ElasticSearchClient)(implicit val sy
   }
 
   def fetch(id: String, params: Map[String, String]): Route = {
-    ParamValidator.getValidId(id) match {
+    OldParamValidator.getValidId(id) match {
       case Success(validId) =>
-        ParamValidator.getFetchParams(params) match {
+        OldParamValidator.getFetchParams(params) match {
           case Success(_) =>
             onComplete(elasticSearchClient.fetch(validId)) {
               case Success(response) => response match {

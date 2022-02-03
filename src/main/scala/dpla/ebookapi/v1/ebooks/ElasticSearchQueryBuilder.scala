@@ -7,7 +7,7 @@ trait ElasticSearchQueryBuilder extends DplaMapFields {
 
   def composeQuery(params: SearchParams): JsValue =
     JsObject(
-      "from" -> params.from.toJson,
+      "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filters, params.exactFieldMatch),
       "aggs" -> aggs(params.facets, params.facetSize)
@@ -24,6 +24,9 @@ trait ElasticSearchQueryBuilder extends DplaMapFields {
     "summary^0.75",
     "title^2"
   )
+
+  // ElasticSearch param that defines the number of hits to skip
+  private def from(page: Int, pageSize: Int): Int = (page-1)*pageSize
 
   private def query(q: Option[String], fieldFilters: Seq[FieldFilter], exactFieldMatch: Boolean) = {
     val keyword: Seq[JsObject] = q.map(keywordQuery(_, keywordQueryFields)).toSeq

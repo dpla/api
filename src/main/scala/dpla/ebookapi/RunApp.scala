@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
+import dpla.ebookapi.v1.ebooks.{EbookRegistry, OldElasticSearchClient}
 
 import scala.util.{Failure, Success}
 

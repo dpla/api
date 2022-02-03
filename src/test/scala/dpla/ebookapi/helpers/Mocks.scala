@@ -3,7 +3,7 @@ package dpla.ebookapi.helpers
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import dpla.ebookapi.v1.ebooks.{Ebook, EbookList, ElasticSearchClient, FieldFilter, SearchParams, SingleEbook}
+import dpla.ebookapi.v1.ebooks.{Ebook, EbookList, OldElasticSearchClient, FieldFilter, SearchParams, SingleEbook}
 import spray.json.DeserializationException
 
 import java.net.UnknownHostException
@@ -27,7 +27,7 @@ trait Mocks {
     new MockElasticSearchClientFailedRequest("http://fake-endpoint.com")
 
   class MockElasticSearchClient(elasticSearchEndpoint: String)
-    extends ElasticSearchClient(elasticSearchEndpoint: String) {
+    extends OldElasticSearchClient(elasticSearchEndpoint: String) {
 
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "MockElasticSearch")
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -64,7 +64,7 @@ trait Mocks {
   }
 
   class MockElasticSearchClientParseError(elasticSearchEndpoint: String)
-    extends ElasticSearchClient(elasticSearchEndpoint: String) {
+    extends OldElasticSearchClient(elasticSearchEndpoint: String) {
 
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "MockElasticSearch")
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -77,7 +77,7 @@ trait Mocks {
   }
 
   class MockElasticSearchClientNotFound(elasticSearchEndpoint: String)
-    extends ElasticSearchClient(elasticSearchEndpoint: String) {
+    extends OldElasticSearchClient(elasticSearchEndpoint: String) {
 
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "MockElasticSearch")
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -87,7 +87,7 @@ trait Mocks {
   }
 
   class MockElasticSearchClientUnexpectedError(elasticSearchEndpoint: String)
-    extends ElasticSearchClient(elasticSearchEndpoint: String) {
+    extends OldElasticSearchClient(elasticSearchEndpoint: String) {
 
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "MockElasticSearch")
     implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -100,7 +100,7 @@ trait Mocks {
   }
 
   class MockElasticSearchClientFailedRequest(elasticSearchEndpoint: String)
-    extends ElasticSearchClient(elasticSearchEndpoint: String) {
+    extends OldElasticSearchClient(elasticSearchEndpoint: String) {
 
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "MockElasticSearch")
     implicit val executionContext: ExecutionContextExecutor = system.executionContext

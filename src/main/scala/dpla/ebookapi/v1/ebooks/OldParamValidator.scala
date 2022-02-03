@@ -1,63 +1,14 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import dpla.ebookapi.v1.ebooks.DplaMapFields.{TextField, URLField}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
 
-// TODO remove either
-final case class ValidSearchParams(params: Either[ValidationError, SearchParams])
-final case class ValidFetchParams(params: Either[ValidationError, String])
-final case class ValidationError(message: String)
-
-/** Case classes for search params */
-
-case class SearchParams(
-                         exactFieldMatch: Boolean,
-                         facets: Option[Seq[String]],
-                         facetSize: Int,
-                         filters: Seq[FieldFilter],
-                         page: Int,
-                         pageSize: Int,
-                         q: Option[String]
-                       ) {
-  // TODO move to ElasticSearchQueryBuilder
-  // ElasticSearch param that defines the number of hits to skip
-  def from: Int = (page-1)*pageSize
-
-  // DPLA MAP field that gives the index of the first result on the page (starting at 1)
-  def start: Int = from+1
-}
-
-case class FieldFilter(
-                        fieldName: String,
-                        value: String
-                      )
-
-object ParamValidatorActor extends DplaMapFields {
-
-  sealed trait ValidationRequest
-  final case class ValidateSearchParams(
-                                         params: Map[String, String],
-                                         replyTo: ActorRef[ValidSearchParams]
-                                       ) extends ValidationRequest
-  final case class ValidateFetchParams(
-                                        id: String,
-                                        params: Map[String, String],
-                                        replyTo: ActorRef[ValidFetchParams]
-                                      ) extends ValidationRequest
-
-  def apply(): Behavior[ValidationRequest] =
-    Behaviors.receiveMessage {
-      case ValidateSearchParams(params, replyTo) =>
-        replyTo ! ValidSearchParams(getSearchParams(params))
-        Behaviors.same
-      case ValidateFetchParams(id, params, replyTo) =>
-        replyTo ! ValidFetchParams(getFetchParams(id, params))
-        Behaviors.same
-    }
+/**
+ * Validates user-supplied parameters and provides default values.
+ */
+object OldParamValidator {
 
   private val defaultExactFieldMatch: Boolean = false
   private val defaultFacetSize: Int = 50
@@ -72,7 +23,7 @@ object ParamValidatorActor extends DplaMapFields {
 
   // A user can give any of the following parameters in a search request.
   private val acceptedSearchParams: Seq[String] =
-    searchableDplaFields ++ Seq(
+    DplaMapFields.searchableFields ++ Seq(
       "exact_field_match",
       "facets",
       "facet_size",
@@ -82,24 +33,10 @@ object ParamValidatorActor extends DplaMapFields {
     )
 
   /**
-   * Method returns ValidationError if any parameters are invalid.
-   * There are not currently any acceptable parameters for a fetch request.
-   */
-  private def getFetchParams(id: String, rawParams: Map[String, String]): Either[ValidationError, String] = {
-    if (rawParams.nonEmpty)
-      Left(ValidationError("Unrecognized parameter: " + rawParams.keys.mkString(", ")))
-    else
-      Try{ getValidId(id) } match {
-        case Success(id) => Right(id)
-        case Failure(e) => Left(ValidationError(e.getMessage))
-      }
-  }
-
-  /**
    * Method returns Failure if any parameters are invalid.
    * Ebook ID must be a non-empty String comprised of letters, numbers, and hyphens.
    */
-  private def getValidId(id: String): String = {
+  def getValidId(id: String): Try[String] = Try {
     val rule = "ID must be a String comprised of letters, numbers, and hyphens between 1 and 32 characters long"
 
     if (id.length < 1 || id.length > 32) throw ValidationException(rule)
@@ -108,34 +45,36 @@ object ParamValidatorActor extends DplaMapFields {
   }
 
   /**
-   * Method returns ValidationError if any parameters are invalid.
+   * Method returns Failure if any parameters are invalid.
+   * There are not currently any acceptable parameters for a fetch request.
    */
-  private def getSearchParams(rawParams: Map[String, String]): Either[ValidationError, SearchParams] = {
+  def getFetchParams(rawParams: Map[String, String]): Try[Unit] = Try {
+    if (rawParams.nonEmpty) throw ValidationException("Unrecognized parameter: " + rawParams.keys.mkString(", "))
+  }
+
+  /**
+   * Method returns Failure if any parameters are invalid.
+   */
+  def getSearchParams(rawParams: Map[String, String]): Try[SearchParams] = Try {
     // Check for unrecognized params
     val unrecognizedParams = rawParams.keys.toSeq diff acceptedSearchParams
-
     if (unrecognizedParams.nonEmpty)
-      Left(ValidationError("Unrecognized parameter: " + unrecognizedParams.mkString(", ")))
-    else
-      Try {
-        // Collect all the user-submitted field filters.
-        val filters: Seq[FieldFilter] = searchableDplaFields.flatMap(getValidFieldFilter(rawParams, _))
+      throw ValidationException("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
 
-        // Return valid search params. Provide defaults when appropriate.
-        SearchParams(
-          exactFieldMatch = getValid(rawParams, "exact_field_match", validBoolean)
-            .getOrElse(defaultExactFieldMatch),
-          facets = getValid(rawParams, "facets", validFields),
-          facetSize = getValid(rawParams, "facet_size", validInt).getOrElse(defaultFacetSize),
-          filters = filters,
-          page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
-          pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
-          q = getValid(rawParams, "q", validText)
-        )
-      } match {
-        case Success(params) => Right(params)
-        case Failure(e) => Left(ValidationError(e.getMessage))
-      }
+    // Collect all the user-submitted field filters.
+    val filters: Seq[FieldFilter] = DplaMapFields.searchableFields.flatMap(getValidFieldFilter(rawParams, _))
+
+    // Return valid search params. Provide defaults when appropriate.
+    SearchParams(
+      exactFieldMatch = getValid(rawParams, "exact_field_match", validBoolean)
+        .getOrElse(defaultExactFieldMatch),
+      facets = getValid(rawParams, "facets", validFields),
+      facetSize = getValid(rawParams, "facet_size", validInt).getOrElse(defaultFacetSize),
+      filters = filters,
+      page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
+      pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
+      q = getValid(rawParams, "q", validText)
+    )
   }
 
   /**
@@ -153,7 +92,7 @@ object ParamValidatorActor extends DplaMapFields {
 
     // Look up the parameter's field type. Use this to determine the appropriate validation method.
     val validationMethod: (String, String) => String =
-      getDplaFieldType(paramName) match {
+      DplaMapFields.getFieldType(paramName) match {
         case Some(fieldType) =>
           fieldType match {
             case TextField => validText
@@ -161,7 +100,7 @@ object ParamValidatorActor extends DplaMapFields {
             case _ => validText // This should not happen
           }
         case None => throw ValidationException(s"Unrecognized parameter: $paramName")
-      }
+    }
 
     getValid(rawParams, paramName, validationMethod).map(FieldFilter(paramName, _))
   }
@@ -176,7 +115,7 @@ object ParamValidatorActor extends DplaMapFields {
   // Must be in the list of accepted fields for the given param.
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
-      case "facets" => facetableDplaFields
+      case "facets" => DplaMapFields.facetableFields
       case _ => Seq[String]()
     }
 
@@ -213,8 +152,8 @@ object ParamValidatorActor extends DplaMapFields {
   // Must be a string between 2 and 200 characters.
   private def validText(text: String, param: String): String =
     if (text.length < 2 || text.length > 200)
-    // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
-    // For internal consistency, and exception is thrown here in both cases.
+      // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
+      // For internal consistency, and exception is thrown here in both cases.
       throw ValidationException(s"$param must be between 2 and 200 characters")
     else text
 

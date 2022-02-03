@@ -28,18 +28,18 @@ case object InternalFailure extends FailedRequest
 
 object EbookRegistry {
 
-  sealed trait Command
+  sealed trait RegistryCommand
   final case class Search(
                            params: Map[String, String],
                            replyTo: ActorRef[SearchResult]
-                         ) extends Command
+                         ) extends RegistryCommand
   final case class Fetch(
                           id: String,
                           params: Map[String, String],
                           replyTo: ActorRef[FetchResult]
-                        ) extends Command
+                        ) extends RegistryCommand
 
-  def apply(): Behavior[Command] = {
+  def apply(): Behavior[RegistryCommand] = {
     implicit val timeout: Timeout = 3.seconds
 
 
