@@ -8,17 +8,17 @@ import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
-sealed trait MapperResponse
-final case class MapSuccess(response: MappedRecord) extends MapperResponse
-final case class MapFailure(message: String) extends MapperResponse
+sealed trait EbookMapperResponse
+final case class MapSuccess(response: MappedEbookRecord) extends EbookMapperResponse
+final case class MapFailure(message: String) extends EbookMapperResponse
 
 /** Case classes for reading ElasticSearch responses **/
 
-trait MappedRecord
+trait MappedEbookRecord
 
 case class SingleEbook(
                         docs: Seq[Ebook]
-                      ) extends MappedRecord
+                      ) extends MappedEbookRecord
 
 case class EbookList(
                       count: Option[Int],
@@ -26,7 +26,7 @@ case class EbookList(
                       start: Option[Int],
                       docs: Seq[Ebook],
                       facets: Option[FacetList]
-                    ) extends MappedRecord
+                    ) extends MappedEbookRecord
 
 case class Ebook(
                   author: Seq[String],
@@ -65,12 +65,12 @@ object EbookMapper {
                                       body: String,
                                       page: Int,
                                       pageSize: Int,
-                                      replyTo: ActorRef[MapperResponse]
+                                      replyTo: ActorRef[EbookMapperResponse]
                                     ) extends MapperCommand
 
   final case class MapFetchResponse(
                                      body: String,
-                                     replyTo: ActorRef[MapperResponse]
+                                     replyTo: ActorRef[EbookMapperResponse]
                                    ) extends MapperCommand
 
   def apply(): Behavior[MapperCommand] =
@@ -83,7 +83,7 @@ object EbookMapper {
         Behaviors.same
     }
 
-  private def mapEbookList(body: String, page: Int, pageSize: Int): MapperResponse =
+  private def mapEbookList(body: String, page: Int, pageSize: Int): EbookMapperResponse =
     Try {
       val start = getStart(page, pageSize)
       body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
@@ -94,7 +94,7 @@ object EbookMapper {
         MapFailure(e.getMessage)
     }
 
-  private def mapSingleEbook(body: String): MapperResponse =
+  private def mapSingleEbook(body: String): EbookMapperResponse =
     Try {
       body.parseJson.convertTo[SingleEbook]
     } match {

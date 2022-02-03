@@ -8,6 +8,8 @@ import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 sealed trait ValidationResponse
+final case class ValidSearchParams(searchParams: SearchParams) extends ValidationResponse
+final case class ValidFetchParams(fetchParams: FetchParams) extends ValidationResponse
 final case class ValidationError(message: String) extends ValidationResponse
 
 case class SearchParams(
@@ -18,18 +20,18 @@ case class SearchParams(
                          page: Int,
                          pageSize: Int,
                          q: Option[String]
-                       ) extends ValidationResponse
+                       )
 
 case class FetchParams(
                         id: String
-                      ) extends ValidationResponse
+                      )
 
 case class FieldFilter(
                         fieldName: String,
                         value: String
                       )
 
-object ParamValidatorActor extends DplaMapFields {
+object ParamValidator extends DplaMapFields {
 
   sealed trait ValidationRequest
   final case class ValidateSearchParams(

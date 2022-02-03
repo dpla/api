@@ -1,67 +1,122 @@
 package dpla.ebookapi.v1.ebooks
 
+import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, ImATeapot}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{complete, onComplete, respondWithHeaders}
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
+import dpla.ebookapi.v1.ebooks.EbookMapper.MapSearchResponse
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.GetSearchResult
 import dpla.ebookapi.v1.ebooks.JsonFormats._
-import dpla.ebookapi.v1.ebooks.ParamValidatorActor.ValidateSearchParams
+import dpla.ebookapi.v1.ebooks.ParamValidator.ValidateSearchParams
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-final case class SearchResult(result: Either[FailedRequest, EbookList])
-final case class FetchResult(result: Either[FailedRequest, SingleEbook])
-
-trait FailedRequest
-case class ValidationFailure(message: String) extends FailedRequest
-case object NotFoundFailure extends FailedRequest
-case object InternalFailure extends FailedRequest
+sealed trait RegistryResponse
+final case class SearchResult(result: EbookList) extends RegistryResponse
+final case class FetchResult(result: SingleEbook) extends RegistryResponse
+case class ValidationFailure(message: String) extends RegistryResponse
+case object NotFoundFailure extends RegistryResponse
+case object InternalFailure extends RegistryResponse
 
 object EbookRegistry {
 
   sealed trait RegistryCommand
+
   final case class Search(
-                           params: Map[String, String],
-                           replyTo: ActorRef[SearchResult]
+                           rawParams: Map[String, String],
+                           replyTo: ActorRef[RegistryResponse]
                          ) extends RegistryCommand
+
   final case class Fetch(
                           id: String,
-                          params: Map[String, String],
-                          replyTo: ActorRef[FetchResult]
+                          rawParams: Map[String, String],
+                          replyTo: ActorRef[RegistryResponse]
                         ) extends RegistryCommand
 
   def apply(): Behavior[RegistryCommand] = {
-    implicit val timeout: Timeout = 3.seconds
+    Behaviors.setup[RegistryCommand] { context =>
+      val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
+        context.spawn(ParamValidator(), "param validator")
+      val elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand] =
+        context.spawn(ElasticSearchClient(), "elastic search client")
+      val ebookMapper: ActorRef[EbookMapper.MapperCommand] =
+        context.spawn(EbookMapper(), "ebook mapper")
 
+      Behaviors.receiveMessage[RegistryCommand] {
 
-    Behaviors.setup { context =>
-      val paramValidator = context.spawn(ParamValidatorActor(), "param validator")
-      val elasticSearchClient = context.spawn(ElasticSearchClientActor(), "elastic search client")
+        case Search(rawParams, replyTo) =>
 
-
-      Behaviors.receiveMessage {
-        case Search(params, replyTo) =>
-          implicit val timeout: Timeout = 3.seconds
-          paramValidator.ask(ValidateSearchParams(params, _))
-          replyTo ! SearchResult(search(params))
+          // Create a session child actor to process the request
+          val sessionChildActor = processSearch(rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
+          context.spawn(sessionChildActor, "process search")
           Behaviors.same
-        case Fetch(id, params, replyTo) =>
-          replyTo ! FetchResult(fetch(id, params))
+
+        case Fetch(id, rawParams, replyTo) =>
+          // TODO
           Behaviors.same
       }
     }
   }
 
-  private def search(params: Map[String, String]): Either[FailedRequest, EbookList] = ???
+  // Per session actor behavior
+  // TODO is there a way to test this to make sure the child actor has its own ActorRef, different from parent?
+  def processSearch(
+                     rawParams: Map[String, String],
+                     replyTo: ActorRef[RegistryResponse],
+                     paramValidator: ActorRef[ParamValidator.ValidationRequest],
+                     elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand],
+                     ebookMapper: ActorRef[EbookMapper.MapperCommand],
+                   ): Behavior[NotUsed] = {
 
-  private def fetch(id: String, params: Map[String, String]): Either[FailedRequest, SingleEbook] = ???
+    Behaviors.setup[AnyRef] { context =>
+
+      var searchParams: Option[SearchParams] = None
+
+      // TODO add narrow to context.self?  Yes if separate processes for search and fetch.
+      paramValidator ! ValidateSearchParams(rawParams, context.self)
+
+      Behaviors.receiveMessage {
+        case ValidSearchParams(params: SearchParams) =>
+          searchParams = Some(params)
+          elasticSearchClient ! GetSearchResult(params, context.self)
+          Behaviors.same
+
+        case ValidationError(message) =>
+          replyTo ! ValidationFailure(message)
+          Behaviors.stopped
+
+        case EsSuccess(body) =>
+          searchParams match {
+            case Some(params) =>
+              ebookMapper ! MapSearchResponse(body, params.page, params.pageSize, context.self)
+              Behaviors.same
+            case None =>
+              // TODO log error
+              replyTo ! InternalFailure
+              Behaviors.stopped
+          }
+
+        case EsHttpFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case EsUnreachable =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case _ =>
+          Behaviors.unhandled
+      }
+    }.narrow[NotUsed]
+  }
 }

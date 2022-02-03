@@ -12,44 +12,46 @@ import scala.util.{Failure, Success}
 
 
 sealed trait EsClientResponse
+// TODO make separate case classes for EsSearchSuccess and EsFetchSuccess?
 case class EsSuccess(body: String) extends EsClientResponse
 case class EsHttpFailure(statusCode: StatusCode) extends EsClientResponse
 case class EsBodyParseFailure(message: String) extends EsClientResponse
 case class EsUnreachable(message: String) extends EsClientResponse
 
-object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
+object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
   sealed trait EsClientCommand
 
-  final case class EsSearch(
-                             params: SearchParams,
-                             replyTo: ActorRef[EsClientResponse]
-                           ) extends EsClientCommand
+  final case class GetSearchResult(
+                                    params: SearchParams,
+                                    replyTo: ActorRef[EsClientResponse]
+                                  ) extends EsClientCommand
 
-  final case class EsFetch(
-                            id: String,
-                            replyTo: ActorRef[EsClientResponse]
-                          ) extends EsClientCommand
+  final case class GetFetchResult(
+                                   id: String,
+                                   replyTo: ActorRef[EsClientResponse]
+                                 ) extends EsClientCommand
 
   private final case class ProcessHttpResponse(
                                                 httpResponse: HttpResponse,
                                                 replyTo: ActorRef[EsClientResponse]
                                               ) extends EsClientCommand
 
-  private final case class WrappedResponse(
-                                            response: EsClientResponse,
-                                            replyTo: ActorRef[EsClientResponse]
-                                          ) extends EsClientCommand
+  private final case class ReturnEsClientResponse(
+                                                   response: EsClientResponse,
+                                                  replyTo: ActorRef[EsClientResponse]
+                                                 ) extends EsClientCommand
 
   val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
     case "" => "http://localhost:9200/eleanor"
     case x => x
   }
 
+  // TODO implement session actor - is this NECESSARY?  Not if replyTo is maintained?  Maybe a good idea anyway?
   def apply(): Behavior[EsClientCommand] =
     Behaviors.receive { (context, command) =>
       command match {
-        case EsSearch(params, replyTo) =>
+        case GetSearchResult(params, replyTo) =>
           val futureHttpResponse: Future[HttpResponse] = search(context.system, params)
 
           // Map the Future value to a message, handled by this actor
@@ -57,12 +59,12 @@ object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
-              WrappedResponse(EsUnreachable(e.getMessage), replyTo)
+              ReturnEsClientResponse(EsUnreachable(e.getMessage), replyTo)
           }
 
           Behaviors.same
 
-        case EsFetch(id, replyTo) =>
+        case GetFetchResult(id, replyTo) =>
           val futureHttpResponse: Future[HttpResponse] = fetch(context.system, id)
 
           // Map the Future value to a message, handled by this actor
@@ -70,7 +72,7 @@ object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
-              WrappedResponse(EsUnreachable(e.getMessage), replyTo)
+              ReturnEsClientResponse(EsUnreachable(e.getMessage), replyTo)
           }
 
           Behaviors.same
@@ -83,9 +85,9 @@ object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
               // Map the Future value to a message, handled by this actor
               context.pipeToSelf(futureBody) {
                 case Success(body) =>
-                  WrappedResponse(EsSuccess(body), replyTo)
+                  ReturnEsClientResponse(EsSuccess(body), replyTo)
                 case Failure(e) =>
-                  WrappedResponse(EsBodyParseFailure(e.getMessage), replyTo)
+                  ReturnEsClientResponse(EsBodyParseFailure(e.getMessage), replyTo)
               }
 
               Behaviors.same
@@ -98,15 +100,15 @@ object ElasticSearchClientActor extends ElasticSearchQueryBuilder {
               // Map the Future value to a message, handled by this actor
               context.pipeToSelf(futureDiscarded) {
                 case Success(_) =>
-                  WrappedResponse(EsHttpFailure(httpResponse.status), replyTo)
+                  ReturnEsClientResponse(EsHttpFailure(httpResponse.status), replyTo)
                 case Failure(e) =>
-                  WrappedResponse(EsBodyParseFailure(e.getMessage), replyTo)
+                  ReturnEsClientResponse(EsBodyParseFailure(e.getMessage), replyTo)
               }
 
               Behaviors.same
           }
 
-        case WrappedResponse(response, replyTo) =>
+        case ReturnEsClientResponse(response, replyTo) =>
           // Send reply to original requester
           replyTo ! response
           Behaviors.same
