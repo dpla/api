@@ -1,23 +1,21 @@
 //package dpla.ebookapi.v1.ebooks
 //
 //import akka.actor.testkit.typed.scaladsl.ActorTestKit
-//import akka.actor.typed.ActorSystem
+//import akka.actor.typed.{ActorRef, ActorSystem}
 //import akka.http.scaladsl.model.StatusCodes
 //import akka.http.scaladsl.server.Route
 //import akka.http.scaladsl.testkit.ScalatestRouteTest
 //import dpla.ebookapi.Routes
-//import dpla.ebookapi.helpers.Mocks
 //import org.scalatest.matchers.should.Matchers
 //import org.scalatest.wordspec.AnyWordSpec
 //
-//class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestRouteTest with Mocks {
+//class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 //
 //  lazy val testKit: ActorTestKit = ActorTestKit()
 //  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
 //  override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
-//
-//  val elasticSearchClient: OldElasticSearchClient = getMockElasticSearchClient
-//  lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
+//  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] = testKit.spawn(EbookRegistry())
+//  lazy val routes: Route = new Routes(ebookRegistry).applicationRoutes
 //
 //  "/v1/ebooks route" should {
 //    "handle invalid HTTP methods" should {

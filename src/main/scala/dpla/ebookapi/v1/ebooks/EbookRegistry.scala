@@ -5,7 +5,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
-import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{GetFetchResult, GetSearchResult}
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{GetEsFetchResult, GetEsSearchResult}
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
 
 
@@ -45,13 +45,15 @@ object EbookRegistry {
         case Search(rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor = processSearch(rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
-          context.spawn(sessionChildActor, "ProcessSearchRequest")
+          val uniqueId = java.util.UUID.randomUUID.toString
+          context.spawn(sessionChildActor, s"ProcessSearchRequest-$uniqueId")
           Behaviors.same
 
         case Fetch(id, rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor = processFetch(id, rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
-          context.spawn(sessionChildActor, "ProcessFetchRequest")
+          val uniqueId = java.util.UUID.randomUUID.toString
+          context.spawn(sessionChildActor, s"ProcessFetchRequest-$uniqueId")
           Behaviors.same
       }
     }
@@ -78,7 +80,7 @@ object EbookRegistry {
       Behaviors.receiveMessage {
         case ValidSearchParams(params: SearchParams) =>
           searchParams = Some(params)
-          elasticSearchClient ! GetSearchResult(params, context.self)
+          elasticSearchClient ! GetEsSearchResult(params, context.self)
           Behaviors.same
 
         case ValidationError(message) =>
@@ -96,11 +98,8 @@ object EbookRegistry {
               Behaviors.stopped
           }
 
-        case EsHttpFailure(statusCode) =>
-          if (statusCode.intValue == 404)
-            replyTo ! NotFoundFailure
-          else
-            replyTo ! InternalFailure
+        case EsHttpFailure =>
+          replyTo ! InternalFailure
           Behaviors.stopped
 
         case EsUnreachable =>
@@ -141,7 +140,7 @@ object EbookRegistry {
 
       Behaviors.receiveMessage {
         case ValidFetchParams(params: FetchParams) =>
-          elasticSearchClient ! GetFetchResult(params, context.self)
+          elasticSearchClient ! GetEsFetchResult(params, context.self)
           Behaviors.same
 
         case ValidationError(message) =>

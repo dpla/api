@@ -31,7 +31,7 @@ object RunApp {
 
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val ebookRegistry = context.spawn(EbookRegistry(), "UserRegistryActor")
+      val ebookRegistry = context.spawn(EbookRegistry(), "EbookRegistry")
       context.watch(ebookRegistry)
 
       val routes = new Routes(ebookRegistry)(context.system)

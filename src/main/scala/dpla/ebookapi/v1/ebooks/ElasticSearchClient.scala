@@ -24,15 +24,15 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
   sealed trait EsClientCommand
 
-  final case class GetSearchResult(
-                                    params: SearchParams,
-                                    replyTo: ActorRef[EsClientResponse]
-                                  ) extends EsClientCommand
+  final case class GetEsSearchResult(
+                                      params: SearchParams,
+                                      replyTo: ActorRef[EsClientResponse]
+                                    ) extends EsClientCommand
 
-  final case class GetFetchResult(
-                                   params: FetchParams,
-                                   replyTo: ActorRef[EsClientResponse]
-                                 ) extends EsClientCommand
+  final case class GetEsFetchResult(
+                                     params: FetchParams,
+                                     replyTo: ActorRef[EsClientResponse]
+                                   ) extends EsClientCommand
 
   private final case class ProcessHttpResponse(
                                                 httpResponse: HttpResponse,
@@ -41,7 +41,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
   private final case class ReturnEsClientResponse(
                                                    response: EsClientResponse,
-                                                  replyTo: ActorRef[EsClientResponse]
+                                                   replyTo: ActorRef[EsClientResponse]
                                                  ) extends EsClientCommand
 
   val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
@@ -53,7 +53,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
   def apply(): Behavior[EsClientCommand] =
     Behaviors.receive { (context, command) =>
       command match {
-        case GetSearchResult(params, replyTo) =>
+        case GetEsSearchResult(params, replyTo) =>
           val futureHttpResponse: Future[HttpResponse] = search(context.system, params)
 
           // Map the Future value to a message, handled by this actor
@@ -66,7 +66,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
           Behaviors.same
 
-        case GetFetchResult(params, replyTo) =>
+        case GetEsFetchResult(params, replyTo) =>
           val futureHttpResponse: Future[HttpResponse] = fetch(context.system, params)
 
           // Map the Future value to a message, handled by this actor
@@ -117,6 +117,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
       }
     }
 
+  // TODO move search and fetch methods to ElasticSearchQueryBuilder?
   private def search(implicit system: ActorSystem[Nothing], params: SearchParams): Future[HttpResponse] = {
     val uri: String = s"$elasticSearchEndpoint/_search"
     val data: String = composeQuery(params).toString

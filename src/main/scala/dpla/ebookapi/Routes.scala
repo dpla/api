@@ -58,8 +58,6 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
                       complete(ebookList)
                     case ValidationFailure(message) =>
                       complete(HttpResponse(BadRequest, entity = message))
-                    case NotFoundFailure =>
-                      complete(HttpResponse(NotFound))
                     case InternalFailure =>
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                     case _ =>
@@ -86,7 +84,7 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
                     case ValidationFailure(message) =>
                       complete(HttpResponse(BadRequest, entity = message))
                     case NotFoundFailure =>
-                      complete(HttpResponse(NotFound))
+                      complete(HttpResponse(NotFound, entity = notFoundMessage))
                     case InternalFailure =>
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                     case _ =>
@@ -118,4 +116,5 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
   )
 
   private val teapotMessage: String = "There was an unexpected internal error. Please try again later."
+  private val notFoundMessage: String = "The ebook you are searching for could not be found."
 }
