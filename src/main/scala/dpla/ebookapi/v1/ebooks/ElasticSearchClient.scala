@@ -1,6 +1,5 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.Done
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
