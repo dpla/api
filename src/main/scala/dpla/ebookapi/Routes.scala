@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import dpla.ebookapi.v1.ebooks.EbookRegistry.{Fetch, Search}
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, FetchResult, InternalFailure, NotFoundFailure, SearchResult, ValidationFailure}
+import dpla.ebookapi.v1.ebooks.{EbookRegistry, FetchResult, InternalFailure, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import akka.actor.typed.scaladsl.AskPattern._
@@ -28,11 +28,10 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
   private implicit val timeout: Timeout =
     Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
 
-  // TODO should I not use ask here?
-  def searchEbooks(params: Map[String, String]): Future[SearchResult] =
+  def searchEbooks(params: Map[String, String]): Future[RegistryResponse] =
     ebookRegistry.ask(Search(params, _))
 
-  def fetchEbooks(id: String, params: Map[String, String]): Future[FetchResult] =
+  def fetchEbooks(id: String, params: Map[String, String]): Future[RegistryResponse] =
     ebookRegistry.ask(Fetch(id, params, _))
 
   lazy val applicationRoutes: Route =
@@ -53,20 +52,22 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
           parameterMap { params =>
             respondWithHeaders(securityResponseHeaders) {
               onComplete(searchEbooks(params)) {
-                case Success(result) =>
-                  result.result match {
-                    case Right(ebookList) =>
+                case Success(response) =>
+                  response match {
+                    case SearchResult(ebookList) =>
                       complete(ebookList)
-                    case Left(failedRequest) =>
-                      failedRequest match {
-                        case failure: ValidationFailure =>
-                          complete(HttpResponse(BadRequest, entity = failure.message))
-                        case InternalFailure =>
-                          complete(HttpResponse(ImATeapot, entity = teapotMessage))
-                      }
+                    case ValidationFailure(message) =>
+                      complete(HttpResponse(BadRequest, entity = message))
+                    case NotFoundFailure =>
+                      complete(HttpResponse(NotFound))
+                    case InternalFailure =>
+                      complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                    case _ =>
+                      // TODO log error
+                      complete(HttpResponse(ImATeapot, entity = teapotMessage))
                   }
                 case Failure(e) =>
-                  System.out.println(s"Error: $e")
+                  // TODO log error
                   complete(HttpResponse(ImATeapot, entity = teapotMessage))
               }
             }
@@ -78,19 +79,19 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
           parameterMap { params =>
             respondWithHeaders(securityResponseHeaders) {
               onComplete(fetchEbooks(id, params)) {
-                case Success(result) =>
-                  result.result match {
-                    case Right(singleEbook) =>
+                case Success(response) =>
+                  response match {
+                    case FetchResult(singleEbook) =>
                       complete(singleEbook)
-                    case Left(failedRequest) =>
-                      failedRequest match {
-                        case failure: ValidationFailure =>
-                          complete(HttpResponse(BadRequest, entity = failure.message))
-                        case NotFoundFailure =>
-                          complete(NotFound)
-                        case InternalFailure =>
-                          complete(HttpResponse(ImATeapot, entity = teapotMessage))
-                      }
+                    case ValidationFailure(message) =>
+                      complete(HttpResponse(BadRequest, entity = message))
+                    case NotFoundFailure =>
+                      complete(HttpResponse(NotFound))
+                    case InternalFailure =>
+                      complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                    case _ =>
+                      // TODO log error
+                      complete(HttpResponse(ImATeapot, entity = teapotMessage))
                   }
                 case Failure(e) =>
                   System.out.println(s"Error: $e")

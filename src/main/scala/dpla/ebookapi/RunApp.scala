@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, OldElasticSearchClient}
+import dpla.ebookapi.v1.ebooks.EbookRegistry
 
 import scala.util.{Failure, Success}
 
@@ -28,13 +28,6 @@ object RunApp {
 
   //#start-http-server
   def main(args: Array[String]): Unit = {
-
-//    val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
-//      case "" => "http://localhost:9200/eleanor"
-//      case x => x
-//    }
-
-//    val elasticSearchClient = new ElasticSearchClient(elasticSearchEndpoint)
 
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>

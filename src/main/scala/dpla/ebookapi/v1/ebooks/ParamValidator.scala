@@ -76,6 +76,8 @@ object ParamValidator extends DplaMapFields {
       "q"
     )
 
+  final case class ValidationException(private val message: String = "") extends Exception(message)
+
   /**
    * Method returns ValidationError if any parameters are invalid.
    * There are not currently any acceptable parameters for a fetch request.
@@ -85,7 +87,7 @@ object ParamValidator extends DplaMapFields {
       ValidationError("Unrecognized parameter: " + rawParams.keys.mkString(", "))
     else
       Try{ getValidId(id) } match {
-        case Success(id) => FetchParams(id)
+        case Success(id) => ValidFetchParams(FetchParams(id))
         case Failure(e) => ValidationError(e.getMessage)
       }
   }
@@ -128,7 +130,7 @@ object ParamValidator extends DplaMapFields {
           q = getValid(rawParams, "q", validText)
         )
       } match {
-        case Success(searchParams) => searchParams
+        case Success(searchParams) => ValidSearchParams(searchParams)
         case Failure(e) => ValidationError(e.getMessage)
       }
   }

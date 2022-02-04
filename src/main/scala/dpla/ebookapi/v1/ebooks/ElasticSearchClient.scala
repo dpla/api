@@ -5,19 +5,22 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCode}
+import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 
 sealed trait EsClientResponse
-// TODO make separate case classes for EsSearchSuccess and EsFetchSuccess?
+// TODO make separate case classes for EsSearchResult and EsFetchResult?
 case class EsSuccess(body: String) extends EsClientResponse
 case class EsHttpFailure(statusCode: StatusCode) extends EsClientResponse
 case class EsBodyParseFailure(message: String) extends EsClientResponse
 case class EsUnreachable(message: String) extends EsClientResponse
 
+// TODO do I need to implement retries, incremental backoff, etc. or does akka-http handle that?
 object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
   sealed trait EsClientCommand
@@ -28,7 +31,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
                                   ) extends EsClientCommand
 
   final case class GetFetchResult(
-                                   id: String,
+                                   params: FetchParams,
                                    replyTo: ActorRef[EsClientResponse]
                                  ) extends EsClientCommand
 
@@ -64,8 +67,8 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
           Behaviors.same
 
-        case GetFetchResult(id, replyTo) =>
-          val futureHttpResponse: Future[HttpResponse] = fetch(context.system, id)
+        case GetFetchResult(params, replyTo) =>
+          val futureHttpResponse: Future[HttpResponse] = fetch(context.system, params)
 
           // Map the Future value to a message, handled by this actor
           context.pipeToSelf(futureHttpResponse) {
@@ -95,10 +98,10 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
             case _ =>
               // The entity must be discarded, or the data will remain back-pressured.
               implicit val system: ActorSystem[Nothing] = context.system
-              val futureDiscarded: Future[Done] = httpResponse.discardEntityBytes.future // pipes data to a sink
+              val discarded: DiscardedEntity = httpResponse.discardEntityBytes() // pipes data to a sink
 
               // Map the Future value to a message, handled by this actor
-              context.pipeToSelf(futureDiscarded) {
+              context.pipeToSelf(discarded.future) {
                 case Success(_) =>
                   ReturnEsClientResponse(EsHttpFailure(httpResponse.status), replyTo)
                 case Failure(e) =>
@@ -128,7 +131,8 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
     Http().singleRequest(request)
   }
 
-  private def fetch(implicit system: ActorSystem[Nothing], id: String): Future[HttpResponse] = {
+  private def fetch(implicit system: ActorSystem[Nothing], params: FetchParams): Future[HttpResponse] = {
+    val id = params.id
     val uri = s"$elasticSearchEndpoint/_doc/$id"
     Http().singleRequest(HttpRequest(uri = uri))
   }

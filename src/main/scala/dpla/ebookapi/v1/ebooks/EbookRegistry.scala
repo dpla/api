@@ -3,23 +3,11 @@ package dpla.ebookapi.v1.ebooks
 import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, ImATeapot}
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.server.Directives.{complete, onComplete, respondWithHeaders}
-import akka.http.scaladsl.server.Route
-import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.EbookMapper.MapSearchResponse
-import dpla.ebookapi.v1.ebooks.ElasticSearchClient.GetSearchResult
-import dpla.ebookapi.v1.ebooks.JsonFormats._
-import dpla.ebookapi.v1.ebooks.ParamValidator.ValidateSearchParams
+import akka.actor.typed.scaladsl.Behaviors
+import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{GetFetchResult, GetSearchResult}
+import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
 
-import scala.collection.immutable
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
 
 sealed trait RegistryResponse
 final case class SearchResult(result: EbookList) extends RegistryResponse
@@ -46,30 +34,33 @@ object EbookRegistry {
   def apply(): Behavior[RegistryCommand] = {
     Behaviors.setup[RegistryCommand] { context =>
       val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
-        context.spawn(ParamValidator(), "param validator")
+        context.spawn(ParamValidator(), "ParamValidator")
       val elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand] =
-        context.spawn(ElasticSearchClient(), "elastic search client")
+        context.spawn(ElasticSearchClient(), "ElasticSearchClient")
       val ebookMapper: ActorRef[EbookMapper.MapperCommand] =
-        context.spawn(EbookMapper(), "ebook mapper")
+        context.spawn(EbookMapper(), "EbookMapper")
 
       Behaviors.receiveMessage[RegistryCommand] {
 
         case Search(rawParams, replyTo) =>
-
           // Create a session child actor to process the request
           val sessionChildActor = processSearch(rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
-          context.spawn(sessionChildActor, "process search")
+          context.spawn(sessionChildActor, "ProcessSearchRequest")
           Behaviors.same
 
         case Fetch(id, rawParams, replyTo) =>
-          // TODO
+          // Create a session child actor to process the request
+          val sessionChildActor = processFetch(id, rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
+          context.spawn(sessionChildActor, "ProcessFetchRequest")
           Behaviors.same
       }
     }
   }
 
-  // Per session actor behavior
-  // TODO is there a way to test this to make sure the child actor has its own ActorRef, different from parent?
+  /**
+   * Per session actor behavior for handling a search request.
+   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   */
   def processSearch(
                      rawParams: Map[String, String],
                      replyTo: ActorRef[RegistryResponse],
@@ -82,7 +73,6 @@ object EbookRegistry {
 
       var searchParams: Option[SearchParams] = None
 
-      // TODO add narrow to context.self?  Yes if separate processes for search and fetch.
       paramValidator ! ValidateSearchParams(rawParams, context.self)
 
       Behaviors.receiveMessage {
@@ -106,15 +96,83 @@ object EbookRegistry {
               Behaviors.stopped
           }
 
-        case EsHttpFailure =>
-          replyTo ! InternalFailure
+        case EsHttpFailure(statusCode) =>
+          if (statusCode.intValue == 404)
+            replyTo ! NotFoundFailure
+          else
+            replyTo ! InternalFailure
           Behaviors.stopped
 
         case EsUnreachable =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
+        case MappedEbookList(ebookList) =>
+          replyTo ! SearchResult(ebookList)
+          Behaviors.stopped
+
+        case MapFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
         case _ =>
+          // TODO log?
+          Behaviors.unhandled
+      }
+    }.narrow[NotUsed]
+  }
+
+  /**
+   * Per session actor behavior for handling a fetch request.
+   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   */
+  def processFetch(
+                     id: String,
+                     rawParams: Map[String, String],
+                     replyTo: ActorRef[RegistryResponse],
+                     paramValidator: ActorRef[ParamValidator.ValidationRequest],
+                     elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand],
+                     ebookMapper: ActorRef[EbookMapper.MapperCommand],
+                   ): Behavior[NotUsed] = {
+
+    Behaviors.setup[AnyRef] { context =>
+
+      paramValidator ! ValidateFetchParams(id, rawParams, context.self)
+
+      Behaviors.receiveMessage {
+        case ValidFetchParams(params: FetchParams) =>
+          elasticSearchClient ! GetFetchResult(params, context.self)
+          Behaviors.same
+
+        case ValidationError(message) =>
+          replyTo ! ValidationFailure(message)
+          Behaviors.stopped
+
+        case EsSuccess(body) =>
+          ebookMapper ! MapFetchResponse(body, context.self)
+          Behaviors.same
+
+        case EsHttpFailure(statusCode) =>
+          if (statusCode.intValue == 404)
+            replyTo ! NotFoundFailure
+          else
+            replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case EsUnreachable =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case MappedSingleEbook(singleEbook) =>
+          replyTo ! FetchResult(singleEbook)
+          Behaviors.stopped
+
+        case MapFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case _ =>
+          // TODO log?
           Behaviors.unhandled
       }
     }.narrow[NotUsed]

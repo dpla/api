@@ -9,16 +9,15 @@ import spray.json._
 import scala.util.{Failure, Success, Try}
 
 sealed trait EbookMapperResponse
-final case class MapSuccess(response: MappedEbookRecord) extends EbookMapperResponse
+final case class MappedEbookList(response: EbookList) extends EbookMapperResponse
+final case class MappedSingleEbook(response: SingleEbook) extends EbookMapperResponse
 final case class MapFailure(message: String) extends EbookMapperResponse
 
 /** Case classes for reading ElasticSearch responses **/
 
-trait MappedEbookRecord
-
 case class SingleEbook(
                         docs: Seq[Ebook]
-                      ) extends MappedEbookRecord
+                      )
 
 case class EbookList(
                       count: Option[Int],
@@ -26,7 +25,7 @@ case class EbookList(
                       start: Option[Int],
                       docs: Seq[Ebook],
                       facets: Option[FacetList]
-                    ) extends MappedEbookRecord
+                    )
 
 case class Ebook(
                   author: Seq[String],
@@ -89,7 +88,7 @@ object EbookMapper {
       body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
     } match {
       case Success(ebookList) =>
-        MapSuccess(ebookList)
+        MappedEbookList(ebookList)
       case Failure(e) =>
         MapFailure(e.getMessage)
     }
@@ -99,7 +98,7 @@ object EbookMapper {
       body.parseJson.convertTo[SingleEbook]
     } match {
       case Success(singleEbook) =>
-        MapSuccess(singleEbook)
+        MappedSingleEbook(singleEbook)
       case Failure(e) =>
         MapFailure(e.getMessage)
     }
