@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 sealed trait EbookMapperResponse
 final case class MappedEbookList(response: EbookList) extends EbookMapperResponse
 final case class MappedSingleEbook(response: SingleEbook) extends EbookMapperResponse
-final case class MapFailure(message: String) extends EbookMapperResponse
+object MapFailure extends EbookMapperResponse
 
 /** Case classes for reading ElasticSearch responses **/
 
@@ -28,19 +28,19 @@ case class EbookList(
                     )
 
 case class Ebook(
-                  author: Seq[String],
-                  genre: Seq[String],
-                  id: Option[String],
-                  itemUri: Option[String],
-                  language: Seq[String],
-                  medium: Seq[String],
-                  payloadUri: Seq[String],
-                  publisher: Seq[String],
-                  publicationDate: Seq[String],
-                  sourceUri: Option[String],
-                  subtitle: Seq[String],
-                  summary: Seq[String],
-                  title: Seq[String]
+                  author: Seq[String] = Seq[String](),
+                  genre: Seq[String] = Seq[String](),
+                  id: Option[String] = None,
+                  itemUri: Option[String] = None,
+                  language: Seq[String] = Seq[String](),
+                  medium: Seq[String] = Seq[String](),
+                  payloadUri: Seq[String] = Seq[String](),
+                  publisher: Seq[String] = Seq[String](),
+                  publicationDate: Seq[String] = Seq[String](),
+                  sourceUri: Option[String] = None,
+                  subtitle: Seq[String] = Seq[String](),
+                  summary: Seq[String]= Seq[String](),
+                  title: Seq[String] = Seq[String]()
                 )
 
 case class FacetList(
@@ -90,7 +90,8 @@ object EbookMapper {
       case Success(ebookList) =>
         MappedEbookList(ebookList)
       case Failure(e) =>
-        MapFailure(e.getMessage)
+        // TODO log
+        MapFailure
     }
 
   private def mapSingleEbook(body: String): EbookMapperResponse =
@@ -100,7 +101,8 @@ object EbookMapper {
       case Success(singleEbook) =>
         MappedSingleEbook(singleEbook)
       case Failure(e) =>
-        MapFailure(e.getMessage)
+        // TODO log
+        MapFailure
     }
 
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
