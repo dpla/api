@@ -5,7 +5,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
-import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{GetEsFetchResult, GetEsSearchResult}
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
 
 
@@ -21,11 +21,13 @@ object EbookRegistry {
   sealed trait RegistryCommand
 
   final case class Search(
+                           elasticSearchClient: ActorRef[EsClientCommand],
                            rawParams: Map[String, String],
                            replyTo: ActorRef[RegistryResponse]
                          ) extends RegistryCommand
 
   final case class Fetch(
+                          elasticSearchClient: ActorRef[EsClientCommand],
                           id: String,
                           rawParams: Map[String, String],
                           replyTo: ActorRef[RegistryResponse]
@@ -35,21 +37,19 @@ object EbookRegistry {
     Behaviors.setup[RegistryCommand] { context =>
       val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
         context.spawn(ParamValidator(), "ParamValidator")
-      val elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand] =
-        context.spawn(ElasticSearchClient(), "ElasticSearchClient")
       val ebookMapper: ActorRef[EbookMapper.MapperCommand] =
         context.spawn(EbookMapper(), "EbookMapper")
 
       Behaviors.receiveMessage[RegistryCommand] {
 
-        case Search(rawParams, replyTo) =>
+        case Search(elasticSearchClient, rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor = processSearch(rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
           val uniqueId = java.util.UUID.randomUUID.toString
           context.spawn(sessionChildActor, s"ProcessSearchRequest-$uniqueId")
           Behaviors.same
 
-        case Fetch(id, rawParams, replyTo) =>
+        case Fetch(elasticSearchClient, id, rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor = processFetch(id, rawParams, replyTo, paramValidator, elasticSearchClient, ebookMapper)
           val uniqueId = java.util.UUID.randomUUID.toString

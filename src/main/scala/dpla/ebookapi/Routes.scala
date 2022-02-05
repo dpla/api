@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import dpla.ebookapi.v1.ebooks.EbookRegistry.{Fetch, Search}
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, FetchResult, InternalFailure, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
+import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient, FetchResult, InternalFailure, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import akka.actor.typed.scaladsl.AskPattern._
@@ -19,7 +19,10 @@ import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 
-class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit val system: ActorSystem[_]) {
+class Routes(
+              ebookRegistry: ActorRef[EbookRegistry.RegistryCommand],
+              elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand]
+            )(implicit val system: ActorSystem[_]) {
 
   // needed for the future map/onComplete
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
@@ -29,10 +32,10 @@ class Routes(ebookRegistry: ActorRef[EbookRegistry.RegistryCommand])(implicit va
     Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
 
   def searchEbooks(params: Map[String, String]): Future[RegistryResponse] =
-    ebookRegistry.ask(Search(params, _))
+    ebookRegistry.ask(Search(elasticSearchClient, params, _))
 
   def fetchEbooks(id: String, params: Map[String, String]): Future[RegistryResponse] =
-    ebookRegistry.ask(Fetch(id, params, _))
+    ebookRegistry.ask(Fetch(elasticSearchClient, id, params, _))
 
   lazy val applicationRoutes: Route =
     concat (

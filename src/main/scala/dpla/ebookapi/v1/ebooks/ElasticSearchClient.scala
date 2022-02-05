@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequ
 import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 
-
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
@@ -18,6 +17,7 @@ case class EsSuccess(body: String) extends EsClientResponse
 case class EsHttpFailure(statusCode: StatusCode) extends EsClientResponse
 case class EsBodyParseFailure(message: String) extends EsClientResponse
 case class EsUnreachable(message: String) extends EsClientResponse
+
 
 // TODO do I need to implement retries, incremental backoff, etc. or does akka-http handle that?
 object ElasticSearchClient extends ElasticSearchQueryBuilder {
@@ -44,15 +44,16 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
                                                    replyTo: ActorRef[EsClientResponse]
                                                  ) extends EsClientCommand
 
-  val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
+  private val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
     case "" => "http://localhost:9200/eleanor"
     case x => x
   }
 
   // TODO implement session actor - is this NECESSARY?  Not if replyTo is maintained?  Maybe a good idea anyway?
-  def apply(): Behavior[EsClientCommand] =
-    Behaviors.receive { (context, command) =>
-      command match {
+  def apply(): Behavior[EsClientCommand] = {
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage[EsClientCommand] {
+
         case GetEsSearchResult(params, replyTo) =>
           val futureHttpResponse: Future[HttpResponse] = search(context.system, params)
 
@@ -116,6 +117,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
           Behaviors.same
       }
     }
+  }
 
   // TODO move search and fetch methods to ElasticSearchQueryBuilder?
   private def search(implicit system: ActorSystem[Nothing], params: SearchParams): Future[HttpResponse] = {

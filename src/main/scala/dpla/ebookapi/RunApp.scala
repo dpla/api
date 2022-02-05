@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.ebookapi.v1.ebooks.EbookRegistry
+import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
 
 import scala.util.{Failure, Success}
 
@@ -31,10 +31,14 @@ object RunApp {
 
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
+
       val ebookRegistry = context.spawn(EbookRegistry(), "EbookRegistry")
       context.watch(ebookRegistry)
 
-      val routes = new Routes(ebookRegistry)(context.system)
+      val elasticSearchClient = context.spawn(ElasticSearchClient(), "ElasticSearchClient")
+      context.watch(elasticSearchClient)
+
+      val routes = new Routes(ebookRegistry, elasticSearchClient)(context.system)
       startHttpServer(routes.applicationRoutes)(context.system)
 
       Behaviors.empty
