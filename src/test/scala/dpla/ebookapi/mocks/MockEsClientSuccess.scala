@@ -4,7 +4,11 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.helpers.FileReader
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{GetEsFetchResult, GetEsSearchResult}
-import dpla.ebookapi.v1.ebooks.{ElasticSearchClient, EsSuccess}
+import dpla.ebookapi.v1.ebooks.{ElasticSearchClient, ElasticSearchResponse}
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes.OK
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object MockEsClientSuccess extends FileReader {
 
@@ -12,15 +16,21 @@ object MockEsClientSuccess extends FileReader {
   private val fetchBody: String = readFile("/elasticSearchMinimalEbook.json")
 
   def apply(): Behavior[ElasticSearchClient.EsClientCommand] = {
-    Behaviors.receiveMessage[ElasticSearchClient.EsClientCommand] {
+    Behaviors.setup { context =>
+      implicit val executor: ExecutionContextExecutor = context.executionContext
 
-      case GetEsSearchResult(_, replyTo) =>
-        replyTo ! EsSuccess(searchBody)
-        Behaviors.same
+      Behaviors.receiveMessage[ElasticSearchClient.EsClientCommand] {
 
-      case GetEsFetchResult(_, replyTo) =>
-        replyTo ! EsSuccess(fetchBody)
-        Behaviors.same
+        case GetEsSearchResult(_, replyTo) =>
+          val searchResponse = Future(HttpResponse(OK, entity=searchBody))
+          replyTo ! ElasticSearchResponse(searchResponse)
+          Behaviors.same
+
+        case GetEsFetchResult(_, replyTo) =>
+          val fetchResponse = Future(HttpResponse(OK, entity=fetchBody))
+          replyTo ! ElasticSearchResponse(fetchResponse)
+          Behaviors.same
+      }
     }
   }
 }
