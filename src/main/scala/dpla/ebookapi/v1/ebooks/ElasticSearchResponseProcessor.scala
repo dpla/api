@@ -9,55 +9,55 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
-sealed trait EsProcessorResponse
-case class EsSuccess(body: String) extends EsProcessorResponse
-case class EsHttpFailure(statusCode: StatusCode) extends EsProcessorResponse
-object EsBodyParseFailure extends EsProcessorResponse
-object EsUnreachable extends EsProcessorResponse
+sealed trait ElasticSearchResponse
+case class ElasticSearchSuccess(body: String) extends ElasticSearchResponse
+case class ElasticSearchHttpFailure(statusCode: StatusCode) extends ElasticSearchResponse
+object ElasticSearchParseFailure extends ElasticSearchResponse
+object ElasticSearchUnreachable extends ElasticSearchResponse
 
 object ElasticSearchResponseProcessor {
 
-  sealed trait EsProcessorCommand
-  case class ProcessEsResponse(
-                                future: Future[HttpResponse],
-                                replyTo: ActorRef[EsProcessorResponse]
-                              ) extends EsProcessorCommand
+  sealed trait ElasticSearchResponseProcessorCommand
+  case class ProcessElasticSearchResponse(
+                                           future: Future[HttpResponse],
+                                           replyTo: ActorRef[ElasticSearchResponse]
+                                         ) extends ElasticSearchResponseProcessorCommand
 
   private final case class ProcessHttpResponse(
                                                 httpResponse: HttpResponse,
-                                                replyTo: ActorRef[EsProcessorResponse]
-                                              ) extends EsProcessorCommand
+                                                replyTo: ActorRef[ElasticSearchResponse]
+                                              ) extends ElasticSearchResponseProcessorCommand
 
   private final case class ReturnProcessorResponse(
-                                                    response: EsProcessorResponse,
-                                                    replyTo: ActorRef[EsProcessorResponse]
-                                                  ) extends EsProcessorCommand
+                                                    response: ElasticSearchResponse,
+                                                    replyTo: ActorRef[ElasticSearchResponse]
+                                                  ) extends ElasticSearchResponseProcessorCommand
 
-  def apply(): Behavior[EsProcessorCommand] = {
+  def apply(): Behavior[ElasticSearchResponseProcessorCommand] = {
     Behaviors.setup { context =>
-      Behaviors.receiveMessage[EsProcessorCommand] {
+      Behaviors.receiveMessage[ElasticSearchResponseProcessorCommand] {
 
-        case ProcessEsResponse(futureHttpResponse, replyTo) =>
+        case ProcessElasticSearchResponse(futureHttpResponse, replyTo) =>
           // Map the Future value to a message, handled by this actor
           context.pipeToSelf(futureHttpResponse) {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
-              ReturnProcessorResponse(EsUnreachable, replyTo)
+              ReturnProcessorResponse(ElasticSearchUnreachable, replyTo)
           }
           Behaviors.same
 
         case ProcessHttpResponse(httpResponse, replyTo) =>
           httpResponse.status.intValue match {
             case 200 =>
-              val futureBody: Future[String] = getBody(context.system, httpResponse)
+              val futureBody: Future[String] = getEntityString(context.system, httpResponse)
 
               // Map the Future value to a message, handled by this actor
               context.pipeToSelf(futureBody) {
                 case Success(body) =>
-                  ReturnProcessorResponse(EsSuccess(body), replyTo)
+                  ReturnProcessorResponse(ElasticSearchSuccess(body), replyTo)
                 case Failure(_) =>
-                  ReturnProcessorResponse(EsBodyParseFailure, replyTo)
+                  ReturnProcessorResponse(ElasticSearchParseFailure, replyTo)
               }
               Behaviors.same
 
@@ -69,9 +69,9 @@ object ElasticSearchResponseProcessor {
               // Map the Future value to a message, handled by this actor
               context.pipeToSelf(discarded.future) {
                 case Success(_) =>
-                  ReturnProcessorResponse(EsHttpFailure(httpResponse.status), replyTo)
+                  ReturnProcessorResponse(ElasticSearchHttpFailure(httpResponse.status), replyTo)
                 case Failure(_) =>
-                  ReturnProcessorResponse(EsBodyParseFailure, replyTo)
+                  ReturnProcessorResponse(ElasticSearchParseFailure, replyTo)
               }
               Behaviors.same
           }
@@ -84,7 +84,7 @@ object ElasticSearchResponseProcessor {
     }
   }
 
-  private def getBody(implicit system: ActorSystem[Nothing], httpResponse: HttpResponse): Future[String] = {
+  private def getEntityString(implicit system: ActorSystem[Nothing], httpResponse: HttpResponse): Future[String] = {
     implicit val ec: ExecutionContextExecutor = system.executionContext
     Unmarshaller.stringUnmarshaller(httpResponse.entity)
   }

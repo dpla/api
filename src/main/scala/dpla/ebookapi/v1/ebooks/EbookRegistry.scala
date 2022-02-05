@@ -6,7 +6,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
-import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessEsResponse
+import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessElasticSearchResponse
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
 
 
@@ -38,8 +38,6 @@ object EbookRegistry {
     Behaviors.setup[RegistryCommand] { context =>
       val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
         context.spawn(ParamValidator(), "ParamValidator")
-      val responseProcessor: ActorRef[ElasticSearchResponseProcessor.EsProcessorCommand] =
-        context.spawn(ElasticSearchResponseProcessor(), "ElasticSearchResponseProcessor")
       val mapper: ActorRef[EbookMapper.MapperCommand] =
         context.spawn(EbookMapper(), "EbookMapper")
 
@@ -48,7 +46,7 @@ object EbookRegistry {
         case Search(client, rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor =
-            processSearch(rawParams, replyTo, paramValidator, client, responseProcessor, mapper)
+            processSearch(rawParams, replyTo, paramValidator, client, mapper)
           val uniqueId = java.util.UUID.randomUUID.toString
           context.spawn(sessionChildActor, s"ProcessSearchRequest-$uniqueId")
           Behaviors.same
@@ -56,7 +54,7 @@ object EbookRegistry {
         case Fetch(client, id, rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor =
-            processFetch(id, rawParams, replyTo, paramValidator, client, responseProcessor, mapper)
+            processFetch(id, rawParams, replyTo, paramValidator, client, mapper)
           val uniqueId = java.util.UUID.randomUUID.toString
           context.spawn(sessionChildActor, s"ProcessFetchRequest-$uniqueId")
           Behaviors.same
@@ -68,12 +66,11 @@ object EbookRegistry {
    * Per session actor behavior for handling a search request.
    * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
    */
-  def processSearch(
+  private def processSearch(
                      rawParams: Map[String, String],
                      replyTo: ActorRef[RegistryResponse],
                      paramValidator: ActorRef[ParamValidator.ValidationRequest],
                      client: ActorRef[ElasticSearchClient.EsClientCommand],
-                     responseProcessor: ActorRef[ElasticSearchResponseProcessor.EsProcessorCommand],
                      mapper: ActorRef[EbookMapper.MapperCommand],
                    ): Behavior[NotUsed] = {
 
@@ -93,11 +90,7 @@ object EbookRegistry {
           replyTo ! ValidationFailure(message)
           Behaviors.stopped
 
-        case ElasticSearchResponse(future) =>
-          responseProcessor ! ProcessEsResponse(future, context.self)
-          Behaviors.same
-
-        case EsSuccess(body) =>
+        case ElasticSearchSuccess(body) =>
           searchParams match {
             case Some(params) =>
               mapper ! MapSearchResponse(body, params.page, params.pageSize, context.self)
@@ -108,11 +101,11 @@ object EbookRegistry {
               Behaviors.stopped
           }
 
-        case EsHttpFailure =>
+        case ElasticSearchHttpFailure =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
-        case EsUnreachable =>
+        case ElasticSearchUnreachable =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -135,13 +128,12 @@ object EbookRegistry {
    * Per session actor behavior for handling a fetch request.
    * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
    */
-  def processFetch(
+  private def processFetch(
                      id: String,
                      rawParams: Map[String, String],
                      replyTo: ActorRef[RegistryResponse],
                      paramValidator: ActorRef[ParamValidator.ValidationRequest],
                      client: ActorRef[ElasticSearchClient.EsClientCommand],
-                     responseProcessor: ActorRef[ElasticSearchResponseProcessor.EsProcessorCommand],
                      mapper: ActorRef[EbookMapper.MapperCommand],
                    ): Behavior[NotUsed] = {
 
@@ -158,22 +150,18 @@ object EbookRegistry {
           replyTo ! ValidationFailure(message)
           Behaviors.stopped
 
-        case ElasticSearchResponse(future) =>
-          responseProcessor ! ProcessEsResponse(future, context.self)
-          Behaviors.same
-
-        case EsSuccess(body) =>
+        case ElasticSearchSuccess(body) =>
           mapper ! MapFetchResponse(body, context.self)
           Behaviors.same
 
-        case EsHttpFailure(statusCode) =>
+        case ElasticSearchHttpFailure(statusCode) =>
           if (statusCode.intValue == 404)
             replyTo ! NotFoundFailure
           else
             replyTo ! InternalFailure
           Behaviors.stopped
 
-        case EsUnreachable =>
+        case ElasticSearchUnreachable =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
