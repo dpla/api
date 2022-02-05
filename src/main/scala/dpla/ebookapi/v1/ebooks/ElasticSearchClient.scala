@@ -120,7 +120,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
   // TODO move search and fetch methods to ElasticSearchQueryBuilder?
   private def search(implicit system: ActorSystem[Nothing], params: SearchParams): Future[HttpResponse] = {
     val uri: String = s"$elasticSearchEndpoint/_search"
-    val data: String = composeQuery(params).toString
+    val data: String = composeSearchQuery(params).toString
 
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.GET,

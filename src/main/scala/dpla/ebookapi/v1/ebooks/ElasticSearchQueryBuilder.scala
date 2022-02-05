@@ -5,7 +5,7 @@ import JsonFormats._
 
 trait ElasticSearchQueryBuilder extends DplaMapFields {
 
-  def composeQuery(params: SearchParams): JsValue =
+  def composeSearchQuery(params: SearchParams): JsValue =
     JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
