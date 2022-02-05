@@ -19,13 +19,11 @@ class EbookMapperTest extends AnyWordSpec with Matchers with FileReader with Bef
   val pageSize = 10
   val minEsEbookList: String = readFile("/elasticSearchMinimalEbookList.json")
   val minEsEbook: String = readFile("/elasticSearchMinimalEbook.json")
-  val minEbookList: EbookList = EbookList(Some(0), Some(10), Some(1), Seq[Ebook](), None)
-  val minSingleEbook: SingleEbook = SingleEbook(Seq(Ebook(id=Some("wfwPJ34Bj-MaVWqX9Kac"))))
 
   "search response mapper" should {
     "return success for mappable response" in {
       ebookMapper ! MapSearchResponse(minEsEbookList, page, pageSize, probe.ref)
-      probe.expectMessage(MappedEbookList(minEbookList))
+      probe.expectMessageType[MappedEbookList]
     }
 
     "return failure for unmappable response" in {
@@ -38,7 +36,7 @@ class EbookMapperTest extends AnyWordSpec with Matchers with FileReader with Bef
   "fetch response mapper" should {
     "return success for mappable response" in {
       ebookMapper ! MapFetchResponse(minEsEbook, probe.ref)
-      probe.expectMessage(MappedSingleEbook(minSingleEbook))
+      probe.expectMessageType[MappedSingleEbook]
     }
 
     "fetch failure for unmappable response" in {
