@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCode}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 
 import scala.concurrent.Future
 
@@ -28,7 +28,7 @@ object ElasticSearchClient extends ElasticSearchQueryBuilder {
 
   private val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
     case "" => "http://localhost:9200/eleanor"
-    case x => x
+    case x => x.stripSuffix("/")
   }
 
   def apply(): Behavior[EsClientCommand] = {

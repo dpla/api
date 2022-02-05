@@ -15,6 +15,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers with ScalatestR
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
+
   override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
   val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] = testKit.spawn(EbookRegistry())
   val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientSuccess())
