@@ -97,7 +97,7 @@ class Routes(
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                   }
                 case Failure(e) =>
-                  System.out.println(s"Error: $e")
+                  // TODO log error
                   complete(HttpResponse(ImATeapot, entity = teapotMessage))
               }
             }
