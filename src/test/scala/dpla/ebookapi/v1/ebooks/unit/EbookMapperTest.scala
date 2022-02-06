@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks.unit
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.ebookapi.helpers.FileReader
-import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
+import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -14,7 +14,7 @@ class EbookMapperTest extends AnyWordSpec with Matchers with FileReader with Bef
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val ebookMapper: ActorRef[EbookMapper.MapperCommand] = testKit.spawn(EbookMapper())
+  val ebookMapper: ActorRef[MapperCommand] = testKit.spawn(EbookMapper())
   val probe: TestProbe[EbookMapperResponse] = testKit.createTestProbe[EbookMapperResponse]()
 
   val page = 1

@@ -53,8 +53,7 @@ object ElasticSearchClient {
           // Create a session child actor to process the request
           val sessionChildActor =
             processSearch(params, replyTo, queryBuilder, responseProcessor)
-          val uniqueId = java.util.UUID.randomUUID.toString
-          context.spawn(sessionChildActor, s"ProcessEsSearchRequest-$uniqueId")
+          context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case GetEsFetchResult(params, replyTo) =>

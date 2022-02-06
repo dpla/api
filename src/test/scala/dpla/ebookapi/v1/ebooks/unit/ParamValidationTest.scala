@@ -2,11 +2,12 @@ package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
+import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationRequest}
 import dpla.ebookapi.v1.ebooks.{ParamValidator, ValidFetchParams, ValidSearchParams, ValidationError, ValidationResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import scala.util.Random
 
 
@@ -15,7 +16,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val paramValidator: ActorRef[ParamValidator.ValidationRequest] = testKit.spawn(ParamValidator())
+  val paramValidator: ActorRef[ValidationRequest] = testKit.spawn(ParamValidator())
   val probe: TestProbe[ValidationResponse] = testKit.createTestProbe[ValidationResponse]
 
   "search param validator" should {

@@ -46,16 +46,14 @@ object EbookRegistry {
           // Create a session child actor to process the request
           val sessionChildActor =
             processSearch(rawParams, replyTo, paramValidator, client, mapper)
-          val uniqueId = java.util.UUID.randomUUID.toString
-          context.spawn(sessionChildActor, s"ProcessSearchRequest-$uniqueId")
+          context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case Fetch(client, id, rawParams, replyTo) =>
           // Create a session child actor to process the request
           val sessionChildActor =
             processFetch(id, rawParams, replyTo, paramValidator, client, mapper)
-          val uniqueId = java.util.UUID.randomUUID.toString
-          context.spawn(sessionChildActor, s"ProcessFetchRequest-$uniqueId")
+          context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
     }
