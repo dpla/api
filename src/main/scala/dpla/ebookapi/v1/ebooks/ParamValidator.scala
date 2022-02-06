@@ -8,7 +8,7 @@ import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 /**
- * Validates user-submitted parameters. Provides defaults when appropriate.
+ * Validates user-submitted parameters. Provides default values when appropriate.
  */
 
 sealed trait ValidationResponse

@@ -39,6 +39,7 @@ object ElasticSearchClient {
   def apply(): Behavior[EsClientCommand] = {
     Behaviors.setup { context =>
 
+      // Spawn children.
       val queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand] =
         context.spawn(ElasticSearchQueryBuilder(), "ElasticSearchQueryBuilder")
       val responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand] =
@@ -47,14 +48,14 @@ object ElasticSearchClient {
       Behaviors.receiveMessage[EsClientCommand] {
 
         case GetEsSearchResult(params, replyTo) =>
-          // Create a session child actor to process the request
+          // Create a session child actor to process the request.
           val sessionChildActor =
             processSearch(params, replyTo, queryBuilder, responseProcessor)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case GetEsFetchResult(params, replyTo) =>
-          // Make an HTTP request to elastic search
+          // Make an HTTP request to elastic search.
           val id = params.id
           val uri = fetchUri(id)
           implicit val system: ActorSystem[Nothing] = context.system
@@ -67,6 +68,10 @@ object ElasticSearchClient {
     }
   }
 
+  /**
+   * Per session actor behavior for handling a search request.
+   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   */
   private def processSearch(
                              params: SearchParams,
                              replyTo: ActorRef[ElasticSearchResponse],

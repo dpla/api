@@ -39,6 +39,8 @@ object EbookRegistry {
 
   def apply(): Behavior[RegistryCommand] = {
     Behaviors.setup[RegistryCommand] { context =>
+
+      // Spawn children.
       val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
         context.spawn(ParamValidator(), "ParamValidator")
       val mapper: ActorRef[EbookMapper.MapperCommand] =
@@ -47,14 +49,14 @@ object EbookRegistry {
       Behaviors.receiveMessage[RegistryCommand] {
 
         case Search(client, rawParams, replyTo) =>
-          // Create a session child actor to process the request
+          // Create a session child actor to process the request.
           val sessionChildActor =
             processSearch(rawParams, replyTo, paramValidator, client, mapper)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case Fetch(client, id, rawParams, replyTo) =>
-          // Create a session child actor to process the request
+          // Create a session child actor to process the request.
           val sessionChildActor =
             processFetch(id, rawParams, replyTo, paramValidator, client, mapper)
           context.spawnAnonymous(sessionChildActor)
