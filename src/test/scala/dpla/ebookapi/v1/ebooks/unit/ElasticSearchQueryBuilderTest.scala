@@ -1,11 +1,12 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.GetSearchQuery
-import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
+import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.{EsQueryBuilderCommand, GetSearchQuery}
+import dpla.ebookapi.v1.ebooks._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
 import spray.json._
 
 class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader
@@ -14,8 +15,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand] =
-    testKit.spawn(ElasticSearchQueryBuilder())
+  val queryBuilder: ActorRef[EsQueryBuilderCommand] = testKit.spawn(ElasticSearchQueryBuilder())
   val probe: TestProbe[EsQueryBuilderResponse] = testKit.createTestProbe[EsQueryBuilderResponse]()
 
   def getJsQuery(params: SearchParams): JsObject = {

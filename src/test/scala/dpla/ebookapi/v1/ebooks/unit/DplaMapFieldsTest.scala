@@ -1,5 +1,6 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.unit
 
+import dpla.ebookapi.v1.ebooks.DplaMapFields
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

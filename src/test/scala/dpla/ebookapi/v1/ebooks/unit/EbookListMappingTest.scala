@@ -1,10 +1,11 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.unit
 
+import dpla.ebookapi.helpers.FileReader
+import dpla.ebookapi.v1.ebooks.{EbookList, JsonFieldReader}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
-import JsonFormats._
-import dpla.ebookapi.helpers.FileReader
 
 class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader with FileReader {
 

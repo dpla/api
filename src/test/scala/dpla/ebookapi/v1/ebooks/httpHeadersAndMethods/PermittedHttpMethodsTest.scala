@@ -1,4 +1,4 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.httpHeadersAndMethods
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.{ActorRef, ActorSystem}
@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks.MockEsClientSuccess
+import dpla.ebookapi.v1.ebooks.EbookRegistry
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

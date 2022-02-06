@@ -1,12 +1,13 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
+import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.{ElasticSearchResponseProcessorCommand, ProcessElasticSearchResponse}
+import dpla.ebookapi.v1.ebooks._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessElasticSearchResponse
 import org.scalatest.{AsyncTestSuite, BeforeAndAfterAll}
 
 import scala.concurrent.Future
@@ -16,7 +17,7 @@ class ElasticSearchResponseProcessorTest extends AnyWordSpec with Matchers with 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand] =
+  val responseProcessor: ActorRef[ElasticSearchResponseProcessorCommand] =
     testKit.spawn(ElasticSearchResponseProcessor())
   val probe: TestProbe[ElasticSearchResponse] = testKit.createTestProbe[ElasticSearchResponse]()
 
