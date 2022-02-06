@@ -15,6 +15,9 @@ case class ElasticSearchHttpFailure(status: Int) extends ElasticSearchResponse
 object ElasticSearchParseFailure extends ElasticSearchResponse
 object ElasticSearchUnreachable extends ElasticSearchResponse
 
+/**
+ *
+ */
 object ElasticSearchResponseProcessor {
 
   sealed trait ElasticSearchResponseProcessorCommand

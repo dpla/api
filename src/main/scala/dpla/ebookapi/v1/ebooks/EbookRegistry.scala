@@ -8,7 +8,11 @@ import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
 
-
+/**
+ * Handles the control flow for processing a request from Routes.
+ * It's children include ParamValidator, EbookMapper, and session actors.
+ * It also messages with ElasticSearchClient.
+ */
 sealed trait RegistryResponse
 final case class SearchResult(result: EbookList) extends RegistryResponse
 final case class FetchResult(result: SingleEbook) extends RegistryResponse
@@ -75,18 +79,30 @@ object EbookRegistry {
 
       var searchParams: Option[SearchParams] = None
 
+      // Send initial message to ParamValidator.
       paramValidator ! ValidateSearchParams(rawParams, context.self)
 
       Behaviors.receiveMessage {
+
+        /**
+         * Possible responses from ParamValidator.
+         * If params are valid, send a message to ElasticSearchClient to get a search result.
+         * If params are invalid, send an error message back to Routes.
+         */
         case ValidSearchParams(params: SearchParams) =>
           searchParams = Some(params)
           client ! GetEsSearchResult(params, context.self)
           Behaviors.same
 
-        case ValidationError(message) =>
+        case InvalidParams(message) =>
           replyTo ! ValidationFailure(message)
           Behaviors.stopped
 
+        /**
+         * Possible responses from ElasticSearchClient.
+         * If the search was successful, send a message to EbookMapper to get a mapped EbookList.
+         * If the search was unsuccessful, send an error message back to Routes.
+         */
         case ElasticSearchSuccess(body) =>
           searchParams match {
             case Some(params) =>
@@ -110,6 +126,11 @@ object EbookRegistry {
           replyTo ! InternalFailure
           Behaviors.stopped
 
+        /**
+         * Possible responses from EbookMapper.
+         * If the mapping was successful, send the mapped EbookList back to Routes.
+         * If the mapping was unsuccessful, send an error message back to Routes.
+         */
         case MappedEbookList(ebookList) =>
           replyTo ! SearchResult(ebookList)
           Behaviors.stopped
@@ -140,17 +161,28 @@ object EbookRegistry {
 
     Behaviors.setup[AnyRef] { context =>
 
+      // Send initial message to ParamValidator.
       paramValidator ! ValidateFetchParams(id, rawParams, context.self)
 
       Behaviors.receiveMessage {
+        /**
+         * Possible responses from ParamValidator.
+         * If params are valid, send a message to ElasticSearchClient to get a fetch result.
+         * If params are invalid, send an error message back to Routes.
+         */
         case ValidFetchParams(params: FetchParams) =>
           client ! GetEsFetchResult(params, context.self)
           Behaviors.same
 
-        case ValidationError(message) =>
+        case InvalidParams(message) =>
           replyTo ! ValidationFailure(message)
           Behaviors.stopped
 
+        /**
+         * Possible responses from ElasticSearchClient.
+         * If the fetch was successful, send a message to EbookMapper to get a mapped Ebook.
+         * If the fetch was unsuccessful, send an error message back to Routes.
+         */
         case ElasticSearchSuccess(body) =>
           mapper ! MapFetchResponse(body, context.self)
           Behaviors.same
@@ -170,6 +202,11 @@ object EbookRegistry {
           replyTo ! InternalFailure
           Behaviors.stopped
 
+        /**
+         * Possible responses from EbookMapper.
+         * If the mapping was successful, send the mapped Ebook back to Routes.
+         * If the mapping was unsuccessful, send an error message back to Routes.
+         */
         case MappedSingleEbook(singleEbook) =>
           replyTo ! FetchResult(singleEbook)
           Behaviors.stopped

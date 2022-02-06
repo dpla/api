@@ -32,12 +32,14 @@ object RunApp {
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
+      // Spawn EbookRegistry and ElasticSearchClient, the two top-level actors.
       val ebookRegistry = context.spawn(EbookRegistry(), "EbookRegistry")
       context.watch(ebookRegistry)
 
       val elasticSearchClient = context.spawn(ElasticSearchClient(), "ElasticSearchClient")
       context.watch(elasticSearchClient)
 
+      // Start the HTTP server. Pass references to the EbookRegistry and ElasticSearchClient actors to Routes.
       val routes = new Routes(ebookRegistry, elasticSearchClient)(context.system)
       startHttpServer(routes.applicationRoutes)(context.system)
 

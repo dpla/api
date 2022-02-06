@@ -7,10 +7,14 @@ import akka.actor.typed.scaladsl.Behaviors
 import java.net.URL
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Validates user-submitted parameters. Provides defaults when appropriate.
+ */
+
 sealed trait ValidationResponse
 final case class ValidSearchParams(searchParams: SearchParams) extends ValidationResponse
 final case class ValidFetchParams(fetchParams: FetchParams) extends ValidationResponse
-final case class ValidationError(message: String) extends ValidationResponse
+final case class InvalidParams(message: String) extends ValidationResponse
 
 case class SearchParams(
                          exactFieldMatch: Boolean,
@@ -84,11 +88,11 @@ object ParamValidator extends DplaMapFields {
    */
   private def getFetchParams(id: String, rawParams: Map[String, String]): ValidationResponse = {
     if (rawParams.nonEmpty)
-      ValidationError("Unrecognized parameter: " + rawParams.keys.mkString(", "))
+      InvalidParams("Unrecognized parameter: " + rawParams.keys.mkString(", "))
     else
       Try{ getValidId(id) } match {
         case Success(id) => ValidFetchParams(FetchParams(id))
-        case Failure(e) => ValidationError(e.getMessage)
+        case Failure(e) => InvalidParams(e.getMessage)
       }
   }
 
@@ -112,7 +116,7 @@ object ParamValidator extends DplaMapFields {
     val unrecognizedParams = rawParams.keys.toSeq diff acceptedSearchParams
 
     if (unrecognizedParams.nonEmpty)
-      ValidationError("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
+      InvalidParams("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
     else
       Try {
         // Collect all the user-submitted field filters.
@@ -131,7 +135,7 @@ object ParamValidator extends DplaMapFields {
         )
       } match {
         case Success(searchParams) => ValidSearchParams(searchParams)
-        case Failure(e) => ValidationError(e.getMessage)
+        case Failure(e) => InvalidParams(e.getMessage)
       }
   }
 

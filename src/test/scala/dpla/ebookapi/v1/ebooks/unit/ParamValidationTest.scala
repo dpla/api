@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks.unit
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationRequest}
-import dpla.ebookapi.v1.ebooks.{ParamValidator, ValidFetchParams, ValidSearchParams, ValidationError, ValidationResponse}
+import dpla.ebookapi.v1.ebooks.{ParamValidator, ValidFetchParams, ValidSearchParams, InvalidParams, ValidationResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -23,7 +23,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
     "reject unrecognized params" in {
       val params = Map("foo" -> "bar")
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -32,7 +32,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val id = "R0VfVX4BfY91SSpFGqxt"
       val params = Map("foo" -> "bar")
       paramValidator ! ValidateFetchParams(id, params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -47,13 +47,13 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
     "reject ID with special characters" in {
       val id = "<foo>"
       paramValidator ! ValidateFetchParams(id, Map(), probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long ID" in {
       val id = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
       paramValidator ! ValidateFetchParams(id, Map(), probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -78,14 +78,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.creator" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.creator" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -110,7 +110,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "standardebooks"
       val params = Map("provider.@id" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -135,14 +135,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "1"
       val params = Map("sourceResource.date.displayDate" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.date.displayDate" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -167,14 +167,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.description" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.description" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -199,7 +199,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "yes"
       val params = Map("exact_field_match" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -224,7 +224,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "sourceResource.description"
       val params = Map("facets" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -249,14 +249,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "foo"
       val params = Map("facet_size" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject out-of-range param" in {
       val given = "9999"
       val params = Map("facet_size" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -281,14 +281,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.format" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.format" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -313,7 +313,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "the-charing-cross-mystery"
       val params = Map("isShownAt" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -338,14 +338,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.language.name" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.language.name" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -370,7 +370,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "http/payload-permanent-address.dp.la"
       val params = Map("object" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -395,14 +395,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "foo"
       val params = Map("page" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject out-of-range param" in {
       val given = "0"
       val params = Map("page" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -427,14 +427,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "foo"
       val params = Map("page_size" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject out-of-range param" in {
       val given = "999999"
       val params = Map("page_size" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -459,14 +459,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.publisher" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.publisher" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -491,14 +491,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("q" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("q" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -523,14 +523,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.subject.name" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.subject.name" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -555,14 +555,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.subtitle" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.subtitle" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 
@@ -587,14 +587,14 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val given = "d"
       val params = Map("sourceResource.title" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
 
     "reject too-long param" in {
       val given: String = Random.alphanumeric.take(201).mkString
       val params = Map("sourceResource.title" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[ValidationError]
+      probe.expectMessageType[InvalidParams]
     }
   }
 }

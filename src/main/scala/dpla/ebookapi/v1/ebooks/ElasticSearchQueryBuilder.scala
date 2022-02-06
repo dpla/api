@@ -5,6 +5,9 @@ import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 
+/**
+ * Composes Elastic Search queries from user-submitted parameters.
+ */
 sealed trait EsQueryBuilderResponse
 case class ElasticSearchQuery(query: JsValue) extends EsQueryBuilderResponse
 

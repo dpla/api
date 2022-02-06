@@ -4,7 +4,9 @@ import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString}
 
 import scala.annotation.tailrec
 
-/** Methods for reading JSON */
+/**
+ * Methods for reading JSON
+ */
 trait JsonFieldReader {
 
   /** Public methods

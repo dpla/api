@@ -2,6 +2,9 @@ package dpla.ebookapi.v1.ebooks
 
 import spray.json.{DefaultJsonProtocol, _}
 
+/**
+ * These formats are used for parsing ElasticSearch responses and mapping them to DPLA MAP.
+ */
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
   implicit object EbookFormat extends RootJsonFormat[Ebook] {

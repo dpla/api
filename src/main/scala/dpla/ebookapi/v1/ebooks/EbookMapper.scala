@@ -8,6 +8,10 @@ import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Maps Elastic Search responses to case classes, which can be written to DPLA MAP.
+ */
+
 sealed trait EbookMapperResponse
 final case class MappedEbookList(response: EbookList) extends EbookMapperResponse
 final case class MappedSingleEbook(response: SingleEbook) extends EbookMapperResponse
@@ -61,14 +65,14 @@ object EbookMapper {
   sealed trait MapperCommand
 
   final case class MapSearchResponse(
-                                      body: String,
+                                      esResponseBody: String,
                                       page: Int,
                                       pageSize: Int,
                                       replyTo: ActorRef[EbookMapperResponse]
                                     ) extends MapperCommand
 
   final case class MapFetchResponse(
-                                     body: String,
+                                     esResponseBody: String,
                                      replyTo: ActorRef[EbookMapperResponse]
                                    ) extends MapperCommand
 

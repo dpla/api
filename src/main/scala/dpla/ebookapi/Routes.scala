@@ -31,6 +31,8 @@ class Routes(
   private implicit val timeout: Timeout =
     Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
 
+  // Search and fetch requests are send to EbookRegistry actor for processing.
+  // These requests include a reference to the ElasticSearchClient actor.
   def searchEbooks(params: Map[String, String]): Future[RegistryResponse] =
     ebookRegistry.ask(Search(elasticSearchClient, params, _))
 

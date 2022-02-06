@@ -1,17 +1,19 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Scheduler}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
-import akka.util.Timeout
 import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.GetSearchQuery
 import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessElasticSearchResponse
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
-
+/**
+ * Composes and sends requests to Elastic Search and processes response streams.
+ * It's children include ElasticSearchQueryBuilder, ElasticSearchResponseProcessor, and session actors.
+ * It also messages with EbookRegistry.
+ */
 // TODO do I need to implement retries, incremental backoff, etc. or does akka-http handle that?
 object ElasticSearchClient {
 
@@ -42,11 +44,6 @@ object ElasticSearchClient {
       val responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand] =
         context.spawn(ElasticSearchResponseProcessor(), "ElasticSearchResponseProcessor")
 
-      // TODO move timeout
-      implicit val timeout: Timeout = 3.seconds
-      implicit val scheduler: Scheduler = context.system.scheduler
-      implicit val system: ActorSystem[Nothing] = context.system
-
       Behaviors.receiveMessage[EsClientCommand] {
 
         case GetEsSearchResult(params, replyTo) =>
@@ -57,11 +54,13 @@ object ElasticSearchClient {
           Behaviors.same
 
         case GetEsFetchResult(params, replyTo) =>
-          // make an HTTP request to elastic search
+          // Make an HTTP request to elastic search
           val id = params.id
           val uri = fetchUri(id)
+          implicit val system: ActorSystem[Nothing] = context.system
           val futureResponse: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
-          // send the response future be processed
+          // Send the response future be processed.
+          // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
           responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
           Behaviors.same
       }
@@ -78,19 +77,21 @@ object ElasticSearchClient {
     Behaviors.setup[EsQueryBuilderResponse] { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
-      // get the search query
+
+      // Send initial message to ElasticSearchQueryBuilder
       queryBuilder ! GetSearchQuery(params, context.self)
 
       Behaviors.receiveMessage[EsQueryBuilderResponse] {
         case ElasticSearchQuery(query) =>
-          // upon receiving the search query, make an http request to elastic search
+          // Upon receiving the search query, make an http request to elastic search
           val request: HttpRequest = HttpRequest(
             method = HttpMethods.GET,
             uri = searchUri,
             entity = HttpEntity(ContentTypes.`application/json`, query.toString)
           )
           val futureResponse: Future[HttpResponse] = Http().singleRequest(request)
-          // send the response future be processed
+          // Send the response future be processed.
+          // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
           responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
           Behaviors.stopped
 
