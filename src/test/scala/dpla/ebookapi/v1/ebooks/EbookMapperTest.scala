@@ -12,6 +12,7 @@ class EbookMapperTest extends AnyWordSpec with Matchers with FileReader with Bef
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
+
   val ebookMapper: ActorRef[EbookMapper.MapperCommand] = testKit.spawn(EbookMapper())
   val probe: TestProbe[EbookMapperResponse] = testKit.createTestProbe[EbookMapperResponse]()
 
