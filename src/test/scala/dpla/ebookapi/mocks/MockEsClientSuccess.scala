@@ -5,10 +5,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.helpers.FileReader
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{GetEsFetchResult, GetEsSearchResult}
 import dpla.ebookapi.v1.ebooks.{ElasticSearchClient, ElasticSearchSuccess}
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes.OK
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 object MockEsClientSuccess extends FileReader {
 
@@ -22,12 +20,10 @@ object MockEsClientSuccess extends FileReader {
       Behaviors.receiveMessage[ElasticSearchClient.EsClientCommand] {
 
         case GetEsSearchResult(_, replyTo) =>
-//          val searchResponse = Future(HttpResponse(OK, entity=searchBody))
           replyTo ! ElasticSearchSuccess(searchBody)
           Behaviors.same
 
         case GetEsFetchResult(_, replyTo) =>
-//          val fetchResponse = Future(HttpResponse(OK, entity=fetchBody))
           replyTo ! ElasticSearchSuccess(fetchBody)
           Behaviors.same
       }

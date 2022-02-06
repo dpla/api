@@ -6,7 +6,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
-import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessElasticSearchResponse
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
 
 
@@ -101,7 +100,11 @@ object EbookRegistry {
               Behaviors.stopped
           }
 
-        case ElasticSearchHttpFailure =>
+        case ElasticSearchHttpFailure(_) =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case ElasticSearchParseFailure =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -154,11 +157,15 @@ object EbookRegistry {
           mapper ! MapFetchResponse(body, context.self)
           Behaviors.same
 
-        case ElasticSearchHttpFailure(statusCode) =>
-          if (statusCode.intValue == 404)
+        case ElasticSearchHttpFailure(status) =>
+          if (status == 404)
             replyTo ! NotFoundFailure
           else
             replyTo ! InternalFailure
+          Behaviors.stopped
+
+        case ElasticSearchParseFailure =>
+          replyTo ! InternalFailure
           Behaviors.stopped
 
         case ElasticSearchUnreachable =>

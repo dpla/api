@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.model.{HttpResponse, StatusCode}
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 
@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 
 sealed trait ElasticSearchResponse
 case class ElasticSearchSuccess(body: String) extends ElasticSearchResponse
-case class ElasticSearchHttpFailure(statusCode: StatusCode) extends ElasticSearchResponse
+case class ElasticSearchHttpFailure(status: Int) extends ElasticSearchResponse
 object ElasticSearchParseFailure extends ElasticSearchResponse
 object ElasticSearchUnreachable extends ElasticSearchResponse
 
@@ -69,7 +69,7 @@ object ElasticSearchResponseProcessor {
               // Map the Future value to a message, handled by this actor
               context.pipeToSelf(discarded.future) {
                 case Success(_) =>
-                  ReturnProcessorResponse(ElasticSearchHttpFailure(httpResponse.status), replyTo)
+                  ReturnProcessorResponse(ElasticSearchHttpFailure(httpResponse.status.intValue), replyTo)
                 case Failure(_) =>
                   ReturnProcessorResponse(ElasticSearchParseFailure, replyTo)
               }

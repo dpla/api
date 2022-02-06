@@ -14,7 +14,6 @@ import scala.concurrent.Future
 class ElasticSearchResponseProcessorTest extends AnyWordSpec with Matchers with BeforeAndAfterAll with AsyncTestSuite {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
-
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   val responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand] =
@@ -34,7 +33,7 @@ class ElasticSearchResponseProcessorTest extends AnyWordSpec with Matchers with 
       val httpResponse = Future(HttpResponse(NotFound))
       responseProcessor ! ProcessElasticSearchResponse(httpResponse, probe.ref)
       val response: ElasticSearchHttpFailure = probe.expectMessageType[ElasticSearchHttpFailure]
-      assert(response.statusCode.intValue == 404)
+      assert(response.status == 404)
     }
 
     "handle unreachable endpoint" in {
