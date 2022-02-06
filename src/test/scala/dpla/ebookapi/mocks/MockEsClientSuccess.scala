@@ -8,8 +8,8 @@ import dpla.ebookapi.v1.ebooks.{ElasticSearchClient, ElasticSearchSuccess}
 
 object MockEsClientSuccess extends FileReader {
 
-  private val searchBody: String = readFile("/elasticSearchMinimalEbookList.json")
-  private val fetchBody: String = readFile("/elasticSearchMinimalEbook.json")
+  private val searchBody: String = readFile("/elasticSearchEbookList.json")
+  private val fetchBody: String = readFile("/elasticSearchEbook.json")
 
   def apply(): Behavior[ElasticSearchClient.EsClientCommand] = {
     Behaviors.receiveMessage[ElasticSearchClient.EsClientCommand] {
