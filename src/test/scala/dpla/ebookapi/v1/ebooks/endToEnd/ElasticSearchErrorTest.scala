@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.mocks.{MockEsClientNotFound, MockEsClientParseError, MockEsClientServerError, MockEsClientUnreachable}
+import dpla.ebookapi.mocks.{MockEsClientNotFound, MockEsClientParseError, MockEsClientServerError, MockEsClientUnmappable, MockEsClientUnreachable}
 import dpla.ebookapi.v1.ebooks.EbookRegistry
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
@@ -55,6 +55,18 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers with ScalatestRou
         status shouldEqual StatusCodes.ImATeapot
       }
     }
+
+    "return Teapot if ElasticSearch response cannot be mapped" in {
+      val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientUnmappable())
+      lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+
+      val request = Get("/v1/ebooks")
+        .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.ImATeapot
+      }
+    }
   }
 
   "/v1/ebooks[id] route" should {
@@ -94,6 +106,18 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers with ScalatestRou
 
     "return Teapot if call to ElasticSearch fails" in {
       val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientUnreachable())
+      lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+
+      val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
+        .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.ImATeapot
+      }
+    }
+
+    "return Teapot if ElasticSearch response cannot be mapped" in {
+      val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientUnmappable())
       lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
 
       val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
