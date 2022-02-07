@@ -92,7 +92,9 @@ object ParamValidator extends DplaMapFields {
     else
       Try{ getValidId(id) } match {
         case Success(id) => ValidFetchParams(FetchParams(id))
-        case Failure(e) => InvalidParams(e.getMessage)
+        case Failure(e) =>
+          // TODO log
+          InvalidParams(e.getMessage)
       }
   }
 
@@ -105,7 +107,10 @@ object ParamValidator extends DplaMapFields {
 
     if (id.length < 1 || id.length > 32) throw ValidationException(rule)
     else if (id.matches("[a-zA-Z0-9-]*")) id
-    else throw ValidationException(rule)
+    else {
+      // TODO log
+      throw ValidationException(rule)
+    }
   }
 
   /**
@@ -115,9 +120,10 @@ object ParamValidator extends DplaMapFields {
     // Check for unrecognized params
     val unrecognizedParams = rawParams.keys.toSeq diff acceptedSearchParams
 
-    if (unrecognizedParams.nonEmpty)
+    if (unrecognizedParams.nonEmpty) {
+      // TODO log
       InvalidParams("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
-    else
+    } else
       Try {
         // Collect all the user-submitted field filters.
         val filters: Seq[FieldFilter] = searchableDplaFields.flatMap(getValidFieldFilter(rawParams, _))
@@ -135,7 +141,9 @@ object ParamValidator extends DplaMapFields {
         )
       } match {
         case Success(searchParams) => ValidSearchParams(searchParams)
-        case Failure(e) => InvalidParams(e.getMessage)
+        case Failure(e) =>
+          // TODO log
+          InvalidParams(e.getMessage)
       }
   }
 
