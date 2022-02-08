@@ -9,6 +9,7 @@
   "_source": {
     "sourceUri": null,
     "itemUri": null,
+    "providerName": null,
     "payloadUri": [],
     "title": [],
     "author": [],

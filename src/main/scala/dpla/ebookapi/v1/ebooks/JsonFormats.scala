@@ -20,6 +20,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         medium = readStringArray(root, "_source", "medium"),
         language = readStringArray(root, "_source", "language"),
         payloadUri = readStringArray(root, "_source", "payloadUri"),
+        providerName = readString(root, "_source", "providerName"),
         publisher = readStringArray(root, "_source", "publisher"),
         publicationDate = readStringArray(root, "_source", "publicationDate"),
         sourceUri = readString(root, "_source", "sourceUri"),
@@ -38,6 +39,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         "object" -> ebook.payloadUri.toJson,
         "provider" -> filterIfEmpty(JsObject(
           "@id" -> ebook.sourceUri.toJson,
+          "name" -> ebook.providerName.toJson
         )),
         "sourceResource" -> filterIfEmpty(JsObject(
           "creator" -> ebook.author.toJson,

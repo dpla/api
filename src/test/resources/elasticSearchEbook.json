@@ -9,6 +9,7 @@
   "_source": {
     "sourceUri": "http://standardebooks.org",
     "itemUri": "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery",
+    "providerName":"Standard Ebooks",
     "payloadUri": [
       "http://payload-permanent-address.dp.la"
     ],
