@@ -29,14 +29,7 @@ object ElasticSearchClient {
                                      replyTo: ActorRef[ElasticSearchResponse]
                                    ) extends EsClientCommand
 
-  private val elasticSearchEndpoint: String = System.getenv("ELASTICSEARCH_URL") match {
-    case "" => "http://localhost:9200/eleanor"
-    case x => x.stripSuffix("/")
-  }
-  private val searchUri: String = s"$elasticSearchEndpoint/_search"
-  private def fetchUri(id: String): String = s"$elasticSearchEndpoint/_doc/$id"
-
-  def apply(): Behavior[EsClientCommand] = {
+  def apply(endpoint: String): Behavior[EsClientCommand] = {
     Behaviors.setup { context =>
 
       // Spawn children.
@@ -50,14 +43,14 @@ object ElasticSearchClient {
         case GetEsSearchResult(params, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSearch(params, replyTo, queryBuilder, responseProcessor)
+            processSearch(params, endpoint, replyTo, queryBuilder, responseProcessor)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case GetEsFetchResult(params, replyTo) =>
           // Make an HTTP request to elastic search.
           val id = params.id
-          val uri = fetchUri(id)
+          val uri = s"$endpoint/_doc/$id"
           implicit val system: ActorSystem[Nothing] = context.system
           val futureResponse: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
           // Send the response future be processed.
@@ -74,6 +67,7 @@ object ElasticSearchClient {
    */
   private def processSearch(
                              params: SearchParams,
+                             endpoint: String,
                              replyTo: ActorRef[ElasticSearchResponse],
                              queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand],
                              responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand]
@@ -82,6 +76,7 @@ object ElasticSearchClient {
     Behaviors.setup[EsQueryBuilderResponse] { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
+      lazy val searchUri: String = s"$endpoint/_search"
 
       // Send initial message to ElasticSearchQueryBuilder
       queryBuilder ! GetSearchQuery(params, context.self)

@@ -83,7 +83,7 @@ object ParamValidator extends DplaMapFields {
   final case class ValidationException(private val message: String = "") extends Exception(message)
 
   /**
-   * Method returns ValidationError if any parameters are invalid.
+   * Method returns ValidationError if ID or any parameters are invalid.
    * There are not currently any acceptable parameters for a fetch request.
    */
   private def getFetchParams(id: String, rawParams: Map[String, String]): ValidationResponse = {
@@ -99,7 +99,7 @@ object ParamValidator extends DplaMapFields {
   }
 
   /**
-   * Method returns Failure if any parameters are invalid.
+   * Method returns Failure if ID is are invalid.
    * Ebook ID must be a non-empty String comprised of letters, numbers, and hyphens.
    */
   private def getValidId(id: String): String = {
