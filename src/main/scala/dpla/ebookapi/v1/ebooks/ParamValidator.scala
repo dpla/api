@@ -9,6 +9,8 @@ import scala.util.{Failure, Success, Try}
 
 /**
  * Validates user-submitted parameters. Provides default values when appropriate.
+ * Bad actors may use invalid search params to try and hack the system, so they
+ * are logged as warnings.
  */
 
 sealed trait ValidationResponse

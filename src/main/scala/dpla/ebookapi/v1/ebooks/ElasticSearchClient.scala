@@ -54,7 +54,7 @@ object ElasticSearchClient {
           val futureResponse: Future[HttpResponse] =
             Http().singleRequest(HttpRequest(uri = fetchUri))
 
-          context.log.info(s"ElasticSearch QUERY: $fetchUri")
+          context.log.info(s"ElasticSearch fetch QUERY: $fetchUri")
 
           // Send the response future be processed.
           // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
@@ -94,7 +94,7 @@ object ElasticSearchClient {
           )
           val futureResponse: Future[HttpResponse] = Http().singleRequest(request)
 
-          context.log.info(s"ElasticSearch QUERY: $searchUri" +
+          context.log.info(s"ElasticSearch search QUERY: $searchUri" +
             System.lineSeparator + query.toString)
 
           // Send the response future be processed.
