@@ -1,65 +1,104 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling._
-import dpla.ebookapi.v1.ebooks.JsonFormats._
-import spray.json._
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
+import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.GetSearchQuery
+import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessElasticSearchResponse
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.Future
 
-class ElasticSearchClient(elasticSearchEndpoint: String) {
+/**
+ * Composes and sends requests to Elastic Search and processes response streams.
+ * It's children include ElasticSearchQueryBuilder, ElasticSearchResponseProcessor, and session actors.
+ * It also messages with EbookRegistry.
+ */
+// TODO do I need to implement retries, incremental backoff, etc. or does akka-http handle that?
+object ElasticSearchClient {
 
-  def fetch(id: String): Future[Either[StatusCode, Future[SingleEbook]]] = {
-    implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
-    // needed for the future map
-    implicit val executionContext: ExecutionContextExecutor = system.executionContext
+  sealed trait EsClientCommand
 
-    val uri = s"$elasticSearchEndpoint/_doc/$id"
+  final case class GetEsSearchResult(
+                                      params: SearchParams,
+                                      replyTo: ActorRef[ElasticSearchResponse]
+                                    ) extends EsClientCommand
 
-    val response: Future[HttpResponse] =
-      Http().singleRequest(HttpRequest(uri = uri))
+  final case class GetEsFetchResult(
+                                     params: FetchParams,
+                                     replyTo: ActorRef[ElasticSearchResponse]
+                                   ) extends EsClientCommand
 
-    response.map(res => {
-      res.status.intValue match {
-        case 200 =>
-          val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val ebook: Future[SingleEbook] = body.map(_.parseJson.convertTo[SingleEbook])
-          Right(ebook)
-        case _ =>
-          Left(res.status)
+  def apply(endpoint: String): Behavior[EsClientCommand] = {
+    Behaviors.setup { context =>
+
+      // Spawn children.
+      val queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand] =
+        context.spawn(ElasticSearchQueryBuilder(), "ElasticSearchQueryBuilder")
+      val responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand] =
+        context.spawn(ElasticSearchResponseProcessor(), "ElasticSearchResponseProcessor")
+
+      Behaviors.receiveMessage[EsClientCommand] {
+
+        case GetEsSearchResult(params, replyTo) =>
+          // Create a session child actor to process the request.
+          val sessionChildActor =
+            processSearch(params, endpoint, replyTo, queryBuilder, responseProcessor)
+          context.spawnAnonymous(sessionChildActor)
+          Behaviors.same
+
+        case GetEsFetchResult(params, replyTo) =>
+          // Make an HTTP request to elastic search.
+          val id = params.id
+          val uri = s"$endpoint/_doc/$id"
+          implicit val system: ActorSystem[Nothing] = context.system
+          val futureResponse: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
+          // Send the response future be processed.
+          // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
+          responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
+          Behaviors.same
       }
-    })
+    }
   }
 
-  def search(params: SearchParams): Future[Either[StatusCode, Future[EbookList]]] = {
-    implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "SingleRequest")
-    // needed for the future map
-    implicit val executionContext: ExecutionContextExecutor = system.executionContext
+  /**
+   * Per session actor behavior for handling a search request.
+   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   */
+  private def processSearch(
+                             params: SearchParams,
+                             endpoint: String,
+                             replyTo: ActorRef[ElasticSearchResponse],
+                             queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand],
+                             responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand]
+                           ): Behavior[EsQueryBuilderResponse] = {
 
-    val uri: String = s"$elasticSearchEndpoint/_search"
-    val data: String = ElasticSearchQueryBuilder.composeQuery(params).toString
+    Behaviors.setup[EsQueryBuilderResponse] { context =>
 
-    val request: HttpRequest = HttpRequest(
-      method = HttpMethods.GET,
-      uri = uri,
-      entity = HttpEntity(ContentTypes.`application/json`, data)
-    )
+      implicit val system: ActorSystem[Nothing] = context.system
+      lazy val searchUri: String = s"$endpoint/_search"
 
-    val response: Future[HttpResponse] = Http().singleRequest(request)
+      // Send initial message to ElasticSearchQueryBuilder
+      queryBuilder ! GetSearchQuery(params, context.self)
 
-    response.map(res => {
-      res.status.intValue match {
-        case 200 =>
-          val body: Future[String] = Unmarshaller.stringUnmarshaller(res.entity)
-          val ebooks: Future[EbookList] =
-            body.map(_.parseJson.convertTo[EbookList].copy(limit=Some(params.pageSize), start=Some(params.start)))
-          Right(ebooks)
+      Behaviors.receiveMessage[EsQueryBuilderResponse] {
+        case ElasticSearchQuery(query) =>
+          // Upon receiving the search query, make an http request to elastic search
+          val request: HttpRequest = HttpRequest(
+            method = HttpMethods.GET,
+            uri = searchUri,
+            entity = HttpEntity(ContentTypes.`application/json`, query.toString)
+          )
+          val futureResponse: Future[HttpResponse] = Http().singleRequest(request)
+          // Send the response future be processed.
+          // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
+          responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
+          Behaviors.stopped
+
         case _ =>
-          Left(res.status)
+          // TODO log
+          Behaviors.unhandled
       }
-    })
+    }
   }
 }

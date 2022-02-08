@@ -2,12 +2,35 @@ package dpla.ebookapi.v1.ebooks
 
 import spray.json._
 import JsonFormats._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 
-object ElasticSearchQueryBuilder {
+/**
+ * Composes Elastic Search queries from user-submitted parameters.
+ */
+sealed trait EsQueryBuilderResponse
+case class ElasticSearchQuery(query: JsValue) extends EsQueryBuilderResponse
 
-  def composeQuery(params: SearchParams): JsValue =
+object ElasticSearchQueryBuilder extends DplaMapFields {
+
+  sealed trait EsQueryBuilderCommand
+
+  case class GetSearchQuery(
+                               params: SearchParams,
+                               replyTo: ActorRef[EsQueryBuilderResponse]
+                             ) extends EsQueryBuilderCommand
+
+  def apply(): Behavior[EsQueryBuilderCommand] = {
+    Behaviors.receiveMessage[EsQueryBuilderCommand] {
+      case GetSearchQuery(params, replyTo) =>
+        replyTo ! ElasticSearchQuery(composeSearchQuery(params))
+        Behaviors.same
+    }
+  }
+
+  def composeSearchQuery(params: SearchParams): JsValue =
     JsObject(
-      "from" -> params.from.toJson,
+      "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filters, params.exactFieldMatch),
       "aggs" -> aggs(params.facets, params.facetSize)
@@ -24,6 +47,9 @@ object ElasticSearchQueryBuilder {
     "summary^0.75",
     "title^2"
   )
+
+  // ElasticSearch param that defines the number of hits to skip
+  private def from(page: Int, pageSize: Int): Int = (page-1)*pageSize
 
   private def query(q: Option[String], fieldFilters: Seq[FieldFilter], exactFieldMatch: Boolean) = {
     val keyword: Seq[JsObject] = q.map(keywordQuery(_, keywordQueryFields)).toSeq
@@ -68,7 +94,7 @@ object ElasticSearchQueryBuilder {
    */
   private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
     if (exactFieldMatch) {
-      val field: String = DplaMapFields.getElasticSearchExactMatchField(filter.fieldName)
+      val field: String = getElasticSearchExactMatchField(filter.fieldName)
         .getOrElse(throw new RuntimeException("Unrecognized field name: " + filter.fieldName)) // This should not happen
 
       // Strip leading and trailing quotation marks
@@ -83,7 +109,7 @@ object ElasticSearchQueryBuilder {
         )
       )
     } else {
-      val fields: Seq[String] = Seq(DplaMapFields.getElasticSearchField(filter.fieldName)).flatten
+      val fields: Seq[String] = Seq(getElasticSearchField(filter.fieldName)).flatten
       keywordQuery(filter.value, fields)
     }
   }
@@ -100,7 +126,7 @@ object ElasticSearchQueryBuilder {
         facetArray.foreach(facet => {
           val terms = JsObject(
             "terms" -> JsObject(
-              "field" -> DplaMapFields.getElasticSearchExactMatchField(facet).toJson,
+              "field" -> getElasticSearchExactMatchField(facet).toJson,
               "size" -> facetSize.toJson
             )
           )

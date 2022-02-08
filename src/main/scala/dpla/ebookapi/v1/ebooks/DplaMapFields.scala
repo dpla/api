@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks
 /**
  * Holds information about DPLA MAP fields.
  */
-object DplaMapFields {
+trait DplaMapFields {
 
   sealed trait DplaFieldType
   case object TextField extends DplaFieldType
@@ -117,13 +117,13 @@ object DplaMapFields {
     )
   )
 
-  def allFields: Seq[String] =
+  def allDplaFields: Seq[String] =
     fields.map(_.name)
 
-  def searchableFields: Seq[String] =
+  def searchableDplaFields: Seq[String] =
     fields.filter(_.searchable).map(_.name)
 
-  def facetableFields: Seq[String] =
+  def facetableDplaFields: Seq[String] =
     fields.filter(_.facetable).filter(_.elasticSearchNotAnalyzed.nonEmpty).map(_.name)
 
   def getElasticSearchField(name: String): Option[String] =
@@ -137,6 +137,6 @@ object DplaMapFields {
   def getElasticSearchExactMatchField(name: String): Option[String] =
     fields.find(_.name == name).map(field => field.elasticSearchNotAnalyzed.getOrElse(field.elasticSearchDefault))
 
-  def getFieldType(name: String): Option[DplaFieldType] =
+  def getDplaFieldType(name: String): Option[DplaFieldType] =
     fields.find(_.name == name).map(_.fieldType)
 }

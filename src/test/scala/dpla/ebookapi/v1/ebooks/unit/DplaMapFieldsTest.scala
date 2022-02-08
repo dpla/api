@@ -1,9 +1,13 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.unit
 
+import dpla.ebookapi.v1.ebooks.DplaMapFields
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class DplaMapFieldsTest extends AnyWordSpec with Matchers {
+
+  class DplaMapFieldsTester extends DplaMapFields
+  val tester = new DplaMapFieldsTester
 
   "DplaMapFieldsTest" should {
     "map DPLA MAP fields to ElasticSearch fields" in {
@@ -35,7 +39,7 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
         "subtitle",
         "title"
       )
-      val mapped = dplaFields.flatMap(DplaMapFields.getElasticSearchField)
+      val mapped = dplaFields.flatMap(tester.getElasticSearchField)
       mapped should contain allElementsOf expected
     }
 
@@ -68,7 +72,7 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
         "subtitle.not_analyzed",
         "title.not_analyzed"
       )
-      val mapped = dplaFields.flatMap( DplaMapFields.getElasticSearchExactMatchField)
+      val mapped = dplaFields.flatMap(tester.getElasticSearchExactMatchField)
       mapped should contain allElementsOf expected
     }
   }

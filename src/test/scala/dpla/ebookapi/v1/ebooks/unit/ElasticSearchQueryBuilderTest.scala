@@ -1,11 +1,28 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.unit
 
-import org.scalatest.PrivateMethodTester
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
+import akka.actor.typed.ActorRef
+import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.{EsQueryBuilderCommand, GetSearchQuery}
+import dpla.ebookapi.v1.ebooks._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
 import spray.json._
 
-class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader {
+class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader
+  with BeforeAndAfterAll {
+
+  lazy val testKit: ActorTestKit = ActorTestKit()
+  override def afterAll(): Unit = testKit.shutdownTestKit()
+
+  val queryBuilder: ActorRef[EsQueryBuilderCommand] = testKit.spawn(ElasticSearchQueryBuilder())
+  val probe: TestProbe[EsQueryBuilderResponse] = testKit.createTestProbe[EsQueryBuilderResponse]()
+
+  def getJsQuery(params: SearchParams): JsObject = {
+    queryBuilder ! GetSearchQuery(params, probe.ref)
+    val msg: ElasticSearchQuery = probe.expectMessageType[ElasticSearchQuery]
+    msg.query.asJsObject
+  }
 
   val minSearchParams: SearchParams = SearchParams(
     exactFieldMatch = false,
@@ -16,9 +33,10 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     pageSize = 20,
     q = None
   )
-  val minQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(minSearchParams).asJsObject
 
-  val detailQueryParams: SearchParams = SearchParams(
+  val minQuery: JsObject = getJsQuery(minSearchParams)
+
+  val detailSearchParams: SearchParams = SearchParams(
     exactFieldMatch = false,
     facets = Some(Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
@@ -27,7 +45,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     pageSize = 20,
     q = Some("dogs")
   )
-  val detailQuery: JsObject = ElasticSearchQueryBuilder.composeQuery(detailQueryParams).asJsObject
+
+  val detailQuery: JsObject = getJsQuery(detailSearchParams)
 
   val elasticSearchField: PrivateMethod[String] =
     PrivateMethod[String](Symbol("elasticSearchField"))
@@ -99,7 +118,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
   "field filter query builder" should {
     "handle no field search with q" in {
       val params = minSearchParams.copy(q=Some("dogs"))
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string"))
       assert(queryString.size == 1)
@@ -108,7 +127,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "handle field search with no q" in {
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string"))
       assert(queryString.size == 1)
@@ -120,7 +139,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         FieldFilter("provider.@id", "http://standardebooks.org")
       )
       val params = minSearchParams.copy(filters=filters)
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryMatch = boolMust.flatMap(obj => readObject(obj, "query_string"))
       assert(queryMatch.size == 2)
@@ -130,7 +149,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val expected = Some("london")
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readString(queryString, "query")
@@ -141,7 +160,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val expected = Seq("genre")
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
-      val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+      val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readStringArray(queryString, "fields")
@@ -151,8 +170,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "exact term match" should {
 
       "use 'term' query" in {
-        val params = detailQueryParams.copy(exactFieldMatch = true)
-        val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+        val params = detailSearchParams.copy(exactFieldMatch = true)
+        val query = getJsQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm = boolMust.flatMap(obj => readObject(obj, "term"))
         assert(queryTerm.size == 1)
@@ -160,8 +179,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
       "specify exact field match field and term" in {
         val expected = Some("adventure")
-        val params = detailQueryParams.copy(exactFieldMatch = true)
-        val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+        val params = detailSearchParams.copy(exactFieldMatch = true)
+        val query = getJsQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
         val traversed = readString(queryTerm, "genre.not_analyzed")
@@ -172,7 +191,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         val expected = Some("Mystery fiction")
         val filters = Seq(FieldFilter("sourceResource.subject.name", "\"Mystery fiction\""))
         val params = minSearchParams.copy(filters=filters, exactFieldMatch=true)
-        val query = ElasticSearchQueryBuilder.composeQuery(params).asJsObject
+        val query = getJsQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
         val traversed = readString(queryTerm, "genre.not_analyzed")

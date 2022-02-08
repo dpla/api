@@ -1,24 +1,28 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1.ebooks.httpHeadersAndMethods
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.helpers.Mocks
+import dpla.ebookapi.mocks.MockEsClientSuccess
+import dpla.ebookapi.v1.ebooks.EbookRegistry
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRouteTest with Mocks {
+class PermittedMediaTypesTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
+  override def afterAll(): Unit = testKit.shutdownTestKit()
+
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
-
-  val elasticSearchClient: ElasticSearchClient = getMockElasticSearchClient
-  lazy val routes: Route = new Routes(elasticSearchClient).applicationRoutes
+  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] = testKit.spawn(EbookRegistry())
+  val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientSuccess())
+  lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
 
   "/v1/ebooks route" should {
     "reject invalid media types" in {
