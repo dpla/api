@@ -39,6 +39,7 @@ case class Ebook(
                   language: Seq[String] = Seq[String](),
                   medium: Seq[String] = Seq[String](),
                   payloadUri: Seq[String] = Seq[String](),
+                  providerName: Option[String] = None,
                   publisher: Seq[String] = Seq[String](),
                   publicationDate: Seq[String] = Seq[String](),
                   sourceUri: Option[String] = None,

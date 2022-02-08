@@ -87,6 +87,12 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
       traversed should contain only expected
     }
 
+    "map providerName" in {
+      val expected = Some("Standard Ebooks")
+      val traversed = readString(firstDoc, "provider", "name")
+      assert(traversed === expected)
+    }
+
     "map publisher" in {
       val expected = "Publisher"
       val traversed = readStringArray(firstDoc, "sourceResource", "publisher")

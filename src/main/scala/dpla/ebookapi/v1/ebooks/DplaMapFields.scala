@@ -44,6 +44,14 @@ trait DplaMapFields {
       elasticSearchNotAnalyzed = Some("sourceUri")
     ),
     DplaField(
+      name = "provider.name",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      elasticSearchDefault = "providerName",
+      elasticSearchNotAnalyzed = Some("providerName.not_analyzed")
+    ),
+    DplaField(
       name = "sourceResource.creator",
       fieldType = TextField,
       searchable = true,

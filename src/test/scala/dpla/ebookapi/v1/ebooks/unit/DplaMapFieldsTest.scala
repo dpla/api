@@ -15,6 +15,7 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
         "isShownAt",
         "object",
         "provider.@id",
+        "provider.name",
         "sourceResource.creator",
         "sourceResource.date.displayDate",
         "sourceResource.description",
@@ -28,6 +29,7 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
       val expected = Seq(
         "sourceUri",
         "itemUri",
+        "providerName",
         "payloadUri",
         "author",
         "publicationDate",
@@ -48,6 +50,7 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
         "isShownAt",
         "object",
         "provider.@id",
+        "provider.name",
         "sourceResource.creator",
         "sourceResource.date.displayDate",
         "sourceResource.description",
@@ -61,6 +64,7 @@ class DplaMapFieldsTest extends AnyWordSpec with Matchers {
       val expected = Seq(
         "sourceUri",
         "itemUri",
+        "providerName.not_analyzed",
         "payloadUri",
         "author.not_analyzed",
         "publicationDate.not_analyzed",
