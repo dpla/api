@@ -111,12 +111,17 @@ object EbookRegistry {
               mapper ! MapSearchResponse(body, params.page, params.pageSize, context.self)
               Behaviors.same
             case None =>
-              // TODO log error
+              // This should not happen.
+              val msg = "Cannot map ElasticSearch response b/c SearchParams are missing."
+              context.log.error(msg)
               replyTo ! InternalFailure
               Behaviors.stopped
           }
 
-        case ElasticSearchHttpFailure(_) =>
+        case ElasticSearchHttpFailure(statusCode) =>
+          val msg = "ElasticSearch fetch RESPONSE: " + statusCode.intValue +
+            ": " + statusCode.reason
+          context.log.error(msg)
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -142,7 +147,6 @@ object EbookRegistry {
           Behaviors.stopped
 
         case _ =>
-          // TODO log?
           Behaviors.unhandled
       }
     }.narrow[NotUsed]
@@ -189,11 +193,15 @@ object EbookRegistry {
           mapper ! MapFetchResponse(body, context.self)
           Behaviors.same
 
-        case ElasticSearchHttpFailure(status) =>
-          if (status == 404)
+        case ElasticSearchHttpFailure(statusCode) =>
+          if (statusCode.intValue == 404)
             replyTo ! NotFoundFailure
-          else
+          else {
+            val msg = "ElasticSearch fetch RESPONSE: " + statusCode.intValue +
+              ": " + statusCode.reason
+            context.log.error(msg)
             replyTo ! InternalFailure
+          }
           Behaviors.stopped
 
         case ElasticSearchParseFailure =>
@@ -218,7 +226,6 @@ object EbookRegistry {
           Behaviors.stopped
 
         case _ =>
-          // TODO log?
           Behaviors.unhandled
       }
     }.narrow[NotUsed]

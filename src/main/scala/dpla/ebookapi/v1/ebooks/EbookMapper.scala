@@ -77,37 +77,55 @@ object EbookMapper {
                                      replyTo: ActorRef[EbookMapperResponse]
                                    ) extends MapperCommand
 
-  def apply(): Behavior[MapperCommand] =
-    Behaviors.receiveMessage {
-      case MapSearchResponse(body, page, pageSize, replyTo) =>
-        replyTo ! mapEbookList(body, page, pageSize)
-        Behaviors.same
-      case MapFetchResponse(body, replyTo) =>
-        replyTo ! mapSingleEbook(body)
-        Behaviors.same
-    }
+  def apply(): Behavior[MapperCommand] = {
+    Behaviors.setup[MapperCommand] { context =>
+      Behaviors.receiveMessage[MapperCommand] {
+        case MapSearchResponse(body, page, pageSize, replyTo) =>
 
-  private def mapEbookList(body: String, page: Int, pageSize: Int): EbookMapperResponse =
+          val response: EbookMapperResponse =
+            mapEbookList(body, page, pageSize) match {
+              case Success(ebookList) =>
+                MappedEbookList(ebookList)
+              case Failure(e) =>
+                val msg = "Failed to parse EbookList from ElasticSearch response"
+                val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
+                context.log.error(s"$msg: $stackTrace" + System.lineSeparator +
+                  s"ElasticSearch response: $body")
+                MapFailure
+          }
+
+          replyTo ! response
+          Behaviors.same
+
+        case MapFetchResponse(body, replyTo) =>
+
+          val response: EbookMapperResponse =
+            mapSingleEbook(body) match {
+              case Success(singleEbook) =>
+                MappedSingleEbook(singleEbook)
+              case Failure(e) =>
+                val msg = "Failed to parse SingleEbook from ElasticSearch response"
+                val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
+                context.log.error(s"$msg: $stackTrace" + System.lineSeparator +
+                  s"ElasticSearch response: $body")
+                MapFailure
+            }
+
+          replyTo ! response
+          Behaviors.same
+      }
+    }
+  }
+
+  private def mapEbookList(body: String, page: Int, pageSize: Int): Try[EbookList] =
     Try {
       val start = getStart(page, pageSize)
       body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
-    } match {
-      case Success(ebookList) =>
-        MappedEbookList(ebookList)
-      case Failure(e) =>
-        // TODO log
-        MapFailure
     }
 
-  private def mapSingleEbook(body: String): EbookMapperResponse =
+  private def mapSingleEbook(body: String): Try[SingleEbook] =
     Try {
       body.parseJson.convertTo[SingleEbook]
-    } match {
-      case Success(singleEbook) =>
-        MappedSingleEbook(singleEbook)
-      case Failure(e) =>
-        // TODO log
-        MapFailure
     }
 
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)
