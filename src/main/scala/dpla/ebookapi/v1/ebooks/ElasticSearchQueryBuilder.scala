@@ -36,15 +36,6 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
       "aggs" -> aggs(params.facets, params.facetSize),
       "_source" -> fieldRetrieval(params.fields)
     ).toJson
-
-//    val withFields = params.fields match {
-//      case Some(dplaFields) =>
-//        val esFields = dplaFields.map(getElasticSearchField)
-//        JsObject(base.fields + ("fields" -> esFields.toJson))
-//      case None =>
-//        base
-//    }
-//    withFields.toJson
   }
 
   // Fields to search in a keyword query and their boost values

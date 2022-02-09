@@ -4,14 +4,15 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
-import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.GetSearchQuery
-import dpla.ebookapi.v1.ebooks.ElasticSearchResponseHandler.ProcessElasticSearchResponse
+import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.{EsQueryBuilderCommand, GetSearchQuery}
+import dpla.ebookapi.v1.ebooks.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
 
 import scala.concurrent.Future
 
 /**
  * Composes and sends requests to Elastic Search and processes response streams.
- * It's children include ElasticSearchQueryBuilder, ElasticSearchResponseProcessor, and session actors.
+ * It's children include ElasticSearchQueryBuilder, ElasticSearchResponseHandler,
+ * and session actors.
  * It also messages with EbookRegistry.
  */
 object ElasticSearchClient {
@@ -32,9 +33,9 @@ object ElasticSearchClient {
     Behaviors.setup { context =>
 
       // Spawn children.
-      val queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand] =
+      val queryBuilder: ActorRef[EsQueryBuilderCommand] =
         context.spawn(ElasticSearchQueryBuilder(), "ElasticSearchQueryBuilder")
-      val responseHandler: ActorRef[ElasticSearchResponseHandler.ElasticSearchResponseHandlerCommand] =
+      val responseHandler: ActorRef[ElasticSearchResponseHandlerCommand] =
         context.spawn(ElasticSearchResponseHandler(), "ElasticSearchResponseProcessor")
 
       Behaviors.receiveMessage[EsClientCommand] {
@@ -72,8 +73,8 @@ object ElasticSearchClient {
                              params: SearchParams,
                              endpoint: String,
                              replyTo: ActorRef[ElasticSearchResponse],
-                             queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand],
-                             responseProcessor: ActorRef[ElasticSearchResponseHandler.ElasticSearchResponseHandlerCommand]
+                             queryBuilder: ActorRef[EsQueryBuilderCommand],
+                             responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand]
                            ): Behavior[EsQueryBuilderResponse] = {
 
     Behaviors.setup[EsQueryBuilderResponse] { context =>
