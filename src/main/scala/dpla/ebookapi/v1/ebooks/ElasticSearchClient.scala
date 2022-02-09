@@ -11,7 +11,7 @@ import scala.concurrent.Future
 
 /**
  * Composes and sends requests to Elastic Search and processes response streams.
- * It's children include ElasticSearchQueryBuilder, ElasticSearchResponseHandler,
+ * Its children include ElasticSearchQueryBuilder, ElasticSearchResponseHandler,
  * and session actors.
  * It also messages with EbookRegistry.
  */
