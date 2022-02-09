@@ -41,7 +41,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     exactFieldMatch = false,
     facets = Some(Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")),
     facetSize = 100,
-    fields = Some(Seq("sourceResource.title, sourceResource.subtitle")),
+    fields = Some(Seq("sourceResource.title")),
     filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
     page = 3,
     pageSize = 20,
@@ -226,6 +226,20 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val expected = Some(100)
       val traversed = readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
       assert(traversed == expected)
+    }
+  }
+
+  "fields retrieval query builder" should {
+    "retrieve all fields by default" in {
+      val expected = "*"
+      val traversed = readStringArray(minQuery, "_source")
+      traversed should contain only expected
+    }
+
+    "specify fields to retrieve" in {
+      val expected = "title"
+      val traversed = readStringArray(detailQuery, "_source")
+      traversed should contain only expected
     }
   }
 }

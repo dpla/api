@@ -219,7 +219,7 @@ object ParamValidator extends DplaMapFields {
 
     val filtered = fieldString.split(",").map(candidate => {
       if (acceptedFields.contains(candidate)) candidate
-      else throw ValidationException(s"'$candidate' is not an allowable field for $param")
+      else throw ValidationException(s"'$candidate' is not an allowable value for '$param'")
     })
 
     if (filtered.nonEmpty) filtered

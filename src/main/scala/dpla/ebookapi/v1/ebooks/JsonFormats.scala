@@ -34,7 +34,6 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
       filterIfEmpty(JsObject(
         "id" -> ebook.id.toJson,
-        "ingestType" -> JsString("ebook"),
         "isShownAt" -> ebook.itemUri.toJson,
         "object" -> ebook.payloadUri.toJson,
         "provider" -> filterIfEmpty(JsObject(
