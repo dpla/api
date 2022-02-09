@@ -1,8 +1,7 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
 
@@ -77,37 +76,57 @@ object EbookMapper {
                                      replyTo: ActorRef[EbookMapperResponse]
                                    ) extends MapperCommand
 
-  def apply(): Behavior[MapperCommand] =
-    Behaviors.receiveMessage {
-      case MapSearchResponse(body, page, pageSize, replyTo) =>
-        replyTo ! mapEbookList(body, page, pageSize)
-        Behaviors.same
-      case MapFetchResponse(body, replyTo) =>
-        replyTo ! mapSingleEbook(body)
-        Behaviors.same
-    }
+  def apply(): Behavior[MapperCommand] = {
+    Behaviors.setup[MapperCommand] { context =>
+      Behaviors.receiveMessage[MapperCommand] {
+        case MapSearchResponse(body, page, pageSize, replyTo) =>
 
-  private def mapEbookList(body: String, page: Int, pageSize: Int): EbookMapperResponse =
+          val response: EbookMapperResponse =
+            mapEbookList(body, page, pageSize) match {
+              case Success(ebookList) =>
+                MappedEbookList(ebookList)
+              case Failure(e) =>
+                // TODO is there a better way to log stack trace?
+                context.log.error2(
+                  "Failed to parse EbookList from ElasticSearch response: {} ElasticSearch response: {}",
+                  e.getStackTrace.mkString(System.lineSeparator + "    "),
+                  body
+                )
+                MapFailure
+            }
+          replyTo ! response
+          Behaviors.same
+
+        case MapFetchResponse(body, replyTo) =>
+
+          val response: EbookMapperResponse =
+            mapSingleEbook(body) match {
+              case Success(singleEbook) =>
+                MappedSingleEbook(singleEbook)
+              case Failure(e) =>
+                // TODO is there a better way to log stack trace?
+                context.log.error2(
+                  "Failed to parse SingleEbook from ElasticSearch response: {} ElasticSearch response: {}",
+                  e.getStackTrace.mkString(System.lineSeparator + "    "),
+                  body
+                )
+                MapFailure
+            }
+          replyTo ! response
+          Behaviors.same
+      }
+    }
+  }
+
+  private def mapEbookList(body: String, page: Int, pageSize: Int): Try[EbookList] =
     Try {
       val start = getStart(page, pageSize)
       body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
-    } match {
-      case Success(ebookList) =>
-        MappedEbookList(ebookList)
-      case Failure(e) =>
-        // TODO log
-        MapFailure
     }
 
-  private def mapSingleEbook(body: String): EbookMapperResponse =
+  private def mapSingleEbook(body: String): Try[SingleEbook] =
     Try {
       body.parseJson.convertTo[SingleEbook]
-    } match {
-      case Success(singleEbook) =>
-        MappedSingleEbook(singleEbook)
-      case Failure(e) =>
-        // TODO log
-        MapFailure
     }
 
   // DPLA MAP field that gives the index of the first result on the page (starting at 1)

@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks
 import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
@@ -111,12 +111,20 @@ object EbookRegistry {
               mapper ! MapSearchResponse(body, params.page, params.pageSize, context.self)
               Behaviors.same
             case None =>
-              // TODO log error
+              // This should not happen.
+              context.log.error(
+                "Cannot map ElasticSearch response b/c SearchParams are missing."
+              )
               replyTo ! InternalFailure
               Behaviors.stopped
           }
 
-        case ElasticSearchHttpFailure(_) =>
+        case ElasticSearchHttpFailure(statusCode) =>
+          context.log.error2(
+            "ElasticSearch search RESPONSE ERROR: {}: {}",
+            statusCode.intValue,
+            statusCode.reason
+          )
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -142,7 +150,6 @@ object EbookRegistry {
           Behaviors.stopped
 
         case _ =>
-          // TODO log?
           Behaviors.unhandled
       }
     }.narrow[NotUsed]
@@ -189,11 +196,17 @@ object EbookRegistry {
           mapper ! MapFetchResponse(body, context.self)
           Behaviors.same
 
-        case ElasticSearchHttpFailure(status) =>
-          if (status == 404)
+        case ElasticSearchHttpFailure(statusCode) =>
+          if (statusCode.intValue == 404)
             replyTo ! NotFoundFailure
-          else
+          else {
+            context.log.error2(
+              "ElasticSearch fetch RESPONSE ERROR: {}: {}",
+              statusCode.intValue,
+              statusCode.reason
+            )
             replyTo ! InternalFailure
+          }
           Behaviors.stopped
 
         case ElasticSearchParseFailure =>
@@ -218,7 +231,6 @@ object EbookRegistry {
           Behaviors.stopped
 
         case _ =>
-          // TODO log?
           Behaviors.unhandled
       }
     }.narrow[NotUsed]

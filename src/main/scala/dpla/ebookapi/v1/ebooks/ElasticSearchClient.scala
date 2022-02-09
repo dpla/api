@@ -1,11 +1,11 @@
 package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.GetSearchQuery
-import dpla.ebookapi.v1.ebooks.ElasticSearchResponseProcessor.ProcessElasticSearchResponse
+import dpla.ebookapi.v1.ebooks.ElasticSearchResponseHandler.ProcessElasticSearchResponse
 
 import scala.concurrent.Future
 
@@ -14,7 +14,6 @@ import scala.concurrent.Future
  * It's children include ElasticSearchQueryBuilder, ElasticSearchResponseProcessor, and session actors.
  * It also messages with EbookRegistry.
  */
-// TODO do I need to implement retries, incremental backoff, etc. or does akka-http handle that?
 object ElasticSearchClient {
 
   sealed trait EsClientCommand
@@ -35,27 +34,31 @@ object ElasticSearchClient {
       // Spawn children.
       val queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand] =
         context.spawn(ElasticSearchQueryBuilder(), "ElasticSearchQueryBuilder")
-      val responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand] =
-        context.spawn(ElasticSearchResponseProcessor(), "ElasticSearchResponseProcessor")
+      val responseHandler: ActorRef[ElasticSearchResponseHandler.ElasticSearchResponseHandlerCommand] =
+        context.spawn(ElasticSearchResponseHandler(), "ElasticSearchResponseProcessor")
 
       Behaviors.receiveMessage[EsClientCommand] {
 
         case GetEsSearchResult(params, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSearch(params, endpoint, replyTo, queryBuilder, responseProcessor)
+            processSearch(params, endpoint, replyTo, queryBuilder, responseHandler)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case GetEsFetchResult(params, replyTo) =>
           // Make an HTTP request to elastic search.
           val id = params.id
-          val uri = s"$endpoint/_doc/$id"
+          val fetchUri = s"$endpoint/_doc/$id"
           implicit val system: ActorSystem[Nothing] = context.system
-          val futureResponse: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
+          val futureResponse: Future[HttpResponse] =
+            Http().singleRequest(HttpRequest(uri = fetchUri))
+
+          context.log.info(s"ElasticSearch fetch QUERY: {}", fetchUri)
+
           // Send the response future be processed.
           // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
-          responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
+          responseHandler ! ProcessElasticSearchResponse(futureResponse, replyTo)
           Behaviors.same
       }
     }
@@ -70,7 +73,7 @@ object ElasticSearchClient {
                              endpoint: String,
                              replyTo: ActorRef[ElasticSearchResponse],
                              queryBuilder: ActorRef[ElasticSearchQueryBuilder.EsQueryBuilderCommand],
-                             responseProcessor: ActorRef[ElasticSearchResponseProcessor.ElasticSearchResponseProcessorCommand]
+                             responseProcessor: ActorRef[ElasticSearchResponseHandler.ElasticSearchResponseHandlerCommand]
                            ): Behavior[EsQueryBuilderResponse] = {
 
     Behaviors.setup[EsQueryBuilderResponse] { context =>
@@ -90,13 +93,19 @@ object ElasticSearchClient {
             entity = HttpEntity(ContentTypes.`application/json`, query.toString)
           )
           val futureResponse: Future[HttpResponse] = Http().singleRequest(request)
+
+          context.log.info2(
+            "ElasticSearch search QUERY: {}: {}",
+            searchUri,
+            query.toString
+          )
+
           // Send the response future be processed.
-          // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
+          // Tell ElasticSearchResponseHandler to reply directly to EbookRegistry.
           responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
           Behaviors.stopped
 
         case _ =>
-          // TODO log
           Behaviors.unhandled
       }
     }

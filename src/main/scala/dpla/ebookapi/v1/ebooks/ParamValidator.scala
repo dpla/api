@@ -2,13 +2,15 @@ package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 /**
  * Validates user-submitted parameters. Provides default values when appropriate.
+ * Bad actors may use invalid search params to try and hack the system, so they
+ * are logged as warnings.
  */
 
 sealed trait ValidationResponse
@@ -48,15 +50,42 @@ object ParamValidator extends DplaMapFields {
                                         replyTo: ActorRef[ValidationResponse]
                                       ) extends ValidationRequest
 
-  def apply(): Behavior[ValidationRequest] =
-    Behaviors.receiveMessage {
-      case ValidateSearchParams(params, replyTo) =>
-        replyTo ! getSearchParams(params)
-        Behaviors.same
-      case ValidateFetchParams(id, params, replyTo) =>
-        replyTo ! getFetchParams(id, params)
-        Behaviors.same
+  def apply(): Behavior[ValidationRequest] = {
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage {
+        case ValidateSearchParams(params, replyTo) =>
+          val response: ValidationResponse = getSearchParams(params)
+
+          response match {
+            case InvalidParams(msg) =>
+              context.log.warn2(
+                "Invalid search params: '{}' for params '{}'",
+                msg,
+                params.map { case(key, value) => s"$key: $value"}.mkString(", ")
+              )
+            case _ => //noop
+          }
+
+          replyTo ! response
+          Behaviors.same
+        case ValidateFetchParams(id, params, replyTo) =>
+          val response = getFetchParams(id, params)
+
+          response match {
+            case InvalidParams(msg) =>
+              context.log.warn2(
+                "Invalid fetch params: '{}' for params '{}'",
+                msg,
+                params.map { case(key, value) => s"$key: $value"}.mkString(", ")
+              )
+            case _ => //noop
+          }
+
+          replyTo ! response
+          Behaviors.same
+      }
     }
+  }
 
   private val defaultExactFieldMatch: Boolean = false
   private val defaultFacetSize: Int = 50
@@ -93,7 +122,6 @@ object ParamValidator extends DplaMapFields {
       Try{ getValidId(id) } match {
         case Success(id) => ValidFetchParams(FetchParams(id))
         case Failure(e) =>
-          // TODO log
           InvalidParams(e.getMessage)
       }
   }
@@ -107,10 +135,7 @@ object ParamValidator extends DplaMapFields {
 
     if (id.length < 1 || id.length > 32) throw ValidationException(rule)
     else if (id.matches("[a-zA-Z0-9-]*")) id
-    else {
-      // TODO log
-      throw ValidationException(rule)
-    }
+    else throw ValidationException(rule)
   }
 
   /**
@@ -121,7 +146,6 @@ object ParamValidator extends DplaMapFields {
     val unrecognizedParams = rawParams.keys.toSeq diff acceptedSearchParams
 
     if (unrecognizedParams.nonEmpty) {
-      // TODO log
       InvalidParams("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
     } else
       Try {
@@ -142,7 +166,6 @@ object ParamValidator extends DplaMapFields {
       } match {
         case Success(searchParams) => ValidSearchParams(searchParams)
         case Failure(e) =>
-          // TODO log
           InvalidParams(e.getMessage)
       }
   }
