@@ -1,10 +1,9 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.actor.typed.{ActorRef, Behavior, LogOptions}
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
-import org.slf4j.event.Level
 
 import scala.util.{Failure, Success, Try}
 
@@ -79,7 +78,6 @@ object EbookMapper {
 
   def apply(): Behavior[MapperCommand] = {
     Behaviors.setup[MapperCommand] { context =>
-
       Behaviors.receiveMessage[MapperCommand] {
         case MapSearchResponse(body, page, pageSize, replyTo) =>
 
@@ -95,7 +93,7 @@ object EbookMapper {
                   body
                 )
                 MapFailure
-          }
+            }
           replyTo ! response
           Behaviors.same
 
