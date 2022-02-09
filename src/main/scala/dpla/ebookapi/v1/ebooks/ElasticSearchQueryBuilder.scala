@@ -28,13 +28,23 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
     }
   }
 
-  def composeSearchQuery(params: SearchParams): JsValue =
-    JsObject(
+  def composeSearchQuery(params: SearchParams): JsValue = {
+    val base = JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filters, params.exactFieldMatch),
       "aggs" -> aggs(params.facets, params.facetSize)
-    ).toJson
+    )
+
+    val withFields = params.fields match {
+      case Some(dplaFields) =>
+        val esFields = dplaFields.map(getElasticSearchField)
+        JsObject(base.fields + ("fields" -> esFields.toJson))
+      case None =>
+        base
+    }
+    withFields.toJson
+  }
 
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields = Seq(
