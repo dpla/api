@@ -46,9 +46,10 @@ object ElasticSearchResponseHandler {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
+              // TODO is there a better way to log stack trace?
               context.log.error(
                 "Failed to reach ElasticSearch: {}",
-                e.getStackTrace.mkString(System.lineSeparator)
+                e.getStackTrace.mkString(System.lineSeparator + "    ")
               )
               ReturnFinalResponse(ElasticSearchUnreachable, replyTo)
           }
@@ -64,9 +65,10 @@ object ElasticSearchResponseHandler {
               case Success(body) =>
                 ReturnFinalResponse(ElasticSearchSuccess(body), replyTo)
               case Failure(e) =>
+                // TODO is there a better way to log stack trace?
                 context.log.error(
                   "Failed to parse ElasticSearch response String: {}",
-                  e.getStackTrace.mkString(System.lineSeparator)
+                  e.getStackTrace.mkString(System.lineSeparator + "    ")
                 )
                 ReturnFinalResponse(ElasticSearchParseFailure, replyTo)
             }
@@ -83,9 +85,10 @@ object ElasticSearchResponseHandler {
               case Success(_) =>
                 ReturnFinalResponse(ElasticSearchHttpFailure(httpResponse.status), replyTo)
               case Failure(e) =>
+                // TODO is there a better way to log stack trace?
                 context.log.error(
                   "Failed to discard ElasticSearch response entity: {}",
-                  e.getStackTrace.mkString(System.lineSeparator)
+                  e.getStackTrace.mkString(System.lineSeparator + "    ")
                 )
                 ReturnFinalResponse(ElasticSearchParseFailure, replyTo)
             }
