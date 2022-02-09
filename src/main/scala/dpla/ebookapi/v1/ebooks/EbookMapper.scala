@@ -1,10 +1,10 @@
 package dpla.ebookapi.v1.ebooks
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior, LogOptions}
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
+import org.slf4j.event.Level
 
 import scala.util.{Failure, Success, Try}
 
@@ -79,6 +79,7 @@ object EbookMapper {
 
   def apply(): Behavior[MapperCommand] = {
     Behaviors.setup[MapperCommand] { context =>
+
       Behaviors.receiveMessage[MapperCommand] {
         case MapSearchResponse(body, page, pageSize, replyTo) =>
 
@@ -87,13 +88,14 @@ object EbookMapper {
               case Success(ebookList) =>
                 MappedEbookList(ebookList)
               case Failure(e) =>
-                val msg = "Failed to parse EbookList from ElasticSearch response"
-                val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
-                context.log.error(s"$msg: $stackTrace" + System.lineSeparator +
-                  s"ElasticSearch response: $body")
+                context.log.errorN(
+                  "Failed to parse EbookList from ElasticSearch response: {} {} ElasticSearch response: {}",
+                  e.getStackTrace.mkString(System.lineSeparator),
+                  System.lineSeparator,
+                  body
+                )
                 MapFailure
           }
-
           replyTo ! response
           Behaviors.same
 
@@ -104,13 +106,14 @@ object EbookMapper {
               case Success(singleEbook) =>
                 MappedSingleEbook(singleEbook)
               case Failure(e) =>
-                val msg = "Failed to parse SingleEbook from ElasticSearch response"
-                val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
-                context.log.error(s"$msg: $stackTrace" + System.lineSeparator +
-                  s"ElasticSearch response: $body")
+                context.log.errorN(
+                  "Failed to parse SingleEbook from ElasticSearch response: {} {} ElasticSearch response: {}",
+                  e.getStackTrace.mkString(System.lineSeparator),
+                  System.lineSeparator,
+                  body
+                )
                 MapFailure
             }
-
           replyTo ! response
           Behaviors.same
       }

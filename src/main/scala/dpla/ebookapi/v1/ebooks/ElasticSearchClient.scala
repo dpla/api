@@ -1,7 +1,7 @@
 package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.GetSearchQuery
@@ -54,7 +54,7 @@ object ElasticSearchClient {
           val futureResponse: Future[HttpResponse] =
             Http().singleRequest(HttpRequest(uri = fetchUri))
 
-          context.log.info(s"ElasticSearch fetch QUERY: $fetchUri")
+          context.log.info(s"ElasticSearch fetch QUERY: {}", fetchUri)
 
           // Send the response future be processed.
           // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
@@ -94,8 +94,11 @@ object ElasticSearchClient {
           )
           val futureResponse: Future[HttpResponse] = Http().singleRequest(request)
 
-          context.log.info(s"ElasticSearch search QUERY: $searchUri" +
-            System.lineSeparator + query.toString)
+          context.log.info2(
+            "ElasticSearch search QUERY: {}: {}",
+            searchUri,
+            query.toString
+          )
 
           // Send the response future be processed.
           // Tell ElasticSearchResponseHandler to reply directly to EbookRegistry.

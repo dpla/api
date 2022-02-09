@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks
 import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
@@ -112,16 +112,19 @@ object EbookRegistry {
               Behaviors.same
             case None =>
               // This should not happen.
-              val msg = "Cannot map ElasticSearch response b/c SearchParams are missing."
-              context.log.error(msg)
+              context.log.error(
+                "Cannot map ElasticSearch response b/c SearchParams are missing."
+              )
               replyTo ! InternalFailure
               Behaviors.stopped
           }
 
         case ElasticSearchHttpFailure(statusCode) =>
-          val msg = "ElasticSearch fetch RESPONSE: " + statusCode.intValue +
-            ": " + statusCode.reason
-          context.log.error(msg)
+          context.log.error2(
+            "ElasticSearch search RESPONSE ERROR: {}: {}",
+            statusCode.intValue,
+            statusCode.reason
+          )
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -197,9 +200,11 @@ object EbookRegistry {
           if (statusCode.intValue == 404)
             replyTo ! NotFoundFailure
           else {
-            val msg = "ElasticSearch fetch RESPONSE: " + statusCode.intValue +
-              ": " + statusCode.reason
-            context.log.error(msg)
+            context.log.error2(
+              "ElasticSearch fetch RESPONSE ERROR: {}: {}",
+              statusCode.intValue,
+              statusCode.reason
+            )
             replyTo ! InternalFailure
           }
           Behaviors.stopped

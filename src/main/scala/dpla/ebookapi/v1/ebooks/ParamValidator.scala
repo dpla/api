@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
@@ -58,9 +58,11 @@ object ParamValidator extends DplaMapFields {
 
           response match {
             case InvalidParams(msg) =>
-              val paramString =
+              context.log.warn2(
+                "Invalid search params: '{}' for params '{}'",
+                msg,
                 params.map { case(key, value) => s"$key: $value"}.mkString(", ")
-              context.log.warn(s"Invalid search params: '$msg' for params '$paramString'")
+              )
             case _ => //noop
           }
 
@@ -71,9 +73,11 @@ object ParamValidator extends DplaMapFields {
 
           response match {
             case InvalidParams(msg) =>
-              val paramString =
+              context.log.warn2(
+                "Invalid fetch params: '{}' for params '{}'",
+                msg,
                 params.map { case(key, value) => s"$key: $value"}.mkString(", ")
-              context.log.warn(s"Invalid fetch params: '$msg' for params '$paramString'")
+              )
             case _ => //noop
           }
 

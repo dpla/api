@@ -46,9 +46,10 @@ object ElasticSearchResponseHandler {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
-              val msg = "Failed to reach ElasticSearch"
-              val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
-              context.log.error(s"$msg: $stackTrace")
+              context.log.error(
+                "Failed to reach ElasticSearch: {}",
+                e.getStackTrace.mkString(System.lineSeparator)
+              )
               ReturnFinalResponse(ElasticSearchUnreachable, replyTo)
           }
           Behaviors.same
@@ -63,9 +64,10 @@ object ElasticSearchResponseHandler {
               case Success(body) =>
                 ReturnFinalResponse(ElasticSearchSuccess(body), replyTo)
               case Failure(e) =>
-                val msg = "Failed to parse ElasticSearch response String"
-                val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
-                context.log.error(s"$msg: $stackTrace")
+                context.log.error(
+                  "Failed to parse ElasticSearch response String: {}",
+                  e.getStackTrace.mkString(System.lineSeparator)
+                )
                 ReturnFinalResponse(ElasticSearchParseFailure, replyTo)
             }
             Behaviors.same
@@ -81,9 +83,10 @@ object ElasticSearchResponseHandler {
               case Success(_) =>
                 ReturnFinalResponse(ElasticSearchHttpFailure(httpResponse.status), replyTo)
               case Failure(e) =>
-                val msg = "Failed to discard ElasticSearch response entity"
-                val stackTrace = e.getStackTrace.mkString(System.lineSeparator)
-                context.log.error(s"$msg: $stackTrace")
+                context.log.error(
+                  "Failed to discard ElasticSearch response entity: {}",
+                  e.getStackTrace.mkString(System.lineSeparator)
+                )
                 ReturnFinalResponse(ElasticSearchParseFailure, replyTo)
             }
             Behaviors.same
