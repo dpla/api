@@ -17,6 +17,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import scala.util.{Failure, Success}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import org.slf4j.{Logger, LoggerFactory}
 
 
 class Routes(
@@ -30,6 +31,8 @@ class Routes(
   // If ask takes more time than this to complete the request is failed
   private implicit val timeout: Timeout =
     Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
+
+  val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")
 
   // Search and fetch requests are send to EbookRegistry actor for processing.
   // These requests include a reference to the ElasticSearchClient actor.
@@ -66,11 +69,16 @@ class Routes(
                     case InternalFailure =>
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                     case _ =>
-                      // TODO log error
+                      log.error(
+                        "Routes /ebooks received unexpected RegistryResponse {}",
+                        response.getClass.getName
+                      )
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                   }
                 case Failure(e) =>
-                  // TODO log error
+                  log.error(
+                    "Routes /ebooks failed to get response from Registry: ", e
+                  )
                   complete(HttpResponse(ImATeapot, entity = teapotMessage))
               }
             }
@@ -93,11 +101,16 @@ class Routes(
                     case InternalFailure =>
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                     case _ =>
-                      // TODO log error
+                      log.error(
+                        "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
+                        response.getClass.getName
+                      )
                       complete(HttpResponse(ImATeapot, entity = teapotMessage))
                   }
                 case Failure(e) =>
-                  // TODO log error
+                  log.error(
+                    "Routes /ebooks/[ID] failed to get response from Registry: ", e
+                  )
                   complete(HttpResponse(ImATeapot, entity = teapotMessage))
               }
             }

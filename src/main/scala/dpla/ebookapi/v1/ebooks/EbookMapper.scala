@@ -86,11 +86,8 @@ object EbookMapper {
               case Success(ebookList) =>
                 MappedEbookList(ebookList)
               case Failure(e) =>
-                // TODO is there a better way to log stack trace?
-                context.log.error2(
-                  "Failed to parse EbookList from ElasticSearch response: {} ElasticSearch response: {}",
-                  e.getStackTrace.mkString(System.lineSeparator + "    "),
-                  body
+                context.log.error(
+                  "Failed to parse EbookList from ElasticSearch response:", e
                 )
                 MapFailure
             }
@@ -104,11 +101,8 @@ object EbookMapper {
               case Success(singleEbook) =>
                 MappedSingleEbook(singleEbook)
               case Failure(e) =>
-                // TODO is there a better way to log stack trace?
-                context.log.error2(
-                  "Failed to parse SingleEbook from ElasticSearch response: {} ElasticSearch response: {}",
-                  e.getStackTrace.mkString(System.lineSeparator + "    "),
-                  body
+                context.log.error(
+                  "Failed to parse SingleEbook from ElasticSearch response:", e
                 )
                 MapFailure
             }
