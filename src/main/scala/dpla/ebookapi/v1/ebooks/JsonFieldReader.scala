@@ -46,7 +46,10 @@ trait JsonFieldReader {
 
   /** Private helper methods */
 
-  private def read[T](getMethod: (JsObject, String) => Option[T], root: JsObject, path: Seq[String]): Option[T] = {
+  private def read[T](getMethod: (JsObject, String) => Option[T],
+                      root: JsObject,
+                      path: Seq[String]): Option[T] = {
+
     val nestedObjects: Seq[String] = path.dropRight(1)
     val lastField: Option[String] = path.lastOption
 

@@ -14,9 +14,18 @@ import scala.util.{Failure, Success, Try}
  */
 
 sealed trait ValidationResponse
-final case class ValidSearchParams(searchParams: SearchParams) extends ValidationResponse
-final case class ValidFetchParams(fetchParams: FetchParams) extends ValidationResponse
-final case class InvalidParams(message: String) extends ValidationResponse
+
+final case class ValidSearchParams(
+                                    searchParams: SearchParams
+                                  ) extends ValidationResponse
+
+final case class ValidFetchParams(
+                                   fetchParams: FetchParams
+                                 ) extends ValidationResponse
+
+final case class InvalidParams(
+                                message: String
+                              ) extends ValidationResponse
 
 case class SearchParams(
                          exactFieldMatch: Boolean,
@@ -119,13 +128,17 @@ object ParamValidator extends DplaMapFields {
       "sort_order"
     )
 
-  final case class ValidationException(private val message: String = "") extends Exception(message)
+  final case class ValidationException(
+                                        private val message: String = ""
+                                      ) extends Exception(message)
 
   /**
    * Method returns ValidationError if ID or any parameters are invalid.
    * There are not currently any acceptable parameters for a fetch request.
    */
-  private def getFetchParams(id: String, rawParams: Map[String, String]): ValidationResponse = {
+  private def getFetchParams(id: String,
+                             rawParams: Map[String, String]): ValidationResponse = {
+
     if (rawParams.nonEmpty)
       InvalidParams("Unrecognized parameter: " + rawParams.keys.mkString(", "))
     else
@@ -138,10 +151,12 @@ object ParamValidator extends DplaMapFields {
 
   /**
    * Method returns Failure if ID is are invalid.
-   * Ebook ID must be a non-empty String comprised of letters, numbers, and hyphens.
+   * Ebook ID must be a non-empty String comprised of letters, numbers, and
+   * hyphens.
    */
   private def getValidId(id: String): String = {
-    val rule = "ID must be a String comprised of letters, numbers, and hyphens between 1 and 32 characters long"
+    val rule = "ID must be a String comprised of letters, numbers, and " +
+      "hyphens between 1 and 32 characters long"
 
     if (id.length < 1 || id.length > 32) throw ValidationException(rule)
     else if (id.matches("[a-zA-Z0-9-]*")) id
@@ -153,10 +168,10 @@ object ParamValidator extends DplaMapFields {
    */
   private def getSearchParams(rawParams: Map[String, String]): ValidationResponse = {
     // Check for unrecognized params
-    val unrecognizedParams = rawParams.keys.toSeq diff acceptedSearchParams
+    val unrecognized = rawParams.keys.toSeq diff acceptedSearchParams
 
-    if (unrecognizedParams.nonEmpty) {
-      InvalidParams("Unrecognized parameter: " + unrecognizedParams.mkString(", "))
+    if (unrecognized.nonEmpty) {
+      InvalidParams("Unrecognized parameter: " + unrecognized.mkString(", "))
     } else
       Try {
         // Collect all the user-submitted field filters.
@@ -165,19 +180,34 @@ object ParamValidator extends DplaMapFields {
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
-          exactFieldMatch = getValid(rawParams, "exact_field_match", validBoolean)
-            .getOrElse(defaultExactFieldMatch),
-          facets = getValid(rawParams, "facets", validFields),
-          facetSize = getValid(rawParams, "facet_size", validInt).getOrElse(defaultFacetSize),
-          fields = getValid(rawParams, "fields", validFields),
-          filters = filters,
-          op = getValid(rawParams, "op", validAndOr).getOrElse(defaultOp),
-          page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
-          pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
-          q = getValid(rawParams, "q", validText),
-          sortBy = getValid(rawParams, "sort_by", validField),
-          sortOrder = getValid(rawParams, "sort_order", validateSortOrder)
-            .getOrElse(defaultSortOrder)
+          exactFieldMatch =
+            getValid(rawParams, "exact_field_match", validBoolean)
+              .getOrElse(defaultExactFieldMatch),
+          facets =
+            getValid(rawParams, "facets", validFields),
+          facetSize =
+            getValid(rawParams, "facet_size", validInt)
+              .getOrElse(defaultFacetSize),
+          fields =
+            getValid(rawParams, "fields", validFields),
+          filters =
+            filters,
+          op =
+            getValid(rawParams, "op", validAndOr)
+              .getOrElse(defaultOp),
+          page =
+            getValid(rawParams, "page", validInt)
+              .getOrElse(defaultPage),
+          pageSize =
+            getValid(rawParams, "page_size", validInt)
+              .getOrElse(defaultPageSize),
+          q =
+            getValid(rawParams, "q", validText),
+          sortBy =
+            getValid(rawParams, "sort_by", validField),
+          sortOrder =
+            getValid(rawParams, "sort_order", validateSortOrder)
+              .getOrElse(defaultSortOrder)
         )
       } match {
         case Success(searchParams) => ValidSearchParams(searchParams)
@@ -187,7 +217,8 @@ object ParamValidator extends DplaMapFields {
   }
 
   /**
-   * Find the raw parameter with the given name. Then validate with the given method.
+   * Find the raw parameter with the given name.
+   * Then validate with the given method.
    */
   private def getValid[T](rawParams: Map[String, String],
                           paramName: String,
@@ -197,9 +228,11 @@ object ParamValidator extends DplaMapFields {
   /**
    * Get a valid value for a field filter.
    */
-  private def getValidFieldFilter(rawParams: Map[String, String], paramName: String): Option[FieldFilter] = {
+  private def getValidFieldFilter(rawParams: Map[String, String],
+                                  paramName: String): Option[FieldFilter] = {
 
-    // Look up the parameter's field type. Use this to determine the appropriate validation method.
+    // Look up the parameter's field type.
+    // Use this to determine the appropriate validation method.
     val validationMethod: (String, String) => String =
       getDplaFieldType(paramName) match {
         case Some(fieldType) =>
@@ -208,10 +241,12 @@ object ParamValidator extends DplaMapFields {
             case URLField => validUrl
             case _ => validText // This should not happen
           }
-        case None => throw ValidationException(s"Unrecognized parameter: $paramName")
+        case None =>
+          throw ValidationException(s"Unrecognized parameter: $paramName")
       }
 
-    getValid(rawParams, paramName, validationMethod).map(FieldFilter(paramName, _))
+    getValid(rawParams, paramName, validationMethod)
+      .map(FieldFilter(paramName, _))
   }
 
   // Must be a Boolean value.
@@ -229,8 +264,12 @@ object ParamValidator extends DplaMapFields {
       case _ => Seq[String]()
     }
 
-    if (acceptedFields.contains(fieldString)) fieldString
-    else throw ValidationException(s"'$fieldString' is not an allowable value for '$param'")
+    if (acceptedFields.contains(fieldString))
+      fieldString
+    else
+      throw ValidationException(
+        s"'$fieldString' is not an allowable value for '$param'"
+      )
   }
 
   // One or more fields.
@@ -243,12 +282,20 @@ object ParamValidator extends DplaMapFields {
     }
 
     val filtered = fieldString.split(",").map(candidate => {
-      if (acceptedFields.contains(candidate)) candidate
-      else throw ValidationException(s"'$candidate' is not an allowable value for '$param'")
+      if (acceptedFields.contains(candidate))
+        candidate
+      else
+        throw ValidationException(
+          s"'$candidate' is not an allowable value for '$param'"
+        )
     })
 
-    if (filtered.nonEmpty) filtered
-    else throw ValidationException(s"$param must contain at least one valid field")
+    if (filtered.nonEmpty)
+      filtered
+    else
+      throw ValidationException(
+        s"$param must contain at least one valid field"
+      )
   }
 
   // Must be an integer between the min and the max for the given param.
@@ -275,7 +322,8 @@ object ParamValidator extends DplaMapFields {
   // Must be a string between 2 and 200 characters.
   private def validText(text: String, param: String): String =
     if (text.length < 2 || text.length > 200)
-    // In the DPLA API (cultural heritage), an exception is thrown if q is too long, but not if q is too short.
+    // In the DPLA API (cultural heritage), an exception is thrown if q is too
+    // long, but not if q is too short.
     // For internal consistency, and exception is thrown here in both cases.
       throw ValidationException(s"$param must be between 2 and 200 characters")
     else text
@@ -283,7 +331,8 @@ object ParamValidator extends DplaMapFields {
   // Must be a valid URL.
   private def validUrl(url: String, param: String): String = {
     val clean: String = {
-      // Strip leading & trailing quotation marks for the purpose of checking for valid URL
+      // Strip leading & trailing quotation marks for the purpose of checking
+      // for valid URL
       if (url.startsWith("\"") && url.endsWith("\""))
         url.stripSuffix("\"").stripPrefix("\"")
       else url
@@ -292,8 +341,11 @@ object ParamValidator extends DplaMapFields {
     Try {
       new URL(clean)
     } match {
-      case Success(_) => url // return value with leading & trailing quotation marks in tact
-      case Failure(_) => throw ValidationException(s"$param must be a valid URL")
+      case Success(_) =>
+        // return value with leading & trailing quotation marks in tact
+        url
+      case Failure(_) =>
+        throw ValidationException(s"$param must be a valid URL")
     }
   }
 

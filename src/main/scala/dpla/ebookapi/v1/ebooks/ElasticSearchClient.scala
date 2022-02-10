@@ -34,9 +34,16 @@ object ElasticSearchClient {
 
       // Spawn children.
       val queryBuilder: ActorRef[EsQueryBuilderCommand] =
-        context.spawn(ElasticSearchQueryBuilder(), "ElasticSearchQueryBuilder")
+        context.spawn(
+          ElasticSearchQueryBuilder(),
+          "ElasticSearchQueryBuilder"
+        )
+
       val responseHandler: ActorRef[ElasticSearchResponseHandlerCommand] =
-        context.spawn(ElasticSearchResponseHandler(), "ElasticSearchResponseProcessor")
+        context.spawn(
+          ElasticSearchResponseHandler(),
+          "ElasticSearchResponseProcessor"
+        )
 
       Behaviors.receiveMessage[EsClientCommand] {
 
@@ -52,14 +59,15 @@ object ElasticSearchClient {
           val id = params.id
           val fetchUri = s"$endpoint/_doc/$id"
           implicit val system: ActorSystem[Nothing] = context.system
-          val futureResponse: Future[HttpResponse] =
+          val futureResp: Future[HttpResponse] =
             Http().singleRequest(HttpRequest(uri = fetchUri))
 
           context.log.info(s"ElasticSearch fetch QUERY: {}", fetchUri)
 
           // Send the response future be processed.
-          // Tell ElasticSearchResponseProcessor to reply directly to EbookRegistry.
-          responseHandler ! ProcessElasticSearchResponse(futureResponse, replyTo)
+          // Tell ElasticSearchResponseProcessor to reply directly to
+          // EbookRegistry.
+          responseHandler ! ProcessElasticSearchResponse(futureResp, replyTo)
           Behaviors.same
       }
     }
@@ -67,7 +75,8 @@ object ElasticSearchClient {
 
   /**
    * Per session actor behavior for handling a search request.
-   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   * The session actor has its own internal state and its own ActorRef for
+   * sending/receiving messages.
    */
   private def processSearch(
                              params: SearchParams,
@@ -87,13 +96,14 @@ object ElasticSearchClient {
 
       Behaviors.receiveMessage[EsQueryBuilderResponse] {
         case ElasticSearchQuery(query) =>
-          // Upon receiving the search query, make an http request to elastic search
+          // Upon receiving the search query, make HTTP request to ElasticSearch
           val request: HttpRequest = HttpRequest(
             method = HttpMethods.GET,
             uri = searchUri,
             entity = HttpEntity(ContentTypes.`application/json`, query.toString)
           )
-          val futureResponse: Future[HttpResponse] = Http().singleRequest(request)
+          val futureResp: Future[HttpResponse] =
+            Http().singleRequest(request)
 
           context.log.info2(
             "ElasticSearch search QUERY: {}: {}",
@@ -102,8 +112,9 @@ object ElasticSearchClient {
           )
 
           // Send the response future be processed.
-          // Tell ElasticSearchResponseHandler to reply directly to EbookRegistry.
-          responseProcessor ! ProcessElasticSearchResponse(futureResponse, replyTo)
+          // Tell ElasticSearchResponseHandler to reply directly to
+          // EbookRegistry.
+          responseProcessor ! ProcessElasticSearchResponse(futureResp, replyTo)
           Behaviors.stopped
 
         case _ =>

@@ -8,12 +8,20 @@ import spray.json._
 import scala.util.{Failure, Success, Try}
 
 /**
- * Maps Elastic Search responses to case classes, which can be written to DPLA MAP.
+ * Maps Elastic Search responses to case classes,
+ * which can be written to DPLA MAP.
  */
 
 sealed trait EbookMapperResponse
-final case class MappedEbookList(response: EbookList) extends EbookMapperResponse
-final case class MappedSingleEbook(response: SingleEbook) extends EbookMapperResponse
+
+final case class MappedEbookList(
+                                  response: EbookList
+                                ) extends EbookMapperResponse
+
+final case class MappedSingleEbook(
+                                    response: SingleEbook
+                                  ) extends EbookMapperResponse
+
 object MapFailure extends EbookMapperResponse
 
 /** Case classes for reading ElasticSearch responses **/
@@ -121,7 +129,8 @@ object EbookMapper {
   private def mapEbookList(body: String, page: Int, pageSize: Int): Try[EbookList] =
     Try {
       val start = getStart(page, pageSize)
-      body.parseJson.convertTo[EbookList].copy(limit=Some(pageSize), start=Some(start))
+      body.parseJson.convertTo[EbookList]
+        .copy(limit=Some(pageSize), start=Some(start))
     }
 
   private def mapSingleEbook(body: String): Try[SingleEbook] =
@@ -129,6 +138,9 @@ object EbookMapper {
       body.parseJson.convertTo[SingleEbook]
     }
 
-  // DPLA MAP field that gives the index of the first result on the page (starting at 1)
+  /**
+   * DPLA MAP field that gives the index of the first result on the page
+   * (starting at 1)
+   */
   private def getStart(page: Int, pageSize: Int): Int = ((page-1)*pageSize)+1
 }

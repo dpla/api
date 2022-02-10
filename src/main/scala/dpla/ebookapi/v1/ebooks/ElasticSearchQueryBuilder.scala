@@ -60,8 +60,10 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
                     op: String
                    ) = {
 
-    val keyword: Seq[JsObject] = q.map(keywordQuery(_, keywordQueryFields)).toSeq
-    val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
+    val keyword: Seq[JsObject] =
+      q.map(keywordQuery(_, keywordQueryFields)).toSeq
+    val filters: Seq[JsObject] =
+      fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
     val queryTerms: Seq[JsObject] = keyword ++ filters
     val boolTerm: String = if (op == "OR") "should" else "must"
 
@@ -96,15 +98,20 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
   /**
    * For general field filter, use a keyword (i.e. "query_string") query.
    * For exact field match, use "term" query.
-   *   "term" searches for an exact term (with no additional text before or after).
-   *   It is case-sensitive and does not analyze the search term.
-   *   You can optionally set a parameter to ignore case, but this is NOT applied in the cultural heritage API.
-   *   It is only for fields that non-analyzed (i.e. indexed as "keyword")
+   * - term" searches for an exact term (with no additional text before or after).
+   * - It is case-sensitive and does not analyze the search term.
+   * - You can optionally set a parameter to ignore case,
+   * - but this is NOT applied in the cultural heritage API.
+   * - It is only for fields that non-analyzed (i.e. indexed as "keyword")
    */
-  private def singleFieldFilter(filter: FieldFilter, exactFieldMatch: Boolean): JsObject = {
+  private def singleFieldFilter(filter: FieldFilter,
+                                exactFieldMatch: Boolean): JsObject = {
+
     if (exactFieldMatch) {
       val field: String = getElasticSearchExactMatchField(filter.fieldName)
-        .getOrElse(throw new RuntimeException("Unrecognized field name: " + filter.fieldName)) // This should not happen
+        .getOrElse(
+          throw new RuntimeException("Unrecognized field name: " + filter.fieldName)
+        ) // This should not happen
 
       // Strip leading and trailing quotation marks
       val value: String =
@@ -118,7 +125,8 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
         )
       )
     } else {
-      val fields: Seq[String] = Seq(getElasticSearchField(filter.fieldName)).flatten
+      val fields: Seq[String] =
+        Seq(getElasticSearchField(filter.fieldName)).flatten
       keywordQuery(filter.value, fields)
     }
   }
