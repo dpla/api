@@ -399,6 +399,31 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
     }
   }
 
+  "op validator" should {
+    "handle empty param" in {
+      val expected = "AND"
+      paramValidator ! ValidateSearchParams(Map(), probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.op shouldEqual expected
+    }
+
+    "accept valid param" in {
+      val given = "OR"
+      val expected = "OR"
+      val params = Map("op" -> given)
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.op shouldEqual expected
+    }
+
+    "reject invalid param" in {
+      val given = "or"
+      val params = Map("op" -> given)
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+  }
+
   "page validator" should {
     "handle empty param" in {
       val expected = 1

@@ -24,6 +24,7 @@ case class SearchParams(
                          facetSize: Int,
                          fields: Option[Seq[String]],
                          filters: Seq[FieldFilter],
+                         op: String,
                          page: Int,
                          pageSize: Int,
                          q: Option[String]
@@ -92,6 +93,7 @@ object ParamValidator extends DplaMapFields {
   private val defaultFacetSize: Int = 50
   private val minFacetSize: Int = 0
   private val maxFacetSize: Int = 2000
+  private val defaultOp: String = "AND"
   private val defaultPage: Int = 1
   private val minPage: Int = 1
   private val maxPage: Int = 1000
@@ -106,6 +108,7 @@ object ParamValidator extends DplaMapFields {
       "facets",
       "facet_size",
       "fields",
+      "op",
       "page",
       "page_size",
       "q"
@@ -163,6 +166,7 @@ object ParamValidator extends DplaMapFields {
           facetSize = getValid(rawParams, "facet_size", validInt).getOrElse(defaultFacetSize),
           fields = getValid(rawParams, "fields", validFields),
           filters = filters,
+          op = getValid(rawParams, "op", validAndOr).getOrElse(defaultOp),
           page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
           pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
           q = getValid(rawParams, "q", validText)
@@ -270,5 +274,11 @@ object ParamValidator extends DplaMapFields {
       case Success(_) => url // return value with leading & trailing quotation marks in tact
       case Failure(_) => throw ValidationException(s"$param must be a valid URL")
     }
+  }
+
+  // Must be 'AND' or 'OR'
+  private def validAndOr(string: String, param: String): String = {
+    if (string == "AND" || string == "OR") string
+    else throw ValidationException(s"$param must be 'AND' or 'OR'")
   }
 }
