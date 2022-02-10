@@ -27,7 +27,9 @@ case class SearchParams(
                          op: String,
                          page: Int,
                          pageSize: Int,
-                         q: Option[String]
+                         q: Option[String],
+                         sortBy: Option[String],
+                         sortOrder: String
                        )
 
 case class FetchParams(
@@ -100,6 +102,7 @@ object ParamValidator extends DplaMapFields {
   private val defaultPageSize: Int = 10
   private val minPageSize: Int = 0
   private val maxPageSize: Int = 1000
+  private val defaultSortOrder: String = "asc"
 
   // A user can give any of the following parameters in a search request.
   private val acceptedSearchParams: Seq[String] =
@@ -111,7 +114,9 @@ object ParamValidator extends DplaMapFields {
       "op",
       "page",
       "page_size",
-      "q"
+      "q",
+      "sort_by",
+      "sort_order"
     )
 
   final case class ValidationException(private val message: String = "") extends Exception(message)
@@ -169,7 +174,10 @@ object ParamValidator extends DplaMapFields {
           op = getValid(rawParams, "op", validAndOr).getOrElse(defaultOp),
           page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
           pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
-          q = getValid(rawParams, "q", validText)
+          q = getValid(rawParams, "q", validText),
+          sortBy = getValid(rawParams, "sort_by", validField),
+          sortOrder = getValid(rawParams, "sort_order", validateSortOrder)
+            .getOrElse(defaultSortOrder)
         )
       } match {
         case Success(searchParams) => ValidSearchParams(searchParams)
@@ -213,6 +221,19 @@ object ParamValidator extends DplaMapFields {
       case None => throw ValidationException(s"$param must be a Boolean value")
     }
 
+  // One field.
+  // Must be in the list of accepted fields for the given param.
+  private def validField(fieldString: String, param: String): String = {
+    val acceptedFields = param match {
+      case "sort_by" => sortableDplaFields
+      case _ => Seq[String]()
+    }
+
+    if (acceptedFields.contains(fieldString)) fieldString
+    else throw ValidationException(s"'$fieldString' is not an allowable value for '$param'")
+  }
+
+  // One or more fields.
   // Must be in the list of accepted fields for the given param.
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
@@ -277,8 +298,12 @@ object ParamValidator extends DplaMapFields {
   }
 
   // Must be 'AND' or 'OR'
-  private def validAndOr(string: String, param: String): String = {
-    if (string == "AND" || string == "OR") string
+  private def validAndOr(andor: String, param: String): String =
+    if (andor == "AND" || andor == "OR") andor
     else throw ValidationException(s"$param must be 'AND' or 'OR'")
-  }
+
+  // Must be 'asc' or 'desc'
+  private def validateSortOrder(order: String, param: String): String =
+    if (order == "asc" || order == "desc") order
+    else throw ValidationException(s"$param must be 'asc' or 'desc'")
 }

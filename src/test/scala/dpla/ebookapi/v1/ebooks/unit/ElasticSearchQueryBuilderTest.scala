@@ -33,7 +33,9 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     op = "AND",
     page = 3,
     pageSize = 20,
-    q = None
+    q = None,
+    sortBy = None,
+    sortOrder = "asc"
   )
 
   val minQuery: JsObject = getJsQuery(minSearchParams)
@@ -47,7 +49,9 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     op = "AND",
     page = 3,
     pageSize = 20,
-    q = Some("dogs")
+    q = Some("dogs"),
+    sortBy = Some("sourceResource.title"),
+    sortOrder = "desc"
   )
 
   val detailQuery: JsObject = getJsQuery(detailSearchParams)
@@ -245,6 +249,33 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "specify facet size" in {
       val expected = Some(100)
       val traversed = readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
+      assert(traversed == expected)
+    }
+  }
+
+  "sort query builder" should {
+    "default to sorting by score" in {
+      val expected = Some("desc")
+      val sortArray = readObjectArray(minQuery, "sort")
+      val score = sortArray.flatMap(obj => readObject(obj, "_score")).head
+      val traversed = readString(score, "order")
+      assert(traversed == expected)
+    }
+
+    "include score sorting when sorting by field" in {
+      val expected = Some("desc")
+      val sortArray = readObjectArray(detailQuery, "sort")
+      val score = sortArray.flatMap(obj => readObject(obj, "_score")).head
+      val traversed = readString(score, "order")
+      assert(traversed == expected)
+    }
+
+    "specify sort field and order" in {
+      val expected = Some("desc")
+      val sortArray = readObjectArray(detailQuery, "sort")
+      val score = sortArray
+        .flatMap(obj => readObject(obj, "title.not_analyzed")).head
+      val traversed = readString(score, "order")
       assert(traversed == expected)
     }
   }

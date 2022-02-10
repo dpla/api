@@ -9,12 +9,25 @@ trait DplaMapFields {
   case object TextField extends DplaFieldType
   case object URLField extends DplaFieldType
 
+  /**
+   * @param name                      DPLA MAP field name
+   * @param fieldType                 One of DplaFieldType
+   * @param searchable                Can users keyword search within this field?
+   * @param facetable                 Can users facet on this field?
+   *                                  Must have elasticSearchNotAnalyzed.
+   * @param sortable                  Can users sort on this field?
+   *                                  Must have elasticSearchNotAnalyzed.
+   * @param elasticSearchDefault      ElasticSearch field name.
+   *                                  Can be either analyzed or not analyzed.
+   * @param elasticSearchNotAnalyzed  ElasticSearch field name, not analyzed.
+   */
   case class DplaField(
                         name: String,
                         fieldType: DplaFieldType,
-                        searchable: Boolean, // Can users do a keyword search within this field?
-                        facetable: Boolean, // Can users facet on this field? Must have elasticSearchNotAnalyzed.
-                        elasticSearchDefault: String, // Can be either analyzed or not analyzed
+                        searchable: Boolean,
+                        facetable: Boolean,
+                        sortable: Boolean,
+                        elasticSearchDefault: String,
                         elasticSearchNotAnalyzed: Option[String] = None
                      )
 
@@ -24,6 +37,7 @@ trait DplaMapFields {
       fieldType = URLField,
       searchable = true,
       facetable = false,
+      sortable = true,
       elasticSearchDefault = "itemUri",
       elasticSearchNotAnalyzed = Some("itemUri")
     ),
@@ -32,6 +46,7 @@ trait DplaMapFields {
       fieldType = URLField,
       searchable = true,
       facetable = false,
+      sortable = true,
       elasticSearchDefault = "payloadUri",
       elasticSearchNotAnalyzed = Some("payloadUri")
     ),
@@ -40,6 +55,7 @@ trait DplaMapFields {
       fieldType = URLField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "sourceUri",
       elasticSearchNotAnalyzed = Some("sourceUri")
     ),
@@ -48,6 +64,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "providerName",
       elasticSearchNotAnalyzed = Some("providerName.not_analyzed")
     ),
@@ -56,6 +73,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "author",
       elasticSearchNotAnalyzed = Some("author.not_analyzed")
     ),
@@ -64,6 +82,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = false,
       elasticSearchDefault = "publicationDate",
       elasticSearchNotAnalyzed = Some("publicationDate.not_analyzed")
     ),
@@ -72,6 +91,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = false,
+      sortable = false,
       elasticSearchDefault = "summary",
       elasticSearchNotAnalyzed = None
     ),
@@ -80,6 +100,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "medium",
       elasticSearchNotAnalyzed = Some("medium.not_analyzed")
     ),
@@ -88,6 +109,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "language",
       elasticSearchNotAnalyzed = Some("language.not_analyzed")
     ),
@@ -96,6 +118,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "publisher",
       elasticSearchNotAnalyzed = Some("publisher.not_analyzed")
     ),
@@ -104,6 +127,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "genre",
       elasticSearchNotAnalyzed = Some("genre.not_analyzed")
     ),
@@ -112,6 +136,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "subtitle",
       elasticSearchNotAnalyzed = Some("subtitle.not_analyzed")
     ),
@@ -120,6 +145,7 @@ trait DplaMapFields {
       fieldType = TextField,
       searchable = true,
       facetable = true,
+      sortable = true,
       elasticSearchDefault = "title",
       elasticSearchNotAnalyzed = Some("title.not_analyzed")
     )
@@ -132,10 +158,22 @@ trait DplaMapFields {
     fields.filter(_.searchable).map(_.name)
 
   def facetableDplaFields: Seq[String] =
-    fields.filter(_.facetable).filter(_.elasticSearchNotAnalyzed.nonEmpty).map(_.name)
+    fields
+      .filter(_.facetable)
+      .filter(_.elasticSearchNotAnalyzed.nonEmpty)
+      .map(_.name)
+
+  def sortableDplaFields: Seq[String] =
+    fields
+      .filter(_.sortable)
+      .filter(_.elasticSearchNotAnalyzed.nonEmpty)
+      .map(_.name)
 
   def getElasticSearchField(name: String): Option[String] =
     fields.find(_.name == name).map(_.elasticSearchDefault)
+
+  def getElasticSearchNotAnalyzed(name: String): Option[String] =
+    fields.find(_.name == name).flatMap(_.elasticSearchNotAnalyzed)
 
   /**
    * Map DPLA MAP field to ElasticSearch non-analyzed field.
