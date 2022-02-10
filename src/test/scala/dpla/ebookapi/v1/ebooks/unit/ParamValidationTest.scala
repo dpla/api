@@ -552,6 +552,52 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
     }
   }
 
+  "sortBy validator" should {
+    "handle empty param" in {
+      val expected = None
+      paramValidator ! ValidateSearchParams(Map(), probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.sortBy shouldEqual expected
+    }
+
+    "accept valid param" in {
+      val given = "sourceResource.title"
+      val expected = Some(Seq("sourceResource.title"))
+      paramValidator ! ValidateSearchParams(Map("sort_by" -> given), probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.sortBy shouldEqual expected
+    }
+
+    "reject invalid param" in {
+      val given = "sourceResource.description"
+      paramValidator ! ValidateSearchParams(Map("sort_by" -> given), probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+  }
+
+  "sortOrder validator" should {
+    "handle empty param" in {
+      val expected = "asc"
+      paramValidator ! ValidateSearchParams(Map(), probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.sortOrder shouldEqual expected
+    }
+
+    "accept valid param" in {
+      val given = "desc"
+      val expected = "desc"
+      paramValidator ! ValidateSearchParams(Map("sort_order" -> given), probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.sortOrder shouldEqual expected
+    }
+
+    "reject invalid param" in {
+      val given = "descending"
+      paramValidator ! ValidateSearchParams(Map("sort_order" -> given), probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+  }
+
   "subject validator" should {
     "handle empty param" in {
       val expected = None

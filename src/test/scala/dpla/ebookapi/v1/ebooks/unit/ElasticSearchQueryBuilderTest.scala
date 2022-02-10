@@ -33,7 +33,9 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     op = "AND",
     page = 3,
     pageSize = 20,
-    q = None
+    q = None,
+    sortBy = None,
+    sortOrder = "asc"
   )
 
   val minQuery: JsObject = getJsQuery(minSearchParams)
@@ -47,7 +49,9 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     op = "AND",
     page = 3,
     pageSize = 20,
-    q = Some("dogs")
+    q = Some("dogs"),
+    sortBy = Some(Seq("sourceResource.title")),
+    sortOrder = "desc"
   )
 
   val detailQuery: JsObject = getJsQuery(detailSearchParams)
