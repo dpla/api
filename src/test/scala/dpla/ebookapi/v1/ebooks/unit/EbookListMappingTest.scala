@@ -7,13 +7,18 @@ import org.scalatest.wordspec.AnyWordSpec
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
 
-class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReader with FileReader {
+class EbookListMappingTest extends AnyWordSpec with Matchers
+  with JsonFieldReader with FileReader {
 
-  val esEbookList: String = readFile("/elasticSearchEbookList.json")
-  val ebookList: JsObject = esEbookList.parseJson.convertTo[EbookList].toJson.asJsObject
+  val esEbookList: String =
+    readFile("/elasticSearchEbookList.json")
+  val ebookList: JsObject =
+    esEbookList.parseJson.convertTo[EbookList].toJson.asJsObject
 
-  val minEsEbookList: String = readFile("/elasticSearchMinimalEbookList.json")
-  val minEbookList: JsObject = minEsEbookList.parseJson.convertTo[EbookList].toJson.asJsObject
+  val minEsEbookList: String =
+    readFile("/elasticSearchMinimalEbookList.json")
+  val minEbookList: JsObject =
+    minEsEbookList.parseJson.convertTo[EbookList].toJson.asJsObject
 
   "a list of ebook records" should {
     "map count" in {
@@ -46,7 +51,8 @@ class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReade
         "wfwPJ34Bj-MaVWqX9Kac",
         "wvwPJ34Bj-MaVWqX9Kac"
       )
-      val ids = readObjectArray(ebookList, "docs").flatMap(readString(_, "id"))
+      val ids = readObjectArray(ebookList, "docs")
+        .flatMap(readString(_, "id"))
       ids should contain allElementsOf expected
     }
 
@@ -65,14 +71,16 @@ class EbookListMappingTest extends AnyWordSpec with Matchers with JsonFieldReade
 
     "map facet terms" in {
       val expected = Some("http://standardebooks.org")
-      val firstTerm = readObjectArray(ebookList, "facets", "provider.@id", "terms").head
+      val firstTerm =
+        readObjectArray(ebookList, "facets", "provider.@id", "terms").head
       val traversed = readString(firstTerm, "term")
       assert(traversed == expected)
     }
 
     "map facet counts" in {
       val expected = Some(590)
-      val firstTerm = readObjectArray(ebookList, "facets", "provider.@id", "terms").head
+      val firstTerm =
+        readObjectArray(ebookList, "facets", "provider.@id", "terms").head
       val traversed = readInt(firstTerm, "count")
       assert(traversed == expected)
     }

@@ -16,10 +16,14 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
-  override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
-  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] = testKit.spawn(EbookRegistry())
-  val elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand] = testKit.spawn(MockEsClientSuccess())
-  lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+  override def createActorSystem(): akka.actor.ActorSystem =
+    testKit.system.classicSystem
+  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
+    testKit.spawn(EbookRegistry())
+  val elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand] =
+    testKit.spawn(MockEsClientSuccess())
+  lazy val routes: Route =
+    new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
 
   "Health check" should {
     "return OK" in {

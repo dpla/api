@@ -7,28 +7,31 @@ import org.scalatest.wordspec.AnyWordSpec
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
 
-class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldReader with FileReader {
+class SingleEbookMappingTest extends AnyWordSpec with Matchers
+  with JsonFieldReader with FileReader {
 
   val esEbook: String = readFile("/elasticSearchEbook.json")
-  val ebook: JsObject = esEbook.parseJson.convertTo[SingleEbook].toJson.asJsObject
+  val ebook: JsObject =
+    esEbook.parseJson.convertTo[SingleEbook].toJson.asJsObject
   val firstDoc: JsObject = readObjectArray(ebook,"docs").headOption
     .getOrElse(throw new RuntimeException("Failed to parse 'docs'"))
 
   val esMinEbook: String = readFile("/elasticSearchMinimalEbook.json")
-  val minEbook: JsObject = esMinEbook.parseJson.convertTo[SingleEbook].toJson.asJsObject
+  val minEbook: JsObject =
+    esMinEbook.parseJson.convertTo[SingleEbook].toJson.asJsObject
   val minFirstDoc: JsObject = readObjectArray(minEbook,"docs").headOption
     .getOrElse(throw new RuntimeException("Failed to parse 'docs'"))
 
   "a single ebook record" should {
     "generate count" in {
-      val expected = 1
-      val traversed = readInt(ebook, "count").getOrElse("NOT FOUND")
+      val expected = Some(1)
+      val traversed = readInt(ebook, "count")
       assert(traversed == expected)
     }
 
     "generate type" in {
-      val expected = "ebook"
-      val traversed = readString(firstDoc, "sourceResource", "type").getOrElse("NOT FOUND")
+      val expected = Some("ebook")
+      val traversed = readString(firstDoc, "sourceResource", "type")
       assert(traversed == expected)
     }
 
@@ -36,7 +39,8 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
 
     "map author" in {
       val expected = "J. S. Fletcher"
-      val traversed = readStringArray(firstDoc, "sourceResource", "creator")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "creator")
       traversed should contain only expected
     }
 
@@ -47,31 +51,37 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
         "Lawyers -- Fiction",
         "London (England) -- Social life and customs -- 20th century -- Fiction"
       )
-      val traversed = readStringArray(firstDoc, "sourceResource", "subject", "name")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "subject", "name")
       traversed should contain allElementsOf expected
     }
 
     "map id" in {
-      val expected = "wfwPJ34Bj-MaVWqX9Kac"
-      val traversed = readString(firstDoc, "id").getOrElse("NOT FOUND")
+      val expected = Some("wfwPJ34Bj-MaVWqX9Kac")
+      val traversed = readString(firstDoc, "id")
       assert(traversed == expected)
     }
 
     "map itemUri" in {
-      val expected = "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery"
-      val traversed = readString(firstDoc, "isShownAt").getOrElse("NOT FOUND")
+      val expected = Some(
+        "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery"
+      )
+      val traversed =
+        readString(firstDoc, "isShownAt")
       assert(traversed == expected)
     }
 
     "map language" in {
       val expected = "en-GB"
-      val traversed = readStringArray(firstDoc, "sourceResource", "language", "name")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "language", "name")
       traversed should contain only expected
     }
 
     "map medium" in {
       val expected = "Medium"
-      val traversed = readStringArray(firstDoc, "sourceResource", "format")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "format")
       traversed should contain only expected
     }
 
@@ -89,31 +99,35 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
 
     "map publisher" in {
       val expected = "Publisher"
-      val traversed = readStringArray(firstDoc, "sourceResource", "publisher")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "publisher")
       traversed should contain only expected
     }
 
     "map publicationDate" in {
       val expected = "1922"
-      val traversed = readStringArray(firstDoc, "sourceResource", "date", "displayDate")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "date", "displayDate")
       traversed should contain only expected
     }
 
     "map sourceUri" in {
-      val expected = "http://standardebooks.org"
-      val traversed = readString(firstDoc, "provider", "@id").getOrElse("NOT FOUND")
+      val expected = Some("http://standardebooks.org")
+      val traversed = readString(firstDoc, "provider", "@id")
       assert(traversed == expected)
     }
 
     "map subtitle" in {
       val expected = "This is a subtitle"
-      val traversed = readStringArray(firstDoc, "sourceResource", "subtitle")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "subtitle")
       traversed should contain only expected
     }
 
     "map summary" in {
       val expected = "A young lawyer witnesses a suspicious death on a late-night train and investigates what turns out to be a murder."
-      val traversed = readStringArray(firstDoc, "sourceResource", "description")
+      val traversed =
+        readStringArray(firstDoc, "sourceResource", "description")
       traversed should contain only expected
     }
 

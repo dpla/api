@@ -9,14 +9,16 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
 import spray.json._
 
-class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with PrivateMethodTester with JsonFieldReader
-  with BeforeAndAfterAll {
+class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers
+  with PrivateMethodTester with JsonFieldReader with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val queryBuilder: ActorRef[EsQueryBuilderCommand] = testKit.spawn(ElasticSearchQueryBuilder())
-  val probe: TestProbe[EsQueryBuilderResponse] = testKit.createTestProbe[EsQueryBuilderResponse]()
+  val queryBuilder: ActorRef[EsQueryBuilderCommand] =
+    testKit.spawn(ElasticSearchQueryBuilder())
+  val probe: TestProbe[EsQueryBuilderResponse] =
+    testKit.createTestProbe[EsQueryBuilderResponse]()
 
   def getJsQuery(params: SearchParams): JsObject = {
     queryBuilder ! GetSearchQuery(params, probe.ref)
@@ -42,7 +44,13 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
   val detailSearchParams: SearchParams = SearchParams(
     exactFieldMatch = false,
-    facets = Some(Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")),
+    facets = Some(
+      Seq(
+        "provider.@id",
+        "sourceResource.publisher",
+        "sourceResource.subject.name"
+      )
+    ),
     facetSize = 100,
     fields = Some(Seq("sourceResource.title")),
     filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
@@ -86,14 +94,16 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "specify keyword" in {
       val expected = Some("dogs")
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readString(queryString, "query")
       assert(traversed == expected)
     }
 
     "specify fields to search" in {
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readStringArray(queryString, "fields")
       assert(traversed.nonEmpty)
     }
@@ -101,7 +111,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "specify wildcard analyzer" in {
       val expected = Some(true)
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readBoolean(queryString, "analyze_wildcard")
       assert(traversed == expected)
     }
@@ -109,7 +120,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "specify default operator" in {
       val expected = Some("AND")
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readString(queryString, "default_operator")
       assert(traversed == expected)
     }
@@ -117,7 +129,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     "specify lenient" in {
       val expected = Some(true)
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readBoolean(queryString, "lenient")
       assert(traversed == expected)
     }
@@ -128,7 +141,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val params = minSearchParams.copy(q=Some("dogs"))
       val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string"))
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string"))
       assert(queryString.size == 1)
     }
 
@@ -137,7 +151,9 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val params = minSearchParams.copy(filters=filters)
       val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string"))
+      val queryString =
+
+        boolMust.flatMap(obj => readObject(obj, "query_string"))
       assert(queryString.size == 1)
     }
 
@@ -149,7 +165,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val params = minSearchParams.copy(filters=filters)
       val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryMatch = boolMust.flatMap(obj => readObject(obj, "query_string"))
+      val queryMatch =
+        boolMust.flatMap(obj => readObject(obj, "query_string"))
       assert(queryMatch.size == 2)
     }
 
@@ -159,7 +176,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val params = minSearchParams.copy(filters=filters)
       val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readString(queryString, "query")
       assert(traversed == expected)
     }
@@ -170,7 +188,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
       val params = minSearchParams.copy(filters=filters)
       val query = getJsQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
-      val queryString = boolMust.flatMap(obj => readObject(obj, "query_string")).head
+      val queryString =
+        boolMust.flatMap(obj => readObject(obj, "query_string")).head
       val traversed = readStringArray(queryString, "fields")
       assert(traversed == expected)
     }
@@ -190,18 +209,21 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         val params = detailSearchParams.copy(exactFieldMatch = true)
         val query = getJsQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
-        val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
         val traversed = readString(queryTerm, "genre.not_analyzed")
         assert(traversed == expected)
       }
 
       "strip leading and trailing quotation marks from term" in {
         val expected = Some("Mystery fiction")
-        val filters = Seq(FieldFilter("sourceResource.subject.name", "\"Mystery fiction\""))
+        val filters =
+          Seq(FieldFilter("sourceResource.subject.name", "\"Mystery fiction\""))
         val params = minSearchParams.copy(filters=filters, exactFieldMatch=true)
         val query = getJsQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
-        val queryTerm = boolMust.flatMap(obj => readObject(obj, "term")).head
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
         val traversed = readString(queryTerm, "genre.not_analyzed")
         assert(traversed == expected)
       }
@@ -234,7 +256,8 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
 
     "include all facets" in {
-      val expected = Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")
+      val expected =
+        Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")
       val parent = readObject(detailQuery, "aggs")
       val fieldNames = parent.get.fields.keys
       fieldNames should contain allElementsOf expected
@@ -242,13 +265,15 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
 
     "specify facet field" in {
       val expected = Some("genre.not_analyzed")
-      val traversed = readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
+      val traversed =
+        readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
       assert(traversed == expected)
     }
 
     "specify facet size" in {
       val expected = Some(100)
-      val traversed = readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
+      val traversed =
+        readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
       assert(traversed == expected)
     }
   }
