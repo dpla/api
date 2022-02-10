@@ -181,6 +181,4 @@ log/*
 
 metastore_db/
 
-.env
-
 .bsp/
