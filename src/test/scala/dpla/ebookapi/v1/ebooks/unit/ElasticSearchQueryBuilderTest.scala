@@ -30,6 +30,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     facetSize = 100,
     fields = None,
     filters = Seq[FieldFilter](),
+    op = "AND",
     page = 3,
     pageSize = 20,
     q = None
@@ -43,6 +44,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     facetSize = 100,
     fields = Some(Seq("sourceResource.title")),
     filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
+    op = "AND",
     page = 3,
     pageSize = 20,
     q = Some("dogs")
@@ -199,6 +201,24 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
         val traversed = readString(queryTerm, "genre.not_analyzed")
         assert(traversed == expected)
       }
+    }
+  }
+
+  "op query builder" should {
+    "set must for AND" in {
+      val expected = "must"
+      val parent = readObject(detailQuery, "query", "bool")
+      val fieldNames = parent.get.fields.keys
+      fieldNames should contain only expected
+    }
+
+    "set should for OR" in  {
+      val expected = "should"
+      val params = detailSearchParams.copy(op="OR")
+      val query = getJsQuery(params)
+      val parent = readObject(query, "query", "bool")
+      val fieldNames = parent.get.fields.keys
+      fieldNames should contain only expected
     }
   }
 

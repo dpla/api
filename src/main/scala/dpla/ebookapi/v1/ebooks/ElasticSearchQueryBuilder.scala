@@ -32,7 +32,7 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
     JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> query(params.q, params.filters, params.exactFieldMatch),
+      "query" -> query(params.q, params.filters, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
       "_source" -> fieldRetrieval(params.fields)
     ).toJson
@@ -53,10 +53,16 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
   // ElasticSearch param that defines the number of hits to skip
   private def from(page: Int, pageSize: Int): Int = (page-1)*pageSize
 
-  private def query(q: Option[String], fieldFilters: Seq[FieldFilter], exactFieldMatch: Boolean) = {
+  private def query(q: Option[String],
+                    fieldFilters: Seq[FieldFilter],
+                    exactFieldMatch: Boolean,
+                    op: String
+                   ) = {
+
     val keyword: Seq[JsObject] = q.map(keywordQuery(_, keywordQueryFields)).toSeq
     val filters: Seq[JsObject] = fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
     val queryTerms: Seq[JsObject] = keyword ++ filters
+    val boolTerm: String = if (op == "OR") "should" else "must"
 
     if (queryTerms.isEmpty)
       JsObject(
@@ -65,7 +71,7 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
     else
       JsObject(
         "bool" -> JsObject(
-          "must" -> queryTerms.toJson
+          boolTerm -> queryTerms.toJson
         )
       )
   }
