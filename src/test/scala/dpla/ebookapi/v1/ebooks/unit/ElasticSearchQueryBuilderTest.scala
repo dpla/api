@@ -253,6 +253,33 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     }
   }
 
+  "sort query builder" should {
+    "default to sorting by score" in {
+      val expected = Some("desc")
+      val sortArray = readObjectArray(minQuery, "sort")
+      val score = sortArray.flatMap(obj => readObject(obj, "_score")).head
+      val traversed = readString(score, "order")
+      assert(traversed == expected)
+    }
+
+    "include score sorting when sorting by field" in {
+      val expected = Some("desc")
+      val sortArray = readObjectArray(detailQuery, "sort")
+      val score = sortArray.flatMap(obj => readObject(obj, "_score")).head
+      val traversed = readString(score, "order")
+      assert(traversed == expected)
+    }
+
+    "specify sort field and order" in {
+      val expected = Some("desc")
+      val sortArray = readObjectArray(detailQuery, "sort")
+      val score = sortArray
+        .flatMap(obj => readObject(obj, "title.not_analyzed")).head
+      val traversed = readString(score, "order")
+      assert(traversed == expected)
+    }
+  }
+
   "fields retrieval query builder" should {
     "retrieve all fields by default" in {
       val expected = "*"

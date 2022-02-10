@@ -34,6 +34,7 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filters, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
+      "sort" -> sort(params.sortBy, params.sortOrder),
       "_source" -> fieldRetrieval(params.fields)
     ).toJson
   }
@@ -143,6 +144,32 @@ object ElasticSearchQueryBuilder extends DplaMapFields {
         base
       case None => JsObject()
     }
+
+  private def sort(sortBy: Option[String], sortOrder: String): JsValue = {
+    val defaultSort: JsValue =
+      JsObject(
+        "_score" -> JsObject(
+          "order" -> "desc".toJson
+        )
+      )
+
+    sortBy match {
+      case Some(field) =>
+        getElasticSearchNotAnalyzed(field) match {
+          case Some(esField) =>
+            JsArray(
+              JsObject(
+                esField -> JsObject(
+                  "order" -> sortOrder.toJson
+                )
+              ),
+              defaultSort
+            )
+          case None => JsArray(defaultSort)
+        }
+      case None => JsArray(defaultSort)
+    }
+  }
 
   private def fieldRetrieval(fields: Option[Seq[String]]): JsValue = {
     fields match {

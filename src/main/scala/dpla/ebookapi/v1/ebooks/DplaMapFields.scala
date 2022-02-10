@@ -16,6 +16,7 @@ trait DplaMapFields {
    * @param facetable                 Can users facet on this field?
    *                                  Must have elasticSearchNotAnalyzed.
    * @param sortable                  Can users sort on this field?
+   *                                  Must have elasticSearchNotAnalyzed.
    * @param elasticSearchDefault      ElasticSearch field name.
    *                                  Can be either analyzed or not analyzed.
    * @param elasticSearchNotAnalyzed  ElasticSearch field name, not analyzed.
@@ -157,13 +158,22 @@ trait DplaMapFields {
     fields.filter(_.searchable).map(_.name)
 
   def facetableDplaFields: Seq[String] =
-    fields.filter(_.facetable).filter(_.elasticSearchNotAnalyzed.nonEmpty).map(_.name)
+    fields
+      .filter(_.facetable)
+      .filter(_.elasticSearchNotAnalyzed.nonEmpty)
+      .map(_.name)
 
   def sortableDplaFields: Seq[String] =
-    fields.filter(_.sortable).map(_.name)
+    fields
+      .filter(_.sortable)
+      .filter(_.elasticSearchNotAnalyzed.nonEmpty)
+      .map(_.name)
 
   def getElasticSearchField(name: String): Option[String] =
     fields.find(_.name == name).map(_.elasticSearchDefault)
+
+  def getElasticSearchNotAnalyzed(name: String): Option[String] =
+    fields.find(_.name == name).flatMap(_.elasticSearchNotAnalyzed)
 
   /**
    * Map DPLA MAP field to ElasticSearch non-analyzed field.
