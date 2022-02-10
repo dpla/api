@@ -26,12 +26,6 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers with JsonFieldRea
       assert(traversed == expected)
     }
 
-    "generate ingestType" in {
-      val expected = "ebook"
-      val traversed = readString(firstDoc, "ingestType").getOrElse("NOT FOUND")
-      assert(traversed == expected)
-    }
-
     "generate type" in {
       val expected = "ebook"
       val traversed = readString(firstDoc, "sourceResource", "type").getOrElse("NOT FOUND")

@@ -10,7 +10,7 @@ import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSear
 
 /**
  * Handles the control flow for processing a request from Routes.
- * It's children include ParamValidator, EbookMapper, and session actors.
+ * Its children include ParamValidator, EbookMapper, and session actors.
  * It also messages with ElasticSearchClient.
  */
 sealed trait RegistryResponse

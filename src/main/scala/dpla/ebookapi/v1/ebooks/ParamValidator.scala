@@ -22,6 +22,7 @@ case class SearchParams(
                          exactFieldMatch: Boolean,
                          facets: Option[Seq[String]],
                          facetSize: Int,
+                         fields: Option[Seq[String]],
                          filters: Seq[FieldFilter],
                          page: Int,
                          pageSize: Int,
@@ -104,6 +105,7 @@ object ParamValidator extends DplaMapFields {
       "exact_field_match",
       "facets",
       "facet_size",
+      "fields",
       "page",
       "page_size",
       "q"
@@ -150,7 +152,8 @@ object ParamValidator extends DplaMapFields {
     } else
       Try {
         // Collect all the user-submitted field filters.
-        val filters: Seq[FieldFilter] = searchableDplaFields.flatMap(getValidFieldFilter(rawParams, _))
+        val filters: Seq[FieldFilter] =
+          searchableDplaFields.flatMap(getValidFieldFilter(rawParams, _))
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -158,6 +161,7 @@ object ParamValidator extends DplaMapFields {
             .getOrElse(defaultExactFieldMatch),
           facets = getValid(rawParams, "facets", validFields),
           facetSize = getValid(rawParams, "facet_size", validInt).getOrElse(defaultFacetSize),
+          fields = getValid(rawParams, "fields", validFields),
           filters = filters,
           page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
           pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
@@ -209,12 +213,13 @@ object ParamValidator extends DplaMapFields {
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
       case "facets" => facetableDplaFields
+      case "fields" => allDplaFields
       case _ => Seq[String]()
     }
 
     val filtered = fieldString.split(",").map(candidate => {
       if (acceptedFields.contains(candidate)) candidate
-      else throw ValidationException(s"'$candidate' is not an allowable field for $param")
+      else throw ValidationException(s"'$candidate' is not an allowable value for '$param'")
     })
 
     if (filtered.nonEmpty) filtered

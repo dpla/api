@@ -260,6 +260,31 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
     }
   }
 
+  "fields validator" should {
+    "handle empty param" in {
+      val expected = None
+      paramValidator ! ValidateSearchParams(Map(), probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.fields shouldEqual expected
+    }
+
+    "accept valid param" in {
+      val given = "provider.@id,sourceResource.creator"
+      val expected = Some(Seq("provider.@id", "sourceResource.creator"))
+      val params = Map("fields" -> given)
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      val msg = probe.expectMessageType[ValidSearchParams]
+      msg.searchParams.fields shouldEqual expected
+    }
+
+    "reject unrecognized field" in {
+      val given = "foo"
+      val params = Map("fields" -> given)
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+  }
+
   "format validator" should {
     "handle empty param" in {
       val expected = None
