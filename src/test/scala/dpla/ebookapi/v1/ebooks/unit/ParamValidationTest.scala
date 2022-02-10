@@ -562,7 +562,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
 
     "accept valid param" in {
       val given = "sourceResource.title"
-      val expected = Some(Seq("sourceResource.title"))
+      val expected = Some("sourceResource.title")
       paramValidator ! ValidateSearchParams(Map("sort_by" -> given), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
       msg.searchParams.sortBy shouldEqual expected

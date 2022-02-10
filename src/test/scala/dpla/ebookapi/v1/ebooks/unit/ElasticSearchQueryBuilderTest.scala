@@ -50,7 +50,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers with Priva
     page = 3,
     pageSize = 20,
     q = Some("dogs"),
-    sortBy = Some(Seq("sourceResource.title")),
+    sortBy = Some("sourceResource.title"),
     sortOrder = "desc"
   )
 

@@ -28,7 +28,7 @@ case class SearchParams(
                          page: Int,
                          pageSize: Int,
                          q: Option[String],
-                         sortBy: Option[Seq[String]],
+                         sortBy: Option[String],
                          sortOrder: String
                        )
 
@@ -175,7 +175,7 @@ object ParamValidator extends DplaMapFields {
           page = getValid(rawParams, "page", validInt).getOrElse(defaultPage),
           pageSize = getValid(rawParams, "page_size", validInt).getOrElse(defaultPageSize),
           q = getValid(rawParams, "q", validText),
-          sortBy = getValid(rawParams, "sort_by", validFields),
+          sortBy = getValid(rawParams, "sort_by", validField),
           sortOrder = getValid(rawParams, "sort_order", validateSortOrder)
             .getOrElse(defaultSortOrder)
         )
@@ -221,12 +221,24 @@ object ParamValidator extends DplaMapFields {
       case None => throw ValidationException(s"$param must be a Boolean value")
     }
 
+  // One field.
+  // Must be in the list of accepted fields for the given param.
+  private def validField(fieldString: String, param: String): String = {
+    val acceptedFields = param match {
+      case "sort_by" => sortableDplaFields
+      case _ => Seq[String]()
+    }
+
+    if (acceptedFields.contains(fieldString)) fieldString
+    else throw ValidationException(s"'$fieldString' is not an allowable value for '$param'")
+  }
+
+  // One or more fields.
   // Must be in the list of accepted fields for the given param.
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
       case "facets" => facetableDplaFields
       case "fields" => allDplaFields
-      case "sort_by" => sortableDplaFields
       case _ => Seq[String]()
     }
 
