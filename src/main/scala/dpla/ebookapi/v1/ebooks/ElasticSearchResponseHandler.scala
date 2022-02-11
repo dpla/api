@@ -10,8 +10,15 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 sealed trait ElasticSearchResponse
-case class ElasticSearchSuccess(body: String) extends ElasticSearchResponse
-case class ElasticSearchHttpFailure(statusCode: StatusCode) extends ElasticSearchResponse
+
+case class ElasticSearchSuccess(
+                                 body: String
+                               ) extends ElasticSearchResponse
+
+case class ElasticSearchHttpFailure(
+                                     statusCode: StatusCode
+                                   ) extends ElasticSearchResponse
+
 object ElasticSearchParseFailure extends ElasticSearchResponse
 object ElasticSearchUnreachable extends ElasticSearchResponse
 
@@ -54,7 +61,8 @@ object ElasticSearchResponseHandler {
         case ProcessHttpResponse(httpResponse, replyTo) =>
           if (httpResponse.status.isSuccess) {
             // If response status is 200, get the response body as a String.
-            val futureBody: Future[String] = getEntityString(context.system, httpResponse)
+            val futureBody: Future[String] =
+              getEntityString(context.system, httpResponse)
 
             // Map the Future value to a message, handled by this actor.
             context.pipeToSelf(futureBody) {
@@ -71,13 +79,16 @@ object ElasticSearchResponseHandler {
           } else {
             // If response status, is not 200, the entity must be discarded.
             // Otherwise, the data will remain back-pressured.
+            // discardEntityBytes() pipes data to a sink.
             implicit val system: ActorSystem[Nothing] = context.system
-            val discarded: DiscardedEntity = httpResponse.discardEntityBytes() // pipes data to a sink
+            val discarded: DiscardedEntity = httpResponse.discardEntityBytes()
 
             // Map the Future value to a message, handled by this actor.
             context.pipeToSelf(discarded.future) {
               case Success(_) =>
-                ReturnFinalResponse(ElasticSearchHttpFailure(httpResponse.status), replyTo)
+                ReturnFinalResponse(
+                  ElasticSearchHttpFailure(httpResponse.status), replyTo
+                )
               case Failure(e) =>
                 context.log.error(
                   "Failed to discard ElasticSearch response entity:", e
@@ -95,7 +106,9 @@ object ElasticSearchResponseHandler {
     }
   }
 
-  private def getEntityString(implicit system: ActorSystem[Nothing], httpResponse: HttpResponse): Future[String] = {
+  private def getEntityString(implicit system: ActorSystem[Nothing],
+                              httpResponse: HttpResponse): Future[String] = {
+
     implicit val ec: ExecutionContextExecutor = system.executionContext
     Unmarshaller.stringUnmarshaller(httpResponse.entity)
   }

@@ -13,16 +13,22 @@ import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ResponseHeadersTest extends AnyWordSpec with Matchers with ScalatestRouteTest with FileReader {
+class ResponseHeadersTest extends AnyWordSpec with Matchers
+  with ScalatestRouteTest with FileReader {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
-  override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
-  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] = testKit.spawn(EbookRegistry())
-  val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientSuccess())
-  lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+  implicit def typedSystem: ActorSystem[Nothing] =
+    testKit.system
+  override def createActorSystem(): akka.actor.ActorSystem =
+    testKit.system.classicSystem
+  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
+    testKit.spawn(EbookRegistry())
+  val elasticSearchClient: ActorRef[EsClientCommand] =
+    testKit.spawn(MockEsClientSuccess())
+  lazy val routes: Route =
+    new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
 
   "/v1/ebooks response header" should {
     "include correct Content-Type" in {
@@ -35,7 +41,8 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "include correct Content-Security-Policy" in {
       val request = Get("/v1/ebooks")
-      val expected = "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
+      val expected =
+        "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
 
       request ~> Route.seal(routes) ~> check {
         header("Content-Security-Policy").get.value shouldEqual expected
@@ -70,7 +77,8 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "include correct Content-Security-Policy" in {
       val request = Get("/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
-      val expected = "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
+      val expected =
+        "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
 
       request ~> Route.seal(routes) ~> check {
         header("Content-Security-Policy").get.value shouldEqual expected

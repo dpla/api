@@ -13,16 +13,21 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 
-class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest with JsonFieldReader {
+class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
+  with JsonFieldReader {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit
 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
-  override def createActorSystem(): akka.actor.ActorSystem = testKit.system.classicSystem
-  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] = testKit.spawn(EbookRegistry())
-  val elasticSearchClient: ActorRef[EsClientCommand] = testKit.spawn(MockEsClientSuccess())
-  lazy val routes: Route = new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+  override def createActorSystem(): akka.actor.ActorSystem =
+    testKit.system.classicSystem
+  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
+    testKit.spawn(EbookRegistry())
+  val elasticSearchClient: ActorRef[EsClientCommand] =
+    testKit.spawn(MockEsClientSuccess())
+  lazy val routes: Route =
+    new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
 
   "/v1/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {
@@ -49,7 +54,8 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest w
           "wfwPJ34Bj-MaVWqX9Kac",
           "wvwPJ34Bj-MaVWqX9Kac"
         )
-        val ids = readObjectArray(entity, "docs").flatMap(readString(_, "id"))
+        val ids = readObjectArray(entity, "docs")
+          .flatMap(readString(_, "id"))
         ids should contain allElementsOf expected
       }
     }
@@ -64,7 +70,8 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest w
         contentType should ===(ContentTypes.`application/json`)
 
         val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val id = readObjectArray(entity, "docs").flatMap(readString(_, "id")).headOption
+        val id = readObjectArray(entity, "docs")
+          .flatMap(readString(_, "id")).headOption
         id should === (Some("wfwPJ34Bj-MaVWqX9Kac"))
       }
     }

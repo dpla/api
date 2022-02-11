@@ -11,13 +11,16 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Random
 
 
-class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class ParamValidationTest extends AnyWordSpec with Matchers
+  with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val paramValidator: ActorRef[ValidationRequest] = testKit.spawn(ParamValidator())
-  val probe: TestProbe[ValidationResponse] = testKit.createTestProbe[ValidationResponse]
+  val paramValidator: ActorRef[ValidationRequest] =
+    testKit.spawn(ParamValidator())
+  val probe: TestProbe[ValidationResponse] =
+    testKit.createTestProbe[ValidationResponse]
 
   "search param validator" should {
     "reject unrecognized params" in {
@@ -62,7 +65,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.creator") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.creator")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -71,7 +76,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.creator" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.creator").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.creator").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -94,7 +101,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "provider.@id") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "provider.@id")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -103,7 +112,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("provider.@id" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "provider.@id").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "provider.@id").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject invalid URL" in {
@@ -119,7 +130,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.date.displayDate") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.date.displayDate")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -128,7 +141,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.date.displayDate" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.date.displayDate").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.date.displayDate").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -151,7 +166,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.description") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.description")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -160,7 +177,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.description" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.description").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.description").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -290,7 +309,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.format") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.format")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -299,7 +320,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.format" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.format").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.format").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -322,7 +345,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "isShownAt") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "isShownAt")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -331,7 +356,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("isShownAt" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "isShownAt").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "isShownAt").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject invalid URL" in {
@@ -347,7 +374,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.language.name") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.language.name")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -356,7 +385,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.language.name" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.language.name").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.language.name").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -379,7 +410,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "object") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "object")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -388,7 +421,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("object" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "object").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "object").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject invalid URL" in {
@@ -493,7 +528,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.publisher") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.publisher")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -502,7 +539,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.publisher" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.publisher").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.publisher").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -603,7 +642,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.subject.name") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.subject.name")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -612,7 +653,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.subject.name" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.subject.name").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.subject.name").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -635,7 +678,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.subtitle") shouldEqual expected
+      val fieldValue =msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.subtitle")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -644,7 +689,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.subtitle" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.subtitle").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.subtitle").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {
@@ -667,7 +714,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val expected = None
       paramValidator ! ValidateSearchParams(Map(), probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.title") shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.title")
+      fieldValue shouldEqual expected
     }
 
     "accept valid param" in {
@@ -676,7 +725,9 @@ class ParamValidationTest extends AnyWordSpec with Matchers with BeforeAndAfterA
       val params = Map("sourceResource.title" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
       val msg = probe.expectMessageType[ValidSearchParams]
-      msg.searchParams.filters.find(_.fieldName == "sourceResource.title").map(_.value) shouldEqual expected
+      val fieldValue = msg.searchParams.filters
+        .find(_.fieldName == "sourceResource.title").map(_.value)
+      fieldValue shouldEqual expected
     }
 
     "reject too-short param" in {

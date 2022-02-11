@@ -42,9 +42,16 @@ object EbookRegistry {
 
       // Spawn children.
       val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
-        context.spawn(ParamValidator(), "ParamValidator")
+        context.spawn(
+          ParamValidator(),
+          "ParamValidator"
+        )
+
       val mapper: ActorRef[EbookMapper.MapperCommand] =
-        context.spawn(EbookMapper(), "EbookMapper")
+        context.spawn(
+          EbookMapper(),
+          "EbookMapper"
+        )
 
       Behaviors.receiveMessage[RegistryCommand] {
 
@@ -67,7 +74,8 @@ object EbookRegistry {
 
   /**
    * Per session actor behavior for handling a search request.
-   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   * The session actor has its own internal state
+   * and its own ActorRef for sending/receiving messages.
    */
   private def processSearch(
                      rawParams: Map[String, String],
@@ -88,7 +96,8 @@ object EbookRegistry {
 
         /**
          * Possible responses from ParamValidator.
-         * If params are valid, send a message to ElasticSearchClient to get a search result.
+         * If params are valid, send a message to ElasticSearchClient to get a
+         * search result.
          * If params are invalid, send an error message back to Routes.
          */
         case ValidSearchParams(params: SearchParams) =>
@@ -102,13 +111,14 @@ object EbookRegistry {
 
         /**
          * Possible responses from ElasticSearchClient.
-         * If the search was successful, send a message to EbookMapper to get a mapped EbookList.
+         * If the search was successful, send a message to EbookMapper to get a
+         * mapped EbookList.
          * If the search was unsuccessful, send an error message back to Routes.
          */
         case ElasticSearchSuccess(body) =>
           searchParams match {
-            case Some(params) =>
-              mapper ! MapSearchResponse(body, params.page, params.pageSize, context.self)
+            case Some(p) =>
+              mapper ! MapSearchResponse(body, p.page, p.pageSize, context.self)
               Behaviors.same
             case None =>
               // This should not happen.
@@ -138,8 +148,8 @@ object EbookRegistry {
 
         /**
          * Possible responses from EbookMapper.
-         * If the mapping was successful, send the mapped EbookList back to Routes.
-         * If the mapping was unsuccessful, send an error message back to Routes.
+         * If mapping was successful, send the mapped EbookList back to Routes.
+         * If mapping was unsuccessful, send an error message back to Routes.
          */
         case MappedEbookList(ebookList) =>
           replyTo ! SearchResult(ebookList)
@@ -157,7 +167,8 @@ object EbookRegistry {
 
   /**
    * Per session actor behavior for handling a fetch request.
-   * The session actor has its own internal state and its own ActorRef for sending/receiving messages.
+   * The session actor has its own internal state
+   * and its own ActorRef for sending/receiving messages.
    */
   private def processFetch(
                      id: String,
@@ -176,7 +187,8 @@ object EbookRegistry {
       Behaviors.receiveMessage {
         /**
          * Possible responses from ParamValidator.
-         * If params are valid, send a message to ElasticSearchClient to get a fetch result.
+         * If params are valid, send a message to ElasticSearchClient to get a
+         * fetch result.
          * If params are invalid, send an error message back to Routes.
          */
         case ValidFetchParams(params: FetchParams) =>
@@ -189,7 +201,8 @@ object EbookRegistry {
 
         /**
          * Possible responses from ElasticSearchClient.
-         * If the fetch was successful, send a message to EbookMapper to get a mapped Ebook.
+         * If the fetch was successful, send a message to EbookMapper to get a
+         * mapped Ebook.
          * If the fetch was unsuccessful, send an error message back to Routes.
          */
         case ElasticSearchSuccess(body) =>

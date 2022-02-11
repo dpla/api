@@ -29,8 +29,9 @@ class Routes(
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
 
   // If ask takes more time than this to complete the request is failed
-  private implicit val timeout: Timeout =
-    Timeout.create(system.settings.config.getDuration("my-app.routes.ask-timeout"))
+  private implicit val timeout: Timeout = Timeout.create(
+      system.settings.config.getDuration("my-app.routes.ask-timeout")
+  )
 
   val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")
 
@@ -39,7 +40,9 @@ class Routes(
   def searchEbooks(params: Map[String, String]): Future[RegistryResponse] =
     ebookRegistry.ask(Search(elasticSearchClient, params, _))
 
-  def fetchEbooks(id: String, params: Map[String, String]): Future[RegistryResponse] =
+  def fetchEbooks(id: String,
+                  params: Map[String, String]): Future[RegistryResponse] =
+
     ebookRegistry.ask(Fetch(elasticSearchClient, id, params, _))
 
   lazy val applicationRoutes: Route =
@@ -127,12 +130,17 @@ class Routes(
   // @see https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
   // @see https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
   private val securityResponseHeaders = Seq(
-    RawHeader("Content-Security-Policy",
-      "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"),
+    RawHeader(
+      "Content-Security-Policy",
+      "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
+    ),
     RawHeader("X-Content-Type-Options", "nosniff"),
     RawHeader("X-Frame-Options", "DENY")
   )
 
-  private val teapotMessage: String = "There was an unexpected internal error. Please try again later."
-  private val notFoundMessage: String = "The ebook you are searching for could not be found."
+  private val teapotMessage: String =
+    "There was an unexpected internal error. Please try again later."
+
+  private val notFoundMessage: String =
+    "The ebook you are searching for could not be found."
 }

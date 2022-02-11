@@ -177,11 +177,14 @@ trait DplaMapFields {
 
   /**
    * Map DPLA MAP field to ElasticSearch non-analyzed field.
-   * If a field is only indexed as analyzed (text), then return the analyzed field.
+   * If a field is only indexed as analyzed (text), then return analyzed field.
    * Used for exact field matches and facets.
    */
   def getElasticSearchExactMatchField(name: String): Option[String] =
-    fields.find(_.name == name).map(field => field.elasticSearchNotAnalyzed.getOrElse(field.elasticSearchDefault))
+    fields.find(_.name == name)
+      .map(field =>
+        field.elasticSearchNotAnalyzed.getOrElse(field.elasticSearchDefault)
+      )
 
   def getDplaFieldType(name: String): Option[DplaFieldType] =
     fields.find(_.name == name).map(_.fieldType)

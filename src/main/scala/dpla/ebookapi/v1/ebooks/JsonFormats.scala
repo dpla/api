@@ -3,7 +3,8 @@ package dpla.ebookapi.v1.ebooks
 import spray.json.{DefaultJsonProtocol, _}
 
 /**
- * These formats are used for parsing ElasticSearch responses and mapping them to DPLA MAP.
+ * These formats are used for parsing ElasticSearch responses and mapping them
+ * to DPLA MAP.
  */
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
@@ -96,9 +97,11 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       ).toJson
   }
 
-  /** In an ElasticSearch response, facets look something like this:
-   *  {"aggregations": {"provider.@id": {"buckets": [...]}}, "sourceResource.publisher": {"buckets": [...]}}}
-   *  You therefore have to read the keys of the "aggregation" object to get the facet field names.
+  /**
+   * In an ElasticSearch response, facets look something like this:
+   * {"aggregations": {"provider.@id": {"buckets": [...]}}}
+   * You therefore have to read the keys of the "aggregation" object to get the
+   * facet field names.
    */
   implicit object FacetListFormat extends RootJsonFormat[FacetList] {
 
@@ -112,7 +115,8 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
           val facets: Seq[Facet] = fieldNames.map(fieldName =>
             Facet(
               field = fieldName,
-              buckets = readObjectArray(root, fieldName, "buckets").map(_.toJson.convertTo[Bucket])
+              buckets = readObjectArray(root, fieldName, "buckets")
+                .map(_.toJson.convertTo[Bucket])
             )
           )
 
@@ -129,7 +133,9 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
       // Add a field to aggObject for each facet field
       facetList.facets.foreach(agg => {
-        aggObject = JsObject(aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson)))
+        aggObject = JsObject(
+          aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson))
+        )
       })
 
       aggObject.toJson
@@ -145,8 +151,10 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         count = readInt(root, "hits", "total", "value"),
         limit = None,
         start = None,
-        docs = readObjectArray(root, "hits", "hits").map(_.toJson.convertTo[Ebook]),
-        facets = readObject(root, "aggregations").map(_.toJson.convertTo[FacetList])
+        docs = readObjectArray(root, "hits", "hits")
+          .map(_.toJson.convertTo[Ebook]),
+        facets = readObject(root, "aggregations")
+          .map(_.toJson.convertTo[FacetList])
       )
     }
 
@@ -160,8 +168,10 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
       // Add facets if there are any
       val complete: JsObject =
-        if (ebookList.facets.nonEmpty) JsObject(base.fields + ("facets" -> ebookList.facets.toJson))
-        else base
+        if (ebookList.facets.nonEmpty)
+          JsObject(base.fields + ("facets" -> ebookList.facets.toJson))
+        else
+          base
 
       complete.toJson
     }
@@ -169,7 +179,8 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
   /** Methods for writing JSON **/
 
-  // Filter out fields whose values are: null, empty array, or object with all empty fields.
+  // Filter out fields whose values are:
+  // null, empty array, or object with all empty fields.
   def filterIfEmpty(obj: JsObject): JsObject = {
 
     def filterFields(fields: Map[String, JsValue]): Map[String, JsValue] =
