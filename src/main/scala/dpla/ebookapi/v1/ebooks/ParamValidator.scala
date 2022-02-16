@@ -70,9 +70,11 @@ object ParamValidator extends DplaMapFields {
   def apply(): Behavior[ValidationRequest] = {
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
+
         case ValidateSearchParams(params, replyTo) =>
           val response: ValidationResponse = getSearchParams(params)
 
+          // Log warnings for invalid params
           response match {
             case InvalidParams(msg) =>
               context.log.warn2(
@@ -80,20 +82,32 @@ object ParamValidator extends DplaMapFields {
                 msg,
                 params.map { case(key, value) => s"$key: $value"}.mkString(", ")
               )
+            case InvalidApiKey =>
+              context.log.warn(
+                "Invalid format for API key: {}",
+                params.getOrElse("api_key", "")
+              )
             case _ => //noop
           }
 
           replyTo ! response
           Behaviors.same
+
         case ValidateFetchParams(id, params, replyTo) =>
           val response = getFetchParams(id, params)
 
+          // Log warnings for invalid params
           response match {
             case InvalidParams(msg) =>
               context.log.warn2(
                 "Invalid fetch params: '{}' for params '{}'",
                 msg,
                 params.map { case(key, value) => s"$key: $value"}.mkString(", ")
+              )
+            case InvalidApiKey =>
+              context.log.warn(
+                "Invalid format for API key: {}",
+                params.getOrElse("api_key", "")
               )
             case _ => //noop
           }

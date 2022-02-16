@@ -14,16 +14,22 @@ import scala.util.{Failure, Success}
 sealed trait PostgresClientResponse
 
 case class ApiKeyFound(
-                        internalAccount: Boolean,
-                        enabled: Boolean
+                        apiKey: ApiKey
                       ) extends PostgresClientResponse
 
 case class ApiKeyCreated(
-                          apiKey: String
+                          apiKey: ApiKey
                         ) extends PostgresClientResponse
 
 object ApiKeyNotFound extends PostgresClientResponse
 object PostgresError extends PostgresClientResponse
+
+case class ApiKey(
+                   key: String,
+                   email: String,
+                   staff: Boolean,
+                   enabled: Boolean
+                 )
 
 object PostgresClient {
 
@@ -40,8 +46,8 @@ object PostgresClient {
                          ) extends PostgresClientCommand
 
   private case class ProcessFindResponse(
-                                          matches: Seq[(String, Option[Boolean],
-                                            Option[Boolean])],
+                                          matches: Seq[(String, String,
+                                            Option[Boolean], Option[Boolean])],
                                           replyTo: ActorRef[PostgresClientResponse]
                                         ) extends PostgresClientCommand
 
@@ -62,8 +68,10 @@ object PostgresClient {
           // Find all accounts with the given API key
           val accounts = TableQuery[Account]
           val query = accounts.filter(_.key === apiKey)
-            .map(account => (account.email, account.staff, account.enabled))
-          val result: Future[Seq[(String, Option[Boolean], Option[Boolean])]] =
+            .map(account =>
+              (account.key, account.email, account.staff, account.enabled)
+            )
+          val result: Future[Seq[(String, String, Option[Boolean], Option[Boolean])]] =
             db.run(query.result)
 
           // Map the Future value to a message, handled by this actor.
@@ -85,12 +93,13 @@ object PostgresClient {
         case ProcessFindResponse(matches, replyTo) =>
           matches.headOption match {
             case Some(account) =>
-              val email = account._1
-              val staff = account._2.getOrElse(false)
-              val enabled = account._3.getOrElse(true)
+              val key = account._1
+              val email = account._2
+              val staff = account._3.getOrElse(false)
+              val enabled = account._4.getOrElse(true)
               context.log.info(s"Found $email $staff $enabled")
               val internalAccount: Boolean = email.endsWith(".dp.la") || staff
-              replyTo ! ApiKeyFound(internalAccount, enabled)
+              replyTo ! ApiKeyFound(ApiKey(key, email, staff, enabled))
             case None =>
               replyTo ! ApiKeyNotFound
           }

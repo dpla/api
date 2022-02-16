@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
+import dpla.ebookapi.v1.{ApiKey, ApiKeyFound, ApiKeyNotFound, PostgresError}
 import dpla.ebookapi.v1.PostgresClient.{FindApiKey, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
@@ -93,9 +94,27 @@ object EbookRegistry {
 
     Behaviors.setup[AnyRef] { context =>
 
+      // searchParams are stored as a session variable because they are needed
+      // for the mapping.
       var searchParams: Option[SearchParams] = None
+
+      // Both searchResult and authorizedKey must be present before sending
+      // a response back to Routes.
       var searchResult: Option[EbookList] = None
-      var authorized: Boolean = false
+      var authorizedKey: Option[ApiKey] = None
+
+      // This behavior is invoked if either the API key has been authorized
+      // or the mapping has been complete.
+      def possibleSessionResolution(): Behavior[AnyRef] =
+        (searchResult, authorizedKey) match {
+          case (Some(ebookList), Some(_)) =>
+            // We've received both message replies, time to complete session
+            replyTo ! SearchResult(ebookList)
+            Behaviors.stopped
+          case _ =>
+            // Still waiting for one of the message replies
+            Behaviors.same
+        }
 
       // Send initial message to ParamValidator.
       paramValidator ! ValidateSearchParams(rawParams, context.self)
@@ -112,8 +131,9 @@ object EbookRegistry {
         case ValidSearchParams(apiKey: String, params: SearchParams) =>
           if (searchParams.isEmpty) {
             searchParams = Some(params)
-            esClient ! GetEsSearchResult(params, context.self)
+            // Calls to Postgres and ElasticSearch can happen concurrently.
             postgresClient ! FindApiKey(apiKey, context.self)
+            esClient ! GetEsSearchResult(params, context.self)
             Behaviors.same
           }
           else {
@@ -170,14 +190,14 @@ object EbookRegistry {
 
         /**
          * Possible responses from EbookMapper.
-         * If mapping was successful, send the mapped EbookList back to Routes.
+         * If mapping was successful (and API key has been authorized),
+         * send the mapped EbookList back to Routes.
          * If mapping was unsuccessful, send an error message back to Routes.
          */
         case MappedEbookList(ebookList) =>
           if (searchResult.isEmpty) {
             searchResult = Some(ebookList)
-            replyTo ! SearchResult(ebookList)
-            Behaviors.stopped
+            possibleSessionResolution()
           }
           else {
             // Sanity check - searchResult should only be set once
@@ -188,6 +208,42 @@ object EbookRegistry {
 
 
         case MapFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        /**
+         * Possible responses from PostgresClient.
+         * If API key was found (and a successful mapping has been received),
+         * send mapped ebookList to Routes.
+         * Otherwise, send an error to Routes.
+         */
+
+        case ApiKeyFound(apiKey) =>
+          if(apiKey.enabled)
+            if (authorizedKey.isEmpty) {
+              authorizedKey = Some(apiKey)
+              possibleSessionResolution()
+            }
+            else {
+              // Sanity check - authorizedKey should only be set once
+              context.log.error("Multiple attempts to set authorizedKey")
+              replyTo ! InternalFailure
+              Behaviors.stopped
+            }
+          else {
+            context.log.info(
+              "Attempted use of disabled API key: {}", apiKey.key
+            )
+            replyTo ! ForbiddenFailure
+            Behaviors.stopped
+          }
+
+
+        case ApiKeyNotFound =>
+          replyTo ! ForbiddenFailure
+          Behaviors.stopped
+
+        case PostgresError =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -214,8 +270,23 @@ object EbookRegistry {
 
     Behaviors.setup[AnyRef] { context =>
 
+      // Both fetchResult and authorizedKey must be present before sending
+      // a response back to Routes.
       var fetchResult: Option[SingleEbook] = None
-      var authorized: Boolean = false
+      var authorizedKey: Option[ApiKey] = None
+
+      // This behavior is invoked if either the API key has been authorized
+      // or the mapping has been complete.
+      def possibleSessionResolution(): Behavior[AnyRef] =
+        (fetchResult, authorizedKey) match {
+          case (Some(singleEbook), Some(_)) =>
+            // We've received both message replies, time to complete session
+            replyTo ! FetchResult(singleEbook)
+            Behaviors.stopped
+          case _ =>
+            // Still waiting for one of the message replies
+            Behaviors.same
+        }
 
       // Send initial message to ParamValidator.
       paramValidator ! ValidateFetchParams(id, rawParams, context.self)
@@ -228,8 +299,9 @@ object EbookRegistry {
          * If params are invalid, send an error message back to Routes.
          */
         case ValidFetchParams(apiKey: String, params: FetchParams) =>
-          esClient ! GetEsFetchResult(params, context.self)
+          // Calls to Postgres and ElasticSearch can happen concurrently.
           postgresClient ! FindApiKey(apiKey, context.self)
+          esClient ! GetEsFetchResult(params, context.self)
           Behaviors.same
 
         case InvalidParams(message) =>
@@ -273,13 +345,14 @@ object EbookRegistry {
 
         /**
          * Possible responses from EbookMapper.
-         * If the mapping was successful, send the mapped Ebook back to Routes.
+         * If the mapping was successful (and the API key has been authorized),
+         * send the mapped Ebook back to Routes.
          * If the mapping was unsuccessful, send an error message back to Routes.
          */
         case MappedSingleEbook(singleEbook) =>
           if (fetchResult.isEmpty) {
-            replyTo ! FetchResult(singleEbook)
-            Behaviors.stopped
+            fetchResult = Some(singleEbook)
+            possibleSessionResolution()
           }
           else {
             // Sanity check - fetchResult should only be set once
@@ -289,6 +362,41 @@ object EbookRegistry {
           }
 
         case MapFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        /**
+         * Possible responses from PostgresClient.
+         * If API key was found (and a successful mapping has been received),
+         * send mapped ebook to Routes.
+         * Otherwise, send an error to Routes.
+         */
+
+        case ApiKeyFound(apiKey) =>
+          if(apiKey.enabled)
+            if (authorizedKey.isEmpty) {
+              authorizedKey = Some(apiKey)
+              possibleSessionResolution()
+            }
+            else {
+              // Sanity check - authorizedKey should only be set once
+              context.log.error("Multiple attempts to set authorizedKey")
+              replyTo ! InternalFailure
+              Behaviors.stopped
+            }
+          else {
+            context.log.info(
+              "Attempted use of disabled API key: {}", apiKey.key
+            )
+            replyTo ! ForbiddenFailure
+            Behaviors.stopped
+          }
+
+        case ApiKeyNotFound =>
+          replyTo ! ForbiddenFailure
+          Behaviors.stopped
+
+        case PostgresError =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
