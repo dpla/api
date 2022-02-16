@@ -7,7 +7,6 @@ import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.PostgresProfile.backend.Database
 import slick.sql.SqlProfile.ColumnOption.SqlType
 
-import java.beans.Beans
 import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
