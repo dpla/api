@@ -94,6 +94,8 @@ object EbookRegistry {
     Behaviors.setup[AnyRef] { context =>
 
       var searchParams: Option[SearchParams] = None
+      var searchResult: Option[EbookList] = None
+      var authorized: Boolean = false
 
       // Send initial message to ParamValidator.
       paramValidator ! ValidateSearchParams(rawParams, context.self)
@@ -108,10 +110,18 @@ object EbookRegistry {
          * If params are invalid, send an error message back to Routes.
          */
         case ValidSearchParams(apiKey: String, params: SearchParams) =>
-          searchParams = Some(params)
-          esClient ! GetEsSearchResult(params, context.self)
-          postgresClient ! FindApiKey(apiKey, context.self)
-          Behaviors.same
+          if (searchParams.isEmpty) {
+            searchParams = Some(params)
+            esClient ! GetEsSearchResult(params, context.self)
+            postgresClient ! FindApiKey(apiKey, context.self)
+            Behaviors.same
+          }
+          else {
+            // Sanity check - search params should only be set once.
+            context.log.error("Multiple attempts to set searchParams")
+            replyTo ! InternalFailure
+            Behaviors.stopped
+          }
 
         case InvalidParams(message) =>
           replyTo ! ValidationFailure(message)
@@ -164,8 +174,18 @@ object EbookRegistry {
          * If mapping was unsuccessful, send an error message back to Routes.
          */
         case MappedEbookList(ebookList) =>
-          replyTo ! SearchResult(ebookList)
-          Behaviors.stopped
+          if (searchResult.isEmpty) {
+            searchResult = Some(ebookList)
+            replyTo ! SearchResult(ebookList)
+            Behaviors.stopped
+          }
+          else {
+            // Sanity check - searchResult should only be set once
+            context.log.error("Multiple attempts to set searchResult")
+            replyTo ! InternalFailure
+            Behaviors.stopped
+          }
+
 
         case MapFailure =>
           replyTo ! InternalFailure
@@ -193,6 +213,9 @@ object EbookRegistry {
                    ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
+
+      var fetchResult: Option[SingleEbook] = None
+      var authorized: Boolean = false
 
       // Send initial message to ParamValidator.
       paramValidator ! ValidateFetchParams(id, rawParams, context.self)
@@ -254,8 +277,16 @@ object EbookRegistry {
          * If the mapping was unsuccessful, send an error message back to Routes.
          */
         case MappedSingleEbook(singleEbook) =>
-          replyTo ! FetchResult(singleEbook)
-          Behaviors.stopped
+          if (fetchResult.isEmpty) {
+            replyTo ! FetchResult(singleEbook)
+            Behaviors.stopped
+          }
+          else {
+            // Sanity check - fetchResult should only be set once
+            context.log.error("Multiple attempts to set fetchResult.")
+            replyTo ! InternalFailure
+            Behaviors.stopped
+          }
 
         case MapFailure =>
           replyTo ! InternalFailure
