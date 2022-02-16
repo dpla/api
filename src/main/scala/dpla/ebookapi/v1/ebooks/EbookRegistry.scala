@@ -4,9 +4,10 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse}
+import dpla.ebookapi.v1.PostgresClient.{FindApiKey, PostgresClientCommand}
+import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
-import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams}
+import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationRequest}
 
 /**
  * Handles the control flow for processing a request from Routes.
@@ -16,7 +17,8 @@ import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSear
 sealed trait RegistryResponse
 final case class SearchResult(result: EbookList) extends RegistryResponse
 final case class FetchResult(result: SingleEbook) extends RegistryResponse
-case class ValidationFailure(message: String) extends RegistryResponse
+final case class ValidationFailure(message: String) extends RegistryResponse
+case object ForbiddenFailure extends RegistryResponse
 case object NotFoundFailure extends RegistryResponse
 case object InternalFailure extends RegistryResponse
 
@@ -25,29 +27,32 @@ object EbookRegistry {
   sealed trait RegistryCommand
 
   final case class Search(
-                           client: ActorRef[EsClientCommand],
+                           esClient: ActorRef[EsClientCommand],
                            rawParams: Map[String, String],
                            replyTo: ActorRef[RegistryResponse]
                          ) extends RegistryCommand
 
   final case class Fetch(
-                          client: ActorRef[EsClientCommand],
+                          esClient: ActorRef[EsClientCommand],
                           id: String,
                           rawParams: Map[String, String],
                           replyTo: ActorRef[RegistryResponse]
                         ) extends RegistryCommand
 
-  def apply(): Behavior[RegistryCommand] = {
+  def apply(
+             postgresClient: ActorRef[PostgresClientCommand]
+           ): Behavior[RegistryCommand] = {
+
     Behaviors.setup[RegistryCommand] { context =>
 
       // Spawn children.
-      val paramValidator: ActorRef[ParamValidator.ValidationRequest] =
+      val paramValidator: ActorRef[ValidationRequest] =
         context.spawn(
           ParamValidator(),
           "ParamValidator"
         )
 
-      val mapper: ActorRef[EbookMapper.MapperCommand] =
+      val mapper: ActorRef[MapperCommand] =
         context.spawn(
           EbookMapper(),
           "EbookMapper"
@@ -55,17 +60,17 @@ object EbookRegistry {
 
       Behaviors.receiveMessage[RegistryCommand] {
 
-        case Search(client, rawParams, replyTo) =>
+        case Search(esClient, rawParams, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSearch(rawParams, replyTo, paramValidator, client, mapper)
+            processSearch(rawParams, replyTo, paramValidator, esClient, postgresClient, mapper)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
-        case Fetch(client, id, rawParams, replyTo) =>
+        case Fetch(esClient, id, rawParams, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processFetch(id, rawParams, replyTo, paramValidator, client, mapper)
+            processFetch(id, rawParams, replyTo, paramValidator, esClient, postgresClient, mapper)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -78,11 +83,12 @@ object EbookRegistry {
    * and its own ActorRef for sending/receiving messages.
    */
   private def processSearch(
-                     rawParams: Map[String, String],
-                     replyTo: ActorRef[RegistryResponse],
-                     paramValidator: ActorRef[ParamValidator.ValidationRequest],
-                     client: ActorRef[ElasticSearchClient.EsClientCommand],
-                     mapper: ActorRef[EbookMapper.MapperCommand],
+                             rawParams: Map[String, String],
+                             replyTo: ActorRef[RegistryResponse],
+                             paramValidator: ActorRef[ValidationRequest],
+                             esClient: ActorRef[EsClientCommand],
+                             postgresClient: ActorRef[PostgresClientCommand],
+                             mapper: ActorRef[EbookMapper.MapperCommand],
                    ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
@@ -91,6 +97,7 @@ object EbookRegistry {
 
       // Send initial message to ParamValidator.
       paramValidator ! ValidateSearchParams(rawParams, context.self)
+//      postgresClient ! FindApiKey("08e3918eeb8bf4469924f062072459a8", context.self)
 
       Behaviors.receiveMessage {
 
@@ -100,13 +107,18 @@ object EbookRegistry {
          * search result.
          * If params are invalid, send an error message back to Routes.
          */
-        case ValidSearchParams(params: SearchParams) =>
+        case ValidSearchParams(apiKey: String, params: SearchParams) =>
           searchParams = Some(params)
-          client ! GetEsSearchResult(params, context.self)
+          esClient ! GetEsSearchResult(params, context.self)
+          postgresClient ! FindApiKey(apiKey, context.self)
           Behaviors.same
 
         case InvalidParams(message) =>
           replyTo ! ValidationFailure(message)
+          Behaviors.stopped
+
+        case InvalidApiKey =>
+          replyTo ! ForbiddenFailure
           Behaviors.stopped
 
         /**
@@ -171,12 +183,13 @@ object EbookRegistry {
    * and its own ActorRef for sending/receiving messages.
    */
   private def processFetch(
-                     id: String,
-                     rawParams: Map[String, String],
-                     replyTo: ActorRef[RegistryResponse],
-                     paramValidator: ActorRef[ParamValidator.ValidationRequest],
-                     client: ActorRef[ElasticSearchClient.EsClientCommand],
-                     mapper: ActorRef[EbookMapper.MapperCommand],
+                            id: String,
+                            rawParams: Map[String, String],
+                            replyTo: ActorRef[RegistryResponse],
+                            paramValidator: ActorRef[ValidationRequest],
+                            esClient: ActorRef[EsClientCommand],
+                            postgresClient: ActorRef[PostgresClientCommand],
+                            mapper: ActorRef[MapperCommand],
                    ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
@@ -191,12 +204,17 @@ object EbookRegistry {
          * fetch result.
          * If params are invalid, send an error message back to Routes.
          */
-        case ValidFetchParams(params: FetchParams) =>
-          client ! GetEsFetchResult(params, context.self)
+        case ValidFetchParams(apiKey: String, params: FetchParams) =>
+          esClient ! GetEsFetchResult(params, context.self)
+          postgresClient ! FindApiKey(apiKey, context.self)
           Behaviors.same
 
         case InvalidParams(message) =>
           replyTo ! ValidationFailure(message)
+          Behaviors.stopped
+
+        case InvalidApiKey =>
+          replyTo ! ForbiddenFailure
           Behaviors.stopped
 
         /**

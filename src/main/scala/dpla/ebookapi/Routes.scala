@@ -6,8 +6,8 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.EbookRegistry.{Fetch, Search}
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient, FetchResult, InternalFailure, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
+import dpla.ebookapi.v1.ebooks.EbookRegistry.{Fetch, RegistryCommand, Search}
+import dpla.ebookapi.v1.ebooks.{FetchResult, ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import akka.actor.typed.scaladsl.AskPattern._
@@ -17,12 +17,13 @@ import akka.http.scaladsl.model.headers.RawHeader
 import scala.util.{Failure, Success}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.slf4j.{Logger, LoggerFactory}
 
 
 class Routes(
-              ebookRegistry: ActorRef[EbookRegistry.RegistryCommand],
-              elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand]
+              ebookRegistry: ActorRef[RegistryCommand],
+              elasticSearchClient: ActorRef[EsClientCommand]
             )(implicit val system: ActorSystem[_]) {
 
   // needed for the future map/onComplete
@@ -67,6 +68,8 @@ class Routes(
                   response match {
                     case SearchResult(ebookList) =>
                       complete(ebookList)
+                    case ForbiddenFailure =>
+                      complete(HttpResponse(Forbidden, entity = forbiddenMessage))
                     case ValidationFailure(message) =>
                       complete(HttpResponse(BadRequest, entity = message))
                     case InternalFailure =>
@@ -97,6 +100,8 @@ class Routes(
                   response match {
                     case FetchResult(singleEbook) =>
                       complete(singleEbook)
+                    case ForbiddenFailure =>
+                      complete(HttpResponse(Forbidden, entity = forbiddenMessage))
                     case ValidationFailure(message) =>
                       complete(HttpResponse(BadRequest, entity = message))
                     case NotFoundFailure =>
@@ -143,4 +148,7 @@ class Routes(
 
   private val notFoundMessage: String =
     "The ebook you are searching for could not be found."
+
+  private val forbiddenMessage: String =
+    "Invalid or inactive API key"
 }

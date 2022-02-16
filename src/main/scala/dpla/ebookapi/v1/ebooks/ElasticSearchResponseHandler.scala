@@ -28,6 +28,7 @@ object ElasticSearchUnreachable extends ElasticSearchResponse
 object ElasticSearchResponseHandler {
 
   sealed trait ElasticSearchResponseHandlerCommand
+
   case class ProcessElasticSearchResponse(
                                            future: Future[HttpResponse],
                                            replyTo: ActorRef[ElasticSearchResponse]
@@ -53,7 +54,7 @@ object ElasticSearchResponseHandler {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
-              context.log.error("Failed to reach ElasticSearch: {}", e)
+              context.log.error("Failed to reach ElasticSearch:", e)
               ReturnFinalResponse(ElasticSearchUnreachable, replyTo)
           }
           Behaviors.same
