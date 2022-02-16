@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.ebooks.unit
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationRequest}
-import dpla.ebookapi.v1.ebooks.{ParamValidator, ValidFetchParams, ValidSearchParams, InvalidParams, ValidationResponse}
+import dpla.ebookapi.v1.ebooks.{InvalidApiKey, InvalidParams, ParamValidator, ValidFetchParams, ValidSearchParams, ValidationResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -59,6 +59,31 @@ class ParamValidationTest extends AnyWordSpec with Matchers
       val id = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
       paramValidator ! ValidateFetchParams(id, baseParams, probe.ref)
       probe.expectMessageType[InvalidParams]
+    }
+  }
+
+  "api key validator" should {
+    "handle empty param" in {
+      val params = Map[String, String]()
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      probe.expectMessage(InvalidApiKey)
+    }
+
+    "accept valid param" in {
+      paramValidator ! ValidateSearchParams(baseParams, probe.ref)
+      probe.expectMessageType[ValidSearchParams]
+    }
+
+    "handle param with invalid length" in {
+      val params = Map("api_key" -> "123")
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      probe.expectMessage(InvalidApiKey)
+    }
+    
+    "handle param with special characters" in {
+      val params = Map("api_key" -> "08e3918eeb8bf446.924f062072459a8")
+      paramValidator ! ValidateSearchParams(params, probe.ref)
+      probe.expectMessage(InvalidApiKey)
     }
   }
 
