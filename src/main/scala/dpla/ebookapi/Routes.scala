@@ -22,8 +22,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 
 class Routes(
-              ebookRegistry: ActorRef[RegistryCommand],
-              elasticSearchClient: ActorRef[EsClientCommand]
+              ebookRegistry: ActorRef[RegistryCommand]
             )(implicit val system: ActorSystem[_]) {
 
   // needed for the future map/onComplete
@@ -39,12 +38,12 @@ class Routes(
   // Search and fetch requests are send to EbookRegistry actor for processing.
   // These requests include a reference to the ElasticSearchClient actor.
   def searchEbooks(params: Map[String, String]): Future[RegistryResponse] =
-    ebookRegistry.ask(Search(elasticSearchClient, params, _))
+    ebookRegistry.ask(Search(params, _))
 
   def fetchEbooks(id: String,
                   params: Map[String, String]): Future[RegistryResponse] =
 
-    ebookRegistry.ask(Fetch(elasticSearchClient, id, params, _))
+    ebookRegistry.ask(Fetch(id, params, _))
 
   lazy val applicationRoutes: Route =
     concat (

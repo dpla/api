@@ -28,19 +28,18 @@ object EbookRegistry {
   sealed trait RegistryCommand
 
   final case class Search(
-                           esClient: ActorRef[EsClientCommand],
                            rawParams: Map[String, String],
                            replyTo: ActorRef[RegistryResponse]
                          ) extends RegistryCommand
 
   final case class Fetch(
-                          esClient: ActorRef[EsClientCommand],
                           id: String,
                           rawParams: Map[String, String],
                           replyTo: ActorRef[RegistryResponse]
                         ) extends RegistryCommand
 
   def apply(
+             esClient: ActorRef[EsClientCommand],
              postgresClient: ActorRef[PostgresClientCommand]
            ): Behavior[RegistryCommand] = {
 
@@ -61,14 +60,14 @@ object EbookRegistry {
 
       Behaviors.receiveMessage[RegistryCommand] {
 
-        case Search(esClient, rawParams, replyTo) =>
+        case Search(rawParams, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
             processSearch(rawParams, replyTo, paramValidator, esClient, postgresClient, mapper)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
-        case Fetch(esClient, id, rawParams, replyTo) =>
+        case Fetch(id, rawParams, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
             processFetch(id, rawParams, replyTo, paramValidator, esClient, postgresClient, mapper)
@@ -118,7 +117,6 @@ object EbookRegistry {
 
       // Send initial message to ParamValidator.
       paramValidator ! ValidateSearchParams(rawParams, context.self)
-//      postgresClient ! FindApiKey("08e3918eeb8bf4469924f062072459a8", context.self)
 
       Behaviors.receiveMessage {
 

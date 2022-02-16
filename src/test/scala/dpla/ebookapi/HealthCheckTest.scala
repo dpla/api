@@ -7,7 +7,9 @@ import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.ebookapi.mocks.MockEsClientSuccess
+import dpla.ebookapi.mocks.{MockEsClientSuccess, MockPostgresClientSuccess}
+import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
@@ -18,12 +20,14 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
-  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
-    testKit.spawn(EbookRegistry())
-  val elasticSearchClient: ActorRef[ElasticSearchClient.EsClientCommand] =
+  val postgresClient: ActorRef[PostgresClientCommand] =
+    testKit.spawn(MockPostgresClientSuccess())
+  val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
+  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
+    testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
   lazy val routes: Route =
-    new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+    new Routes(ebookRegistry).applicationRoutes
 
   "Health check" should {
     "return OK" in {

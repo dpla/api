@@ -45,13 +45,13 @@ object PostgresClient {
                            replyTo: ActorRef[PostgresClientResponse]
                          ) extends PostgresClientCommand
 
-  private case class ProcessFindResponse(
+  private final case class ProcessFindResponse(
                                           matches: Seq[(String, String,
                                             Option[Boolean], Option[Boolean])],
                                           replyTo: ActorRef[PostgresClientResponse]
                                         ) extends PostgresClientCommand
 
-  private case class ReturnFinalResponse(
+  private final case class ReturnFinalResponse(
                                           response: PostgresClientResponse,
                                           replyTo: ActorRef[PostgresClientResponse]
                                         ) extends PostgresClientCommand
@@ -79,7 +79,7 @@ object PostgresClient {
             case Success(matches) =>
               ProcessFindResponse(matches, replyTo)
             case Failure(e) =>
-              context.log.error("Failed to reach Postgres: ", e)
+              context.log.error("Postgres error:", e)
               ReturnFinalResponse(PostgresError, replyTo)
           }
 

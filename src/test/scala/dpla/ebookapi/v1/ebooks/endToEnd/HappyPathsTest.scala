@@ -6,7 +6,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.mocks.MockEsClientSuccess
+import dpla.ebookapi.mocks.{MockEsClientSuccess, MockPostgresClientSuccess}
+import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.ebooks.{EbookRegistry, JsonFieldReader}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
@@ -22,16 +23,20 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
-  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
-    testKit.spawn(EbookRegistry())
+  val postgresClient: ActorRef[PostgresClientCommand] =
+    testKit.spawn(MockPostgresClientSuccess())
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
+  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
+    testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
   lazy val routes: Route =
-    new Routes(ebookRegistry, elasticSearchClient).applicationRoutes
+    new Routes(ebookRegistry).applicationRoutes
+
+  val apiKey = "08e3918eeb8bf4469924f062072459a8"
 
   "/v1/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {
-      val request = Get("/v1/ebooks?page_size=100")
+      val request = Get(s"/v1/ebooks?page_size=100&api_key=$apiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -63,7 +68,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "/v1/ebooks/[id] route" should {
     "be happy with valid user inputs and successful es response" in {
-      val request = Get("/v1/ebooks/wfwPJ34Bj-MaVWqX9Kac")
+      val request = Get(s"/v1/ebooks/wfwPJ34Bj-MaVWqX9Kac?api_key=$apiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK

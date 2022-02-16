@@ -58,7 +58,7 @@ object RunApp {
 
       val ebookRegistry =
         context.spawn(
-          EbookRegistry(postgresClient),
+          EbookRegistry(elasticSearchClient, postgresClient),
           "EbookRegistry"
         )
 
@@ -69,7 +69,7 @@ object RunApp {
       // Start the HTTP server.
       // Pass references to the EbookRegistry and ElasticSearchClient actors to
       // Routes.
-      val routes = new Routes(ebookRegistry, elasticSearchClient)(context.system)
+      val routes = new Routes(ebookRegistry)(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
 
