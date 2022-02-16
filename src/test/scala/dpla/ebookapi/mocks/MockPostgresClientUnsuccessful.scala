@@ -2,7 +2,7 @@ package dpla.ebookapi.mocks
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.PostgresClient.{CreateApiKey, FindApiKey, PostgresClientCommand}
+import dpla.ebookapi.v1.PostgresClient._
 import dpla.ebookapi.v1.{ApiKeyNotFound, PostgresError}
 
 object MockPostgresClientUnsuccessful {

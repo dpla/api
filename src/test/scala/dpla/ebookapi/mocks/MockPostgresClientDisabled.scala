@@ -5,13 +5,13 @@ import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.PostgresClient._
 import dpla.ebookapi.v1.{ApiKey, ApiKeyCreated, ApiKeyFound}
 
-object MockPostgresClientSuccess {
+object MockPostgresClientDisabled {
 
   private val apiKey = ApiKey(
     key = "08e3918eeb8bf4469924f062072459a8",
     email = "x@example.org",
     staff = false,
-    enabled = true
+    enabled = false
   )
 
   def apply(): Behavior[PostgresClientCommand] = {

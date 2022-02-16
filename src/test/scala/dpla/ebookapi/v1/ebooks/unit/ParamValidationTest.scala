@@ -79,7 +79,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers
       paramValidator ! ValidateSearchParams(params, probe.ref)
       probe.expectMessage(InvalidApiKey)
     }
-    
+
     "handle param with special characters" in {
       val params = Map("api_key" -> "08e3918eeb8bf446.924f062072459a8")
       paramValidator ! ValidateSearchParams(params, probe.ref)
