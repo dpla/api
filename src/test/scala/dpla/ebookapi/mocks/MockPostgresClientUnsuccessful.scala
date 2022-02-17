@@ -14,6 +14,10 @@ object MockPostgresClientUnsuccessful {
         replyTo ! AccountNotFound
         Behaviors.same
 
+      case FindAccountByEmail(_, replyTo) =>
+        replyTo ! AccountNotFound
+        Behaviors.same
+
       case CreateAccount(_, replyTo) =>
         replyTo ! PostgresError
         Behaviors.same

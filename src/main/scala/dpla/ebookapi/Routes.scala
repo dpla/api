@@ -158,7 +158,7 @@ class Routes(
                 case ValidationFailure(message) =>
                   complete(HttpResponse(BadRequest, entity = message))
                 case InternalFailure =>
-                  complete(HttpResponse(InternalServerError))
+                  complete(HttpResponse(ImATeapot, entity = teapotMessage))
               }
             case Failure(e) =>
               log.error(

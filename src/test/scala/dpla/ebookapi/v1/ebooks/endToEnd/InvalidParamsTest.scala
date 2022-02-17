@@ -66,4 +66,14 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
       }
     }
   }
+
+  "/api_key/[email]" should {
+    "return BadRequest if email is invalid" in {
+      val request = Post("/v1/api_key/foo")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
 }

@@ -67,4 +67,42 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       }
     }
   }
+
+  "/api_key/[email]" should {
+    "return Teapot if Postgres errors" in {
+      val postgresClient: ActorRef[PostgresClientCommand] =
+        testKit.spawn(MockPostgresClientError())
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        testKit.spawn(ApiKeyRegistry(postgresClient))
+      lazy val routes: Route =
+        new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
+
+      val request = Post(s"/v1/api_key/email@example.com")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.ImATeapot
+      }
+    }
+  }
+
+  "/api_key/[email] route" should {
+    "return Conflict if email has existing api key" in {
+      val postgresClient: ActorRef[PostgresClientCommand] =
+        testKit.spawn(MockPostgresClientSuccess())
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        testKit.spawn(ApiKeyRegistry(postgresClient))
+      lazy val routes: Route =
+        new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
+
+      val request = Post("/v1/api_key/email@example.com")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.Conflict
+      }
+    }
+  }
 }

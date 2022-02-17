@@ -14,6 +14,10 @@ object MockPostgresClientError {
         replyTo ! PostgresError
         Behaviors.same
 
+      case FindAccountByEmail(_, replyTo) =>
+        replyTo ! PostgresError
+        Behaviors.same
+
       case CreateAccount(_, replyTo) =>
         replyTo ! PostgresError
         Behaviors.same
