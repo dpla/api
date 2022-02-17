@@ -81,7 +81,7 @@ object ApiKeyRegistry {
          * If email address is invalid, send an error message back to Routes.
          */
         case ValidEmail(email) =>
-          postgresClient ! FindAccountByEmail(email, context.self)
+          postgresClient ! CreateAccount(email, context.self)
           Behaviors.same
 
         case InvalidParams(message) =>
@@ -93,13 +93,10 @@ object ApiKeyRegistry {
          * Send either new API key or error back to Routes.
          */
         case AccountFound(account) =>
-          // TODO email reminder
+          // TODO behavior if disabled?
+          // TODO email reminder if enabled
           replyTo ! ExistingApiKey(account.email)
           Behaviors.stopped
-
-        case AccountNotFound =>
-          postgresClient ! CreateAccount(email, context.self)
-          Behaviors.same
 
         case AccountCreated(account) =>
           // TODO email new key

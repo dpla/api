@@ -3,11 +3,14 @@ package dpla.ebookapi.v1
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.PostgresProfile.api.actionBasedSQLInterpolation
 import slick.jdbc.PostgresProfile.backend.Database
 
 import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import scala.util.Random
+
 
 sealed trait PostgresClientResponse
 
@@ -16,7 +19,7 @@ final case class AccountFound(
                        ) extends PostgresClientResponse
 
 final case class AccountCreated(
-                           apiKey: UserAccount
+                           account: UserAccount
                          ) extends PostgresClientResponse
 
 case object AccountNotFound extends PostgresClientResponse
@@ -67,13 +70,61 @@ object PostgresClient {
 
       Behaviors.receiveMessage[PostgresClientCommand] {
 
+        case CreateAccount(email, replyTo) =>
+          // Create an API key for the given email address
+          // unless an account already exists for the email address
+          val newKey: String = Random.alphanumeric.take(32).mkString
+          val staff: Boolean = if (email.endsWith(".dp.la")) true else false
+          val enabled: Boolean = true
+//          val staffStr: String = if (staff) "t" else "f"
+
+//          val accounts = TableQuery[Accounts]
+//
+//          val insertActions = DBIO.seq(
+//            accounts.map(a => (a.key, a.email, a.enabled)) += (newKey, email, Some(true))
+//          )
+
+//          def insert(a: Account) = sqlu"INSERT INTO account (key, email, enabled) SELECT ${a.key}, ${a.email}, ${a.enabled} WHERE NOT EXISTS (SELECT id FROM account WHERE email = ${a.email});"
+//
+//          val inserts: Seq[DBIO[Int]] = Seq(
+//            Account(
+//              id = None,
+//              key = newKey,
+//              email = email,
+//              enabled = Some(true),
+//              staff = None,
+//              createdAt = None,
+//              updatedAt = None
+//            )
+//          ).map(insert)
+
+          val insertAction: DBIO[Int] =
+            sqlu"INSERT INTO account (key, email, enabled, staff) SELECT $newKey, $email, $enabled, $staff WHERE NOT EXISTS (SELECT id FROM account WHERE email = $email);"
+
+          val result: Future[Int] = db.run(insertAction)
+
+          // Map the future value to a message, handled by this actor.
+          context.pipeToSelf(result) {
+            case Success(columns) =>
+              if (columns == 1) {
+                val newAccount = UserAccount(newKey, email, staff, enabled)
+                ReturnFinalResponse(AccountCreated(newAccount), replyTo)
+              }
+              else
+                FindAccountByEmail(email, replyTo)
+
+            case Failure(e) =>
+              context.log.error("Postgres error:", e)
+              ReturnFinalResponse(PostgresError, replyTo)
+          }
+
+          Behaviors.same
+
         case FindAccountByKey(apiKey, replyTo) =>
           // Find all accounts with the given API key
-          val accounts = TableQuery[Account]
+          val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.key === apiKey)
-            .map(account =>
-              (account.key, account.email, account.staff, account.enabled)
-            )
+            .map(a => (a.key, a.email, a.staff, a.enabled))
           val result: Future[Seq[(String, String, Option[Boolean], Option[Boolean])]] =
             db.run(query.result)
 
@@ -90,7 +141,7 @@ object PostgresClient {
 
         case FindAccountByEmail(email, replyTo) =>
           // Find all accounts with the given email
-          val accounts = TableQuery[Account]
+          val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.email === email)
             .map(account =>
               (account.key, account.email, account.staff, account.enabled)
@@ -106,11 +157,6 @@ object PostgresClient {
               context.log.error("Postgres error:", e)
               ReturnFinalResponse(PostgresError, replyTo)
           }
-
-          Behaviors.same
-
-        case CreateAccount(email, replyTo) =>
-          // Create an API key for the given email address
 
           Behaviors.same
 
@@ -137,8 +183,21 @@ object PostgresClient {
   }
 }
 
-class Account(tag: Tag) extends Table[(Int, String, String, Option[Boolean],
-  Option[Boolean], Option[LocalDateTime], Option[LocalDateTime])](tag, "account") {
+/**
+ * Database models
+ */
+
+case class Account(
+                    id: Int,
+                    key: String,
+                    email: String,
+                    enabled: Option[Boolean],
+                    staff: Option[Boolean],
+                    createdAt: Option[LocalDateTime],
+                    updatedAt: Option[LocalDateTime]
+                  )
+
+class Accounts(tag: Tag) extends Table[Account](tag, "account") {
 
   def id = column[Int]("id", O.PrimaryKey)
   def key = column[String]("key")
@@ -147,5 +206,5 @@ class Account(tag: Tag) extends Table[(Int, String, String, Option[Boolean],
   def staff = column[Option[Boolean]]("staff")
   def createdAt = column[Option[LocalDateTime]]("created_at")
   def updatedAt = column[Option[LocalDateTime]]("updated_at")
-  def * = (id, key, email, enabled, staff, createdAt, updatedAt)
+  def * = (id, key, email, enabled, staff, createdAt, updatedAt) <> (Account.tupled, Account.unapply)
 }
