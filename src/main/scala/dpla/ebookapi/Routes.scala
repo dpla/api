@@ -6,8 +6,8 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.EbookRegistry.{Fetch, RegistryCommand, Search}
-import dpla.ebookapi.v1.ebooks.{FetchResult, ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
+import dpla.ebookapi.v1.ebooks.EbookRegistry.{CreateApiKey, Fetch, RegistryCommand, Search}
+import dpla.ebookapi.v1.ebooks.{FetchResult, ForbiddenFailure, InternalFailure, NewApiKey, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
@@ -39,6 +39,9 @@ class Routes(
   def fetchEbooks(id: String, params: Map[String, String]): Future[RegistryResponse] =
     ebookRegistry.ask(Fetch(id, params, _))
 
+  def createApiKey(email: String): Future[RegistryResponse] =
+    ebookRegistry.ask(CreateApiKey(email, _))
+
   lazy val applicationRoutes: Route =
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
@@ -47,6 +50,7 @@ class Routes(
           pathPrefix("ebooks")(ebooksRoutes)
         )
       },
+      pathPrefix("api_key")(apiKeyRoute),
       path("health-check")(healthCheckRoute)
     )
 
@@ -82,7 +86,7 @@ class Routes(
                     }
                   case Failure(e) =>
                     log.error(
-                      "Routes /ebooks failed to get response from Registry: ", e
+                      "Routes /ebooks failed to get response from Registry:", e
                     )
                     complete(HttpResponse(ImATeapot, entity = teapotMessage))
                 }
@@ -123,7 +127,7 @@ class Routes(
                     }
                   case Failure(e) =>
                     log.error(
-                      "Routes /ebooks/[ID] failed to get response from Registry: ", e
+                      "Routes /ebooks/[ID] failed to get response from Registry:", e
                     )
                     complete(HttpResponse(ImATeapot, entity = teapotMessage))
                 }
@@ -133,6 +137,29 @@ class Routes(
         }
       }
     )
+
+  lazy val apiKeyRoute: Route =
+    path(Segment) { email =>
+      post {
+        onComplete(createApiKey(email)) {
+          case Success(response) =>
+            response match {
+              case NewApiKey(key) =>
+                // TODO this should be a more comprehensive message
+                complete(key)
+              case ValidationFailure(message) =>
+                complete(HttpResponse(BadRequest, entity = message))
+              case InternalFailure =>
+                complete(HttpResponse(InternalServerError))
+            }
+          case Failure(e) =>
+            log.error(
+              "Routes /api_key failed to get response from Registry:", e
+            )
+            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+        }
+      }
+    }
 
   lazy val healthCheckRoute: Route =
     get {

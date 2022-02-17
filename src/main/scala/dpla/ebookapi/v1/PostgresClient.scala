@@ -11,37 +11,37 @@ import scala.util.{Failure, Success}
 
 sealed trait PostgresClientResponse
 
-case class ApiKeyFound(
-                        apiKey: ApiKey
-                      ) extends PostgresClientResponse
+case class AccountFound(
+                         account: UserAccount
+                       ) extends PostgresClientResponse
 
-case class ApiKeyCreated(
-                          apiKey: ApiKey
-                        ) extends PostgresClientResponse
+case class AccountCreated(
+                           apiKey: UserAccount
+                         ) extends PostgresClientResponse
 
-object ApiKeyNotFound extends PostgresClientResponse
+object AccountNotFound extends PostgresClientResponse
 object PostgresError extends PostgresClientResponse
 
-case class ApiKey(
-                   key: String,
-                   email: String,
-                   staff: Boolean,
-                   enabled: Boolean
-                 )
+case class UserAccount(
+                        apiKey: String,
+                        email: String,
+                        staff: Boolean,
+                        enabled: Boolean
+                      )
 
 object PostgresClient {
 
   sealed trait PostgresClientCommand
 
-  case class FindApiKey(
-                         apiKey: String,
-                         replyTo: ActorRef[PostgresClientResponse]
-                       ) extends PostgresClientCommand
+  case class FindAccount(
+                          apiKey: String,
+                          replyTo: ActorRef[PostgresClientResponse]
+                        ) extends PostgresClientCommand
 
-  case class CreateApiKey(
-                           email: String,
-                           replyTo: ActorRef[PostgresClientResponse]
-                         ) extends PostgresClientCommand
+  case class CreateAccount(
+                            email: String,
+                            replyTo: ActorRef[PostgresClientResponse]
+                          ) extends PostgresClientCommand
 
   private final case class ProcessFindResponse(
                                           matches: Seq[(String, String,
@@ -62,7 +62,7 @@ object PostgresClient {
 
       Behaviors.receiveMessage[PostgresClientCommand] {
 
-        case FindApiKey(apiKey, replyTo) =>
+        case FindAccount(apiKey, replyTo) =>
           // Find all accounts with the given API key
           val accounts = TableQuery[Account]
           val query = accounts.filter(_.key === apiKey)
@@ -83,7 +83,7 @@ object PostgresClient {
 
           Behaviors.same
 
-        case CreateApiKey(email, replyTo) =>
+        case CreateAccount(email, replyTo) =>
           // Create an API key for the given email address
 
           Behaviors.same
@@ -97,9 +97,9 @@ object PostgresClient {
               val enabled = account._4.getOrElse(true)
               context.log.info(s"Found $email $staff $enabled")
               val internalAccount: Boolean = email.endsWith(".dp.la") || staff
-              replyTo ! ApiKeyFound(ApiKey(key, email, staff, enabled))
+              replyTo ! AccountFound(UserAccount(key, email, staff, enabled))
             case None =>
-              replyTo ! ApiKeyNotFound
+              replyTo ! AccountNotFound
           }
           Behaviors.same
 

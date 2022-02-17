@@ -4,11 +4,11 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import dpla.ebookapi.v1.{ApiKey, ApiKeyFound, ApiKeyNotFound, PostgresError}
-import dpla.ebookapi.v1.PostgresClient.{FindApiKey, PostgresClientCommand}
+import dpla.ebookapi.v1.{AccountFound, AccountNotFound, PostgresError, UserAccount}
+import dpla.ebookapi.v1.PostgresClient.{FindAccount, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
-import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationRequest}
+import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateEmail, ValidateFetchParams, ValidateSearchParams, ValidationCommand}
 
 /**
  * Handles the control flow for processing a request from Routes.
@@ -18,6 +18,7 @@ import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSear
 sealed trait RegistryResponse
 final case class SearchResult(result: EbookList) extends RegistryResponse
 final case class FetchResult(result: SingleEbook) extends RegistryResponse
+final case class NewApiKey(apiKey: String) extends RegistryResponse
 final case class ValidationFailure(message: String) extends RegistryResponse
 case object ForbiddenFailure extends RegistryResponse
 case object NotFoundFailure extends RegistryResponse
@@ -38,6 +39,11 @@ object EbookRegistry {
                           replyTo: ActorRef[RegistryResponse]
                         ) extends RegistryCommand
 
+  final case class CreateApiKey(
+                                 email: String,
+                                 replyTo: ActorRef[RegistryResponse]
+                               ) extends RegistryCommand
+
   def apply(
              esClient: ActorRef[EsClientCommand],
              postgresClient: ActorRef[PostgresClientCommand]
@@ -46,7 +52,7 @@ object EbookRegistry {
     Behaviors.setup[RegistryCommand] { context =>
 
       // Spawn children.
-      val paramValidator: ActorRef[ValidationRequest] =
+      val paramValidator: ActorRef[ValidationCommand] =
         context.spawn(
           ParamValidator(),
           "ParamValidator"
@@ -63,14 +69,23 @@ object EbookRegistry {
         case Search(rawParams, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSearch(rawParams, replyTo, paramValidator, esClient, postgresClient, mapper)
+            processSearch(rawParams, replyTo, paramValidator, esClient,
+              postgresClient, mapper)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
         case Fetch(id, rawParams, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processFetch(id, rawParams, replyTo, paramValidator, esClient, postgresClient, mapper)
+            processFetch(id, rawParams, replyTo, paramValidator, esClient,
+              postgresClient, mapper)
+          context.spawnAnonymous(sessionChildActor)
+          Behaviors.same
+
+        case CreateApiKey(email, replyTo) =>
+          // Create a session child actor to process the request.
+          val sessionChildActor =
+            processCreateApiKey(email, replyTo, paramValidator, postgresClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -85,7 +100,7 @@ object EbookRegistry {
   private def processSearch(
                              rawParams: Map[String, String],
                              replyTo: ActorRef[RegistryResponse],
-                             paramValidator: ActorRef[ValidationRequest],
+                             paramValidator: ActorRef[ValidationCommand],
                              esClient: ActorRef[EsClientCommand],
                              postgresClient: ActorRef[PostgresClientCommand],
                              mapper: ActorRef[EbookMapper.MapperCommand],
@@ -97,15 +112,15 @@ object EbookRegistry {
       // for the mapping.
       var searchParams: Option[SearchParams] = None
 
-      // Both searchResult and authorizedKey must be present before sending
+      // Both searchResult and authorizedAccount must be present before sending
       // a response back to Routes.
       var searchResult: Option[EbookList] = None
-      var authorizedKey: Option[ApiKey] = None
+      var authorizedAccount: Option[UserAccount] = None
 
       // This behavior is invoked if either the API key has been authorized
       // or the mapping has been complete.
       def possibleSessionResolution(): Behavior[AnyRef] =
-        (searchResult, authorizedKey) match {
+        (searchResult, authorizedAccount) match {
           case (Some(ebookList), Some(_)) =>
             // We've received both message replies, time to complete session
             replyTo ! SearchResult(ebookList)
@@ -130,7 +145,7 @@ object EbookRegistry {
           if (searchParams.isEmpty) {
             searchParams = Some(params)
             // Calls to Postgres and ElasticSearch can happen concurrently.
-            postgresClient ! FindApiKey(apiKey, context.self)
+            postgresClient ! FindAccount(apiKey, context.self)
             esClient ! GetEsSearchResult(params, context.self)
           }
           Behaviors.same
@@ -205,24 +220,20 @@ object EbookRegistry {
          * Otherwise, send an error to Routes.
          */
 
-        case ApiKeyFound(apiKey) =>
-          if(apiKey.enabled)
-            if (authorizedKey.isEmpty) {
-              authorizedKey = Some(apiKey)
+        case AccountFound(account) =>
+          if(account.enabled)
+            if (authorizedAccount.isEmpty) {
+              authorizedAccount = Some(account)
               possibleSessionResolution()
             }
             else
               Behaviors.same
           else {
-            context.log.info(
-              "Attempted use of disabled API key: {}", apiKey.key
-            )
             replyTo ! ForbiddenFailure
             Behaviors.stopped
           }
 
-
-        case ApiKeyNotFound =>
+        case AccountNotFound =>
           replyTo ! ForbiddenFailure
           Behaviors.stopped
 
@@ -245,7 +256,7 @@ object EbookRegistry {
                             id: String,
                             rawParams: Map[String, String],
                             replyTo: ActorRef[RegistryResponse],
-                            paramValidator: ActorRef[ValidationRequest],
+                            paramValidator: ActorRef[ValidationCommand],
                             esClient: ActorRef[EsClientCommand],
                             postgresClient: ActorRef[PostgresClientCommand],
                             mapper: ActorRef[MapperCommand],
@@ -253,15 +264,15 @@ object EbookRegistry {
 
     Behaviors.setup[AnyRef] { context =>
 
-      // Both fetchResult and authorizedKey must be present before sending
+      // Both fetchResult and authorizedAccount must be present before sending
       // a response back to Routes.
       var fetchResult: Option[SingleEbook] = None
-      var authorizedKey: Option[ApiKey] = None
+      var authorizedAccount: Option[UserAccount] = None
 
       // This behavior is invoked if either the API key has been authorized
       // or the mapping has been complete.
       def possibleSessionResolution(): Behavior[AnyRef] =
-        (fetchResult, authorizedKey) match {
+        (fetchResult, authorizedAccount) match {
           case (Some(singleEbook), Some(_)) =>
             // We've received both message replies, time to complete session
             replyTo ! FetchResult(singleEbook)
@@ -283,7 +294,7 @@ object EbookRegistry {
          */
         case ValidFetchParams(apiKey: String, params: FetchParams) =>
           // Calls to Postgres and ElasticSearch can happen concurrently.
-          postgresClient ! FindApiKey(apiKey, context.self)
+          postgresClient ! FindAccount(apiKey, context.self)
           esClient ! GetEsFetchResult(params, context.self)
           Behaviors.same
 
@@ -351,23 +362,20 @@ object EbookRegistry {
          * Otherwise, send an error to Routes.
          */
 
-        case ApiKeyFound(apiKey) =>
-          if(apiKey.enabled)
-            if (authorizedKey.isEmpty) {
-              authorizedKey = Some(apiKey)
+        case AccountFound(account) =>
+          if(account.enabled)
+            if (authorizedAccount.isEmpty) {
+              authorizedAccount = Some(account)
               possibleSessionResolution()
             }
             else
               Behaviors.same
           else {
-            context.log.info(
-              "Attempted use of disabled API key: {}", apiKey.key
-            )
             replyTo ! ForbiddenFailure
             Behaviors.stopped
           }
 
-        case ApiKeyNotFound =>
+        case AccountNotFound =>
           replyTo ! ForbiddenFailure
           Behaviors.stopped
 
@@ -377,6 +385,42 @@ object EbookRegistry {
 
         case _ =>
           Behaviors.unhandled
+      }
+    }.narrow[NotUsed]
+  }
+
+  /**
+   * Per session actor behavior for handling request for a new api key.
+   * The session actor has its own internal state
+   * and its own ActorRef for sending/receiving messages.
+   */
+  def processCreateApiKey(
+                           email: String,
+                           replyTo: ActorRef[RegistryResponse],
+                           paramValidator: ActorRef[ValidationCommand],
+                           postgresClient: ActorRef[PostgresClientCommand]
+                         ): Behavior[NotUsed] = {
+
+    Behaviors.setup[AnyRef] { context =>
+
+      // Send initial message to ParamValidator.
+      paramValidator ! ValidateEmail(email, context.self)
+
+      Behaviors.receiveMessage {
+
+        /**
+         * Possible responses from ParamValidator.
+         * If email address is valid, send a message to PostgresClient to
+         * create new account.
+         * If email address is invalid, send an error message back to Routes.
+         */
+        case ValidEmail =>
+          // TODO
+          Behaviors.same
+
+        case InvalidParams(message) =>
+          replyTo ! ValidationFailure(message)
+          Behaviors.stopped
       }
     }.narrow[NotUsed]
   }

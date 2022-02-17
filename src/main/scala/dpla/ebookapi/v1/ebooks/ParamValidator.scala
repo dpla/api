@@ -25,6 +25,10 @@ final case class ValidFetchParams(
                                    fetchParams: FetchParams
                                  ) extends ValidationResponse
 
+final case class ValidEmail(
+                             email: String
+                           ) extends ValidationResponse
+
 final case class InvalidParams(
                                 message: String
                               ) extends ValidationResponse
@@ -56,18 +60,25 @@ case class FieldFilter(
 
 object ParamValidator extends DplaMapFields {
 
-  sealed trait ValidationRequest
+  sealed trait ValidationCommand
+
   final case class ValidateSearchParams(
                                          params: Map[String, String],
                                          replyTo: ActorRef[ValidationResponse]
-                                       ) extends ValidationRequest
+                                       ) extends ValidationCommand
+
   final case class ValidateFetchParams(
                                         id: String,
                                         params: Map[String, String],
                                         replyTo: ActorRef[ValidationResponse]
-                                      ) extends ValidationRequest
+                                      ) extends ValidationCommand
 
-  def apply(): Behavior[ValidationRequest] = {
+  final case class ValidateEmail(
+                                  email: String,
+                                  replyTo: ActorRef[ValidationResponse]
+                                ) extends ValidationCommand
+
+  def apply(): Behavior[ValidationCommand] = {
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
 
@@ -114,6 +125,20 @@ object ParamValidator extends DplaMapFields {
 
           replyTo ! response
           Behaviors.same
+
+        case ValidateEmail(email, replyTo) =>
+          val response = getValidEmail(email)
+
+          // Log warning for invalid params.
+          response match {
+            case InvalidParams(msg) =>
+              context.log.warn(msg)
+
+            case _ => // noop
+          }
+
+          replyTo ! response
+          Behaviors.same
       }
     }
   }
@@ -155,9 +180,6 @@ object ParamValidator extends DplaMapFields {
                                         private val message: String = ""
                                       ) extends Exception(message)
 
-  /**
-   * Method returns ValidationError if ID or any parameters are invalid.
-   */
   private def getFetchParams(id: String,
                              rawParams: Map[String, String]): ValidationResponse = {
 
@@ -182,9 +204,6 @@ object ParamValidator extends DplaMapFields {
     }
   }
 
-  /**
-   * Method returns ValidationError if any parameters are invalid.
-   */
   private def getSearchParams(rawParams: Map[String, String]): ValidationResponse = {
     // Check for unrecognized params
     val unrecognized = rawParams.keys.toSeq diff acceptedSearchParams
@@ -244,24 +263,24 @@ object ParamValidator extends DplaMapFields {
   }
 
   /**
-   * Find the raw parameter with the given name.
-   * Then validate with the given method.
+   * Validates email format.
+   * Allows Latin, non-Latin, and numeric characters.
+   * Allows special characters in user as specified by RFC22,
+   * with the exception of pipe character (|) and single quote (')
+   * which pose a risk of SQL injection.
+   * Does not allow consecutive dots.
+   * Limits username to 64 characters.
+   * Top-level domain must be 2-7 characters.
    */
-  private def getValid[T](rawParams: Map[String, String],
-                          paramName: String,
-                          validationMethod: (String, String) => T): Option[T] =
-    rawParams.find(_._1 == paramName).map{case (k,v) => validationMethod(v,k)}
+  private def getValidEmail(email: String): ValidationResponse = {
 
-  /**
-   * Method returns valid API key, or None if API key is invalid.
-   */
-  private def getValidApiKey(rawParams: Map[String, String]): Option[String] = {
-    Try {
-      getValid(rawParams, "api_key", validApiKey)
-    } match {
-      case Success(keyOption) => keyOption
-      case Failure(_) => None
-    }
+    val pattern: String =
+      "^(?=.{1,64}@)[\\p{L}0-9_!#$%&*+/=?`{}~^-]+" +
+        "(\\.[\\p{L}0-9_!#$%&*+/=?`{}~^-]+)" +
+        "*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,7})$"
+
+    if (email.matches(pattern)) ValidEmail(email)
+    else InvalidParams(s"$email is not a valid email address.")
   }
 
   /**
@@ -279,6 +298,18 @@ object ParamValidator extends DplaMapFields {
   }
 
   /**
+   * Method returns valid API key, or None if API key is invalid.
+   */
+  private def getValidApiKey(rawParams: Map[String, String]): Option[String] = {
+    Try {
+      getValid(rawParams, "api_key", validApiKey)
+    } match {
+      case Success(keyOption) => keyOption
+      case Failure(_) => None
+    }
+  }
+
+  /**
    * Get a valid value for a field filter.
    */
   private def getValidFieldFilter(rawParams: Map[String, String],
@@ -287,20 +318,29 @@ object ParamValidator extends DplaMapFields {
     // Look up the parameter's field type.
     // Use this to determine the appropriate validation method.
     val validationMethod: (String, String) => String =
-      getDplaFieldType(paramName) match {
-        case Some(fieldType) =>
-          fieldType match {
-            case TextField => validText
-            case URLField => validUrl
-            case _ => validText // This should not happen
-          }
-        case None =>
-          throw ValidationException(s"Unrecognized parameter: $paramName")
-      }
+    getDplaFieldType(paramName) match {
+      case Some(fieldType) =>
+        fieldType match {
+          case TextField => validText
+          case URLField => validUrl
+          case _ => validText // This should not happen
+        }
+      case None =>
+        throw ValidationException(s"Unrecognized parameter: $paramName")
+    }
 
     getValid(rawParams, paramName, validationMethod)
       .map(FieldFilter(paramName, _))
   }
+
+  /**
+   * Find the raw parameter with the given name.
+   * Then validate with the given method.
+   */
+  private def getValid[T](rawParams: Map[String, String],
+                          paramName: String,
+                          validationMethod: (String, String) => T): Option[T] =
+    rawParams.find(_._1 == paramName).map{case (k,v) => validationMethod(v,k)}
 
   // Must be a Boolean value.
   private def validBoolean(boolString: String, param: String): Boolean =
