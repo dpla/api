@@ -2,8 +2,8 @@ package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateEmail, ValidateFetchParams, ValidateSearchParams, ValidationCommand}
-import dpla.ebookapi.v1.ebooks.{InvalidApiKey, InvalidParams, ParamValidator, ValidEmail, ValidFetchParams, ValidSearchParams, ValidationResponse}
+import dpla.ebookapi.v1.{InvalidApiKey, InvalidParams, ParamValidator, ValidEmail, ValidFetchParams, ValidSearchParams, ValidationResponse}
+import dpla.ebookapi.v1.ParamValidator.{ValidateEmail, ValidateFetchParams, ValidateSearchParams, ValidationCommand}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

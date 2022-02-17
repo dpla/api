@@ -11,16 +11,16 @@ import scala.util.{Failure, Success}
 
 sealed trait ElasticSearchResponse
 
-case class ElasticSearchSuccess(
+final case class ElasticSearchSuccess(
                                  body: String
                                ) extends ElasticSearchResponse
 
-case class ElasticSearchHttpFailure(
+final case class ElasticSearchHttpFailure(
                                      statusCode: StatusCode
                                    ) extends ElasticSearchResponse
 
-object ElasticSearchParseFailure extends ElasticSearchResponse
-object ElasticSearchUnreachable extends ElasticSearchResponse
+case object ElasticSearchParseFailure extends ElasticSearchResponse
+case object ElasticSearchUnreachable extends ElasticSearchResponse
 
 /**
  * Processes response streams from Elastic Search.
@@ -29,10 +29,10 @@ object ElasticSearchResponseHandler {
 
   sealed trait ElasticSearchResponseHandlerCommand
 
-  case class ProcessElasticSearchResponse(
-                                           future: Future[HttpResponse],
-                                           replyTo: ActorRef[ElasticSearchResponse]
-                                         ) extends ElasticSearchResponseHandlerCommand
+  final case class ProcessElasticSearchResponse(
+                                                 future: Future[HttpResponse],
+                                                 replyTo: ActorRef[ElasticSearchResponse]
+                                               ) extends ElasticSearchResponseHandlerCommand
 
   private final case class ProcessHttpResponse(
                                                 httpResponse: HttpResponse,

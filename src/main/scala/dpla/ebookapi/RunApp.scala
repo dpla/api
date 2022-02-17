@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import dpla.ebookapi.v1.PostgresClient
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
 import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
 
 import scala.util.{Failure, Success}
@@ -44,10 +45,7 @@ object RunApp {
           case x => x.stripSuffix("/")
         }
 
-      // Spawn EbookRegistry, ElasticSearchClient, and PostgresClient,
-      // the three top-level actors.
-      // Pass references to the PostgresClient and ElasticSearchClient actors to
-      // EbookRegistry.
+      // Spawn top-level actors.
 
       val elasticSearchClient =
         context.spawn(
@@ -64,12 +62,19 @@ object RunApp {
           "EbookRegistry"
         )
 
+      val apiKeyRegistry =
+        context.spawn(
+          ApiKeyRegistry(postgresClient),
+          "ApiKeyRegistry"
+        )
+
       context.watch(ebookRegistry)
+      context.watch(apiKeyRegistry)
       context.watch(elasticSearchClient)
       context.watch(postgresClient)
 
       // Start the HTTP server.
-      val routes = new Routes(ebookRegistry)(context.system)
+      val routes = new Routes(ebookRegistry, apiKeyRegistry)(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
 

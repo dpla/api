@@ -3,11 +3,11 @@ package dpla.ebookapi
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{pathPrefix, _}
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.EbookRegistry.{CreateApiKey, Fetch, RegistryCommand, Search}
-import dpla.ebookapi.v1.ebooks.{FetchResult, ForbiddenFailure, InternalFailure, NewApiKey, NotFoundFailure, RegistryResponse, SearchResult, ValidationFailure}
+import dpla.ebookapi.v1.ebooks.EbookRegistry.{EbookRegistryCommand, Fetch, Search}
+import dpla.ebookapi.v1.ebooks.{FetchResult, SearchResult}
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
@@ -17,11 +17,15 @@ import akka.http.scaladsl.model.headers.RawHeader
 import scala.util.{Failure, Success}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.{ApiKeyRegistryCommand, CreateApiKey}
+import dpla.ebookapi.v1.apiKey.NewApiKey
 import org.slf4j.{Logger, LoggerFactory}
 
 
 class Routes(
-              ebookRegistry: ActorRef[RegistryCommand]
+              ebookRegistry: ActorRef[EbookRegistryCommand],
+              apiKeyRegistry: ActorRef[ApiKeyRegistryCommand]
             )(implicit val system: ActorSystem[_]) {
 
   // If ask takes more time than this to complete the request is failed
@@ -40,17 +44,17 @@ class Routes(
     ebookRegistry.ask(Fetch(id, params, _))
 
   def createApiKey(email: String): Future[RegistryResponse] =
-    ebookRegistry.ask(CreateApiKey(email, _))
+    apiKeyRegistry.ask(CreateApiKey(email, _))
 
   lazy val applicationRoutes: Route =
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("v1") {
         concat(
-          pathPrefix("ebooks")(ebooksRoutes)
+          pathPrefix("ebooks")(ebooksRoutes),
+          pathPrefix("api_key")(apiKeyRoute)
         )
       },
-      pathPrefix("api_key")(apiKeyRoute),
       path("health-check")(healthCheckRoute)
     )
 
@@ -141,22 +145,24 @@ class Routes(
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
-        onComplete(createApiKey(email)) {
-          case Success(response) =>
-            response match {
-              case NewApiKey(key) =>
-                // TODO this should be a more comprehensive message
-                complete(key)
-              case ValidationFailure(message) =>
-                complete(HttpResponse(BadRequest, entity = message))
-              case InternalFailure =>
-                complete(HttpResponse(InternalServerError))
-            }
-          case Failure(e) =>
-            log.error(
-              "Routes /api_key failed to get response from Registry:", e
-            )
-            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+        respondWithHeaders(securityResponseHeaders) {
+          onComplete(createApiKey(email)) {
+            case Success(response) =>
+              response match {
+                case NewApiKey(email) =>
+                  // TODO this should be a more comprehensive message
+                  complete(email)
+                case ValidationFailure(message) =>
+                  complete(HttpResponse(BadRequest, entity = message))
+                case InternalFailure =>
+                  complete(HttpResponse(InternalServerError))
+              }
+            case Failure(e) =>
+              log.error(
+                "Routes /api_key failed to get response from Registry:", e
+              )
+              complete(HttpResponse(ImATeapot, entity = teapotMessage))
+          }
         }
       }
     }

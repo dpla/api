@@ -8,6 +8,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks.{MockEsClientSuccess, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistry
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
@@ -27,10 +29,12 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     testKit.spawn(MockPostgresClientSuccess())
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
-  val ebookRegistry: ActorRef[EbookRegistry.RegistryCommand] =
+  val ebookRegistry: ActorRef[EbookRegistry.EbookRegistryCommand] =
     testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+    testKit.spawn(ApiKeyRegistry(postgresClient))
   lazy val routes: Route =
-    new Routes(ebookRegistry).applicationRoutes
+    new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
   val apiKey = "08e3918eeb8bf4469924f062072459a8"
 

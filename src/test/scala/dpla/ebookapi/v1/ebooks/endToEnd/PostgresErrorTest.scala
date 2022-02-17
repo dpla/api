@@ -8,8 +8,10 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistry
-import dpla.ebookapi.v1.ebooks.EbookRegistry.RegistryCommand
+import dpla.ebookapi.v1.ebooks.EbookRegistry.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -32,10 +34,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     "return Teapot if Postgres errors" in {
       val postgresClient: ActorRef[PostgresClientCommand] =
         testKit.spawn(MockPostgresClientError())
-      val ebookRegistry: ActorRef[RegistryCommand] =
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
         testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        testKit.spawn(ApiKeyRegistry(postgresClient))
       lazy val routes: Route =
-        new Routes(ebookRegistry).applicationRoutes
+        new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
       val request = Get(s"/v1/ebooks?api_key=$apiKey")
 
@@ -49,10 +53,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     "return Teapot if Postgres errors" in {
       val postgresClient: ActorRef[PostgresClientCommand] =
         testKit.spawn(MockPostgresClientError())
-      val ebookRegistry: ActorRef[RegistryCommand] =
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
         testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        testKit.spawn(ApiKeyRegistry(postgresClient))
       lazy val routes: Route =
-        new Routes(ebookRegistry).applicationRoutes
+        new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
       val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
 

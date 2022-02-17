@@ -2,6 +2,8 @@ package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
+import dpla.ebookapi.v1
+import dpla.ebookapi.v1.{FieldFilter, SearchParams}
 import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.{EsQueryBuilderCommand, GetSearchQuery}
 import dpla.ebookapi.v1.ebooks._
 import org.scalatest.matchers.should.Matchers
@@ -26,7 +28,7 @@ class ElasticSearchQueryBuilderTest extends AnyWordSpec with Matchers
     msg.query.asJsObject
   }
 
-  val minSearchParams: SearchParams = SearchParams(
+  val minSearchParams: SearchParams = v1.SearchParams(
     exactFieldMatch = false,
     facets = None,
     facetSize = 100,

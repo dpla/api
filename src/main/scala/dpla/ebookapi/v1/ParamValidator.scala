@@ -1,13 +1,12 @@
-package dpla.ebookapi.v1.ebooks
+package dpla.ebookapi.v1
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
+import akka.actor.typed.{ActorRef, Behavior}
+import dpla.ebookapi.v1.ebooks.DplaMapFields
+import org.apache.commons.validator.routines.EmailValidator
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
-import org.apache.commons.validator
-import org.apache.commons.validator.routines.EmailValidator
 
 /**
  * Validates user-submitted parameters. Provides default values when appropriate.

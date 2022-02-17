@@ -17,7 +17,7 @@ object MockPostgresClientDisabled {
   def apply(): Behavior[PostgresClientCommand] = {
     Behaviors.receiveMessage[PostgresClientCommand] {
 
-      case FindAccount(_, replyTo) =>
+      case FindAccountByKey(_, replyTo) =>
         replyTo ! AccountFound(apiKey)
         Behaviors.same
 

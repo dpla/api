@@ -11,16 +11,16 @@ import scala.util.{Failure, Success}
 
 sealed trait PostgresClientResponse
 
-case class AccountFound(
+final case class AccountFound(
                          account: UserAccount
                        ) extends PostgresClientResponse
 
-case class AccountCreated(
+final case class AccountCreated(
                            apiKey: UserAccount
                          ) extends PostgresClientResponse
 
-object AccountNotFound extends PostgresClientResponse
-object PostgresError extends PostgresClientResponse
+case object AccountNotFound extends PostgresClientResponse
+case object PostgresError extends PostgresClientResponse
 
 case class UserAccount(
                         apiKey: String,
@@ -33,12 +33,17 @@ object PostgresClient {
 
   sealed trait PostgresClientCommand
 
-  case class FindAccount(
-                          apiKey: String,
-                          replyTo: ActorRef[PostgresClientResponse]
-                        ) extends PostgresClientCommand
+  final case class FindAccountByKey(
+                               apiKey: String,
+                               replyTo: ActorRef[PostgresClientResponse]
+                             ) extends PostgresClientCommand
 
-  case class CreateAccount(
+  final case class FindAccountByEmail(
+                                 email: String,
+                                 replyTo: ActorRef[PostgresClientResponse]
+                               ) extends PostgresClientCommand
+
+  final case class CreateAccount(
                             email: String,
                             replyTo: ActorRef[PostgresClientResponse]
                           ) extends PostgresClientCommand
@@ -62,10 +67,31 @@ object PostgresClient {
 
       Behaviors.receiveMessage[PostgresClientCommand] {
 
-        case FindAccount(apiKey, replyTo) =>
+        case FindAccountByKey(apiKey, replyTo) =>
           // Find all accounts with the given API key
           val accounts = TableQuery[Account]
           val query = accounts.filter(_.key === apiKey)
+            .map(account =>
+              (account.key, account.email, account.staff, account.enabled)
+            )
+          val result: Future[Seq[(String, String, Option[Boolean], Option[Boolean])]] =
+            db.run(query.result)
+
+          // Map the Future value to a message, handled by this actor.
+          context.pipeToSelf(result) {
+            case Success(matches) =>
+              ProcessFindResponse(matches, replyTo)
+            case Failure(e) =>
+              context.log.error("Postgres error:", e)
+              ReturnFinalResponse(PostgresError, replyTo)
+          }
+
+          Behaviors.same
+
+        case FindAccountByEmail(email, replyTo) =>
+          // Find all accounts with the given email
+          val accounts = TableQuery[Account]
+          val query = accounts.filter(_.email === email)
             .map(account =>
               (account.key, account.email, account.staff, account.enabled)
             )
@@ -95,8 +121,8 @@ object PostgresClient {
               val email = account._2
               val staff = account._3.getOrElse(false)
               val enabled = account._4.getOrElse(true)
-              context.log.info(s"Found $email $staff $enabled")
-              val internalAccount: Boolean = email.endsWith(".dp.la") || staff
+              // TODO delete log, for testing only
+              context.log.info(s"Found $key $email $staff $enabled")
               replyTo ! AccountFound(UserAccount(key, email, staff, enabled))
             case None =>
               replyTo ! AccountNotFound
