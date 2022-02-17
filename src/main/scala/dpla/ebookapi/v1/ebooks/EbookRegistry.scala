@@ -132,14 +132,8 @@ object EbookRegistry {
             // Calls to Postgres and ElasticSearch can happen concurrently.
             postgresClient ! FindApiKey(apiKey, context.self)
             esClient ! GetEsSearchResult(params, context.self)
-            Behaviors.same
           }
-          else {
-            // Sanity check - search params should only be set once.
-            context.log.error("Multiple attempts to set searchParams")
-            replyTo ! InternalFailure
-            Behaviors.stopped
-          }
+          Behaviors.same
 
         case InvalidParams(message) =>
           replyTo ! ValidationFailure(message)
@@ -197,13 +191,8 @@ object EbookRegistry {
             searchResult = Some(ebookList)
             possibleSessionResolution()
           }
-          else {
-            // Sanity check - searchResult should only be set once
-            context.log.error("Multiple attempts to set searchResult")
-            replyTo ! InternalFailure
-            Behaviors.stopped
-          }
-
+          else
+            Behaviors.same
 
         case MapFailure =>
           replyTo ! InternalFailure
@@ -222,12 +211,8 @@ object EbookRegistry {
               authorizedKey = Some(apiKey)
               possibleSessionResolution()
             }
-            else {
-              // Sanity check - authorizedKey should only be set once
-              context.log.error("Multiple attempts to set authorizedKey")
-              replyTo ! InternalFailure
-              Behaviors.stopped
-            }
+            else
+              Behaviors.same
           else {
             context.log.info(
               "Attempted use of disabled API key: {}", apiKey.key
@@ -352,12 +337,8 @@ object EbookRegistry {
             fetchResult = Some(singleEbook)
             possibleSessionResolution()
           }
-          else {
-            // Sanity check - fetchResult should only be set once
-            context.log.error("Multiple attempts to set fetchResult.")
-            replyTo ! InternalFailure
-            Behaviors.stopped
-          }
+          else
+            Behaviors.same
 
         case MapFailure =>
           replyTo ! InternalFailure
@@ -376,12 +357,8 @@ object EbookRegistry {
               authorizedKey = Some(apiKey)
               possibleSessionResolution()
             }
-            else {
-              // Sanity check - authorizedKey should only be set once
-              context.log.error("Multiple attempts to set authorizedKey")
-              replyTo ! InternalFailure
-              Behaviors.stopped
-            }
+            else
+              Behaviors.same
           else {
             context.log.info(
               "Attempted use of disabled API key: {}", apiKey.key

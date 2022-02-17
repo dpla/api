@@ -1,11 +1,9 @@
 package dpla.ebookapi.v1
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import slick.jdbc.PostgresProfile
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.scaladsl.Behaviors
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.PostgresProfile.backend.Database
-import slick.sql.SqlProfile.ColumnOption.SqlType
 
 import java.time.LocalDateTime
 import scala.concurrent.Future
