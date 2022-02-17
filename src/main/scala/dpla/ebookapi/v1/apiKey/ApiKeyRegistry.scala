@@ -80,7 +80,7 @@ object ApiKeyRegistry {
          * create new account.
          * If email address is invalid, send an error message back to Routes.
          */
-        case ValidEmail =>
+        case ValidEmail(email) =>
           postgresClient ! FindAccountByEmail(email, context.self)
           Behaviors.same
 

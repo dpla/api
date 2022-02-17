@@ -19,7 +19,7 @@ import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.{ApiKeyRegistryCommand, CreateApiKey}
-import dpla.ebookapi.v1.apiKey.NewApiKey
+import dpla.ebookapi.v1.apiKey.{ExistingApiKey, NewApiKey}
 import org.slf4j.{Logger, LoggerFactory}
 
 
@@ -150,8 +150,11 @@ class Routes(
             case Success(response) =>
               response match {
                 case NewApiKey(email) =>
-                  // TODO this should be a more comprehensive message
-                  complete(email)
+                  complete(newApiKeyMessage(email))
+                case ExistingApiKey(email) =>
+                  complete(
+                    HttpResponse(Conflict, entity = existingApiKeyMessage(email))
+                  )
                 case ValidationFailure(message) =>
                   complete(HttpResponse(BadRequest, entity = message))
                 case InternalFailure =>
@@ -191,4 +194,12 @@ class Routes(
 
   private val forbiddenMessage: String =
     "Invalid or inactive API key"
+
+  private def existingApiKeyMessage(email: String): String =
+    s"There is already an API key for $email. We have sent a reminder " +
+      "message to that address."
+
+  private def newApiKeyMessage(email: String): String =
+    s"API key created and sent to $email"
+
 }
