@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationRequest}
+import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationCommand}
 import dpla.ebookapi.v1.ebooks.{InvalidApiKey, InvalidParams, ParamValidator, ValidFetchParams, ValidSearchParams, ValidationResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -19,7 +19,7 @@ class ParamValidationTest extends AnyWordSpec with Matchers
 
   val baseParams = Map("api_key" -> "08e3918eeb8bf4469924f062072459a8")
 
-  val paramValidator: ActorRef[ValidationRequest] =
+  val paramValidator: ActorRef[ValidationCommand] =
     testKit.spawn(ParamValidator())
   val probe: TestProbe[ValidationResponse] =
     testKit.createTestProbe[ValidationResponse]

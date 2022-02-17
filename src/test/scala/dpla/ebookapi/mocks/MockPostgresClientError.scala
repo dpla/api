@@ -10,11 +10,11 @@ object MockPostgresClientError {
   def apply(): Behavior[PostgresClientCommand] = {
     Behaviors.receiveMessage[PostgresClientCommand] {
 
-      case FindApiKey(_, replyTo) =>
+      case FindAccount(_, replyTo) =>
         replyTo ! PostgresError
         Behaviors.same
 
-      case CreateApiKey(_, replyTo) =>
+      case CreateAccount(_, replyTo) =>
         replyTo ! PostgresError
         Behaviors.same
     }
