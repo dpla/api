@@ -46,6 +46,8 @@ object RunApp {
 
       // Spawn EbookRegistry, ElasticSearchClient, and PostgresClient,
       // the three top-level actors.
+      // Pass references to the PostgresClient and ElasticSearchClient actors to
+      // EbookRegistry.
 
       val elasticSearchClient =
         context.spawn(
@@ -67,8 +69,6 @@ object RunApp {
       context.watch(postgresClient)
 
       // Start the HTTP server.
-      // Pass references to the EbookRegistry and ElasticSearchClient actors to
-      // Routes.
       val routes = new Routes(ebookRegistry)(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
