@@ -6,6 +6,8 @@ import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
+import org.apache.commons.validator
+import org.apache.commons.validator.routines.EmailValidator
 
 /**
  * Validates user-submitted parameters. Provides default values when appropriate.
@@ -263,25 +265,20 @@ object ParamValidator extends DplaMapFields {
   }
 
   /**
-   * Validates email format.
-   * Allows Latin, non-Latin, and numeric characters.
-   * Allows special characters in user as specified by RFC22,
-   * with the exception of pipe character (|) and single quote (')
-   * which pose a risk of SQL injection.
-   * Does not allow consecutive dots.
-   * Limits username to 64 characters.
-   * Top-level domain must be 2-7 characters.
+   * Validates email format using the Apache Commons validator.
+   * Disallows pipe character (|) and single quote ('), both of which
+   * could be used for SQL injection.
+   * Limits length to 100 characters to be in compliance with database.
    */
-  private def getValidEmail(email: String): ValidationResponse = {
+  private def getValidEmail(email: String): ValidationResponse =
+    if (EmailValidator.getInstance.isValid(email)
+      && !email.contains("|")
+      && !email.contains("'")
+      && email.length <= 100)
 
-    val pattern: String =
-      "^(?=.{1,64}@)[\\p{L}0-9_!#$%&*+/=?`{}~^-]+" +
-        "(\\.[\\p{L}0-9_!#$%&*+/=?`{}~^-]+)" +
-        "*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,7})$"
-
-    if (email.matches(pattern)) ValidEmail(email)
-    else InvalidParams(s"$email is not a valid email address.")
-  }
+      ValidEmail(email)
+    else
+      InvalidParams(s"$email is not a valid email address.")
 
   /**
    * Method returns Failure if ID is invalid.

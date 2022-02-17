@@ -2,8 +2,8 @@ package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationCommand}
-import dpla.ebookapi.v1.ebooks.{InvalidApiKey, InvalidParams, ParamValidator, ValidFetchParams, ValidSearchParams, ValidationResponse}
+import dpla.ebookapi.v1.ebooks.ParamValidator.{ValidateEmail, ValidateFetchParams, ValidateSearchParams, ValidationCommand}
+import dpla.ebookapi.v1.ebooks.{InvalidApiKey, InvalidParams, ParamValidator, ValidEmail, ValidFetchParams, ValidSearchParams, ValidationResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -772,6 +772,56 @@ class ParamValidationTest extends AnyWordSpec with Matchers
       val given: String = Random.alphanumeric.take(201).mkString
       val params = baseParams ++ Map("sourceResource.title" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+  }
+
+  "email validator" should {
+    "reject missing email" in {
+      val given = ""
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+
+    "accept valid email" in {
+      val given = "Email-123@example.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[ValidEmail]
+    }
+
+    "accept special characters in username" in {
+      val given = "Email&123@example.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[ValidEmail]
+    }
+
+    "accept plus sign in username (for gmail)" in {
+      val given = "Email+123@example.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[ValidEmail]
+    }
+
+    "accept dash in domain name" in {
+      val given = "Email-123@ex-ample.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[ValidEmail]
+    }
+
+    "reject pipe character" in {
+      val given = "Email|123@example.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+
+    "reject single quote" in {
+      val given = "Email'123'@example.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
+      probe.expectMessageType[InvalidParams]
+    }
+
+    "reject too-long email" in {
+      val given = Random.alphanumeric.take(100).mkString + "@example.com"
+      paramValidator ! ValidateEmail(given, probe.ref)
       probe.expectMessageType[InvalidParams]
     }
   }

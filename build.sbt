@@ -20,8 +20,10 @@ lazy val root = (project in file(".")).
       "com.typesafe.slick" %% "slick"                   % "3.3.3",
       "com.typesafe.slick" %% "slick-hikaricp"          % "3.3.3",
       "org.postgresql"     %  "postgresql"              % "9.4-1206-jdbc42",
+      "commons-validator"  %  "commons-validator"       % "1.7",
 
-      "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
+
+"com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
       "org.scalatest"     %% "scalatest"                % "3.1.4"         % Test
     )
