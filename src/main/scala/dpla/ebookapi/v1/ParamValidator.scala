@@ -265,16 +265,10 @@ object ParamValidator extends DplaMapFields {
 
   /**
    * Validates email format using the Apache Commons validator.
-   * Disallows pipe character (|) and single quote ('), both of which
-   * could be used for SQL injection.
    * Limits length to 100 characters to be in compliance with database.
    */
   private def getValidEmail(email: String): ValidationResponse =
-    if (EmailValidator.getInstance.isValid(email)
-      && !email.contains("|")
-      && !email.contains("'")
-      && email.length <= 100)
-
+    if (EmailValidator.getInstance.isValid(email) && email.length <= 100)
       ValidEmail(email)
     else
       InvalidParams(s"$email is not a valid email address.")

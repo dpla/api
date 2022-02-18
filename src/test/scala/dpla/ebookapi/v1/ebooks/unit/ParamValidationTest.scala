@@ -807,18 +807,6 @@ class ParamValidationTest extends AnyWordSpec with Matchers
       probe.expectMessageType[ValidEmail]
     }
 
-    "reject pipe character" in {
-      val given = "Email|123@example.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[InvalidParams]
-    }
-
-    "reject single quote" in {
-      val given = "Email'123'@example.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[InvalidParams]
-    }
-
     "reject too-long email" in {
       val given = Random.alphanumeric.take(100).mkString + "@example.com"
       paramValidator ! ValidateEmail(given, probe.ref)
