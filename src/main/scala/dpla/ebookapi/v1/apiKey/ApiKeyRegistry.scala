@@ -21,6 +21,10 @@ final case class ExistingApiKey(
                                  email: String
                                ) extends RegistryResponse
 
+final case class DisabledApiKey(
+                                 email: String
+                               ) extends RegistryResponse
+
 object ApiKeyRegistry {
 
   sealed trait ApiKeyRegistryCommand
@@ -93,9 +97,11 @@ object ApiKeyRegistry {
          * Send either new API key or error back to Routes.
          */
         case AccountFound(account) =>
-          // TODO behavior if disabled?
-          // TODO email reminder if enabled
-          replyTo ! ExistingApiKey(account.email)
+          if (account.enabled.getOrElse(true))
+            replyTo ! ExistingApiKey(account.email)
+          else
+            // TODO email reminder if enabled
+            replyTo ! DisabledApiKey(account.email)
           Behaviors.stopped
 
         case AccountCreated(account) =>

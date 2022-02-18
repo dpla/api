@@ -97,7 +97,6 @@ object PostgresClient {
 
           // Create an API key for the given email address
           // unless an account already exists for the email address
-          // TODO also update (upsert?) if an account has been disabled
           val insertAction =
             sql"""INSERT INTO account (key, email, enabled, staff)
                 SELECT $newKey, $email, $enabled, $staff

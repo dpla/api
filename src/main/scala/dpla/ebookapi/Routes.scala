@@ -19,7 +19,7 @@ import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.{ApiKeyRegistryCommand, CreateApiKey}
-import dpla.ebookapi.v1.apiKey.{ExistingApiKey, NewApiKey}
+import dpla.ebookapi.v1.apiKey.{DisabledApiKey, ExistingApiKey, NewApiKey}
 import org.slf4j.{Logger, LoggerFactory}
 
 
@@ -131,7 +131,8 @@ class Routes(
                     }
                   case Failure(e) =>
                     log.error(
-                      "Routes /ebooks/[ID] failed to get response from Registry:", e
+                      "Routes /ebooks/[ID] failed to get response from Registry:",
+                      e
                     )
                     complete(HttpResponse(ImATeapot, entity = teapotMessage))
                 }
@@ -150,10 +151,14 @@ class Routes(
             case Success(response) =>
               response match {
                 case NewApiKey(email) =>
-                  complete(newApiKeyMessage(email))
+                  complete(newKeyMessage(email))
                 case ExistingApiKey(email) =>
                   complete(
-                    HttpResponse(Conflict, entity = existingApiKeyMessage(email))
+                    HttpResponse(Conflict, entity = existingKeyMessage(email))
+                  )
+                case DisabledApiKey(email) =>
+                  complete(
+                    HttpResponse(Conflict, entity = disabledKeyMessage(email))
                   )
                 case ValidationFailure(message) =>
                   complete(HttpResponse(BadRequest, entity = message))
@@ -195,11 +200,14 @@ class Routes(
   private val forbiddenMessage: String =
     "Invalid or inactive API key"
 
-  private def existingApiKeyMessage(email: String): String =
+  private def existingKeyMessage(email: String): String =
     s"There is already an API key for $email. We have sent a reminder " +
       "message to that address."
 
-  private def newApiKeyMessage(email: String): String =
+  private def newKeyMessage(email: String): String =
     s"API key created and sent to $email"
 
+  private def disabledKeyMessage(email: String): String =
+    s"The API key associated with email address $email has been disabled. " +
+      "If you would like to reactivate it, please contact DPLA."
 }
