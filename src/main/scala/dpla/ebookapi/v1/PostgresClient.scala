@@ -10,6 +10,7 @@ import slick.jdbc.PostgresProfile.backend.Database
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scala.util.Random
+import org.apache.commons.codec.digest.DigestUtils
 
 
 sealed trait PostgresClientResponse
@@ -84,10 +85,8 @@ object PostgresClient {
       Behaviors.receiveMessage[PostgresClientCommand] {
 
         case CreateAccount(email, replyTo) =>
-          // Forcing lowercase on the API key makes it backward-compatible with
-          // the old DPLA API application-level validations.
-          // TODO use md5 to generate new key
-          val newKey: String = Random.alphanumeric.take(32).mkString.toLowerCase
+          val newKey: String =
+            DigestUtils.md5Hex(email + Random.alphanumeric.take(32).mkString)
           val staff: Boolean = if (email.endsWith(".dp.la")) true else false
           val enabled: Boolean = true
 
