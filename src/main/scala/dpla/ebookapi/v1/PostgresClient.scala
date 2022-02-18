@@ -71,33 +71,14 @@ object PostgresClient {
       Behaviors.receiveMessage[PostgresClientCommand] {
 
         case CreateAccount(email, replyTo) =>
-          // Create an API key for the given email address
-          // unless an account already exists for the email address
-          val newKey: String = Random.alphanumeric.take(32).mkString
+          // Forcing lowercase on the API key makes it backward-compatible with
+          // the old DPLA API application-level validations.
+          val newKey: String = Random.alphanumeric.take(32).mkString.toLowerCase
           val staff: Boolean = if (email.endsWith(".dp.la")) true else false
           val enabled: Boolean = true
-//          val staffStr: String = if (staff) "t" else "f"
 
-//          val accounts = TableQuery[Accounts]
-//
-//          val insertActions = DBIO.seq(
-//            accounts.map(a => (a.key, a.email, a.enabled)) += (newKey, email, Some(true))
-//          )
-
-//          def insert(a: Account) = sqlu"INSERT INTO account (key, email, enabled) SELECT ${a.key}, ${a.email}, ${a.enabled} WHERE NOT EXISTS (SELECT id FROM account WHERE email = ${a.email});"
-//
-//          val inserts: Seq[DBIO[Int]] = Seq(
-//            Account(
-//              id = None,
-//              key = newKey,
-//              email = email,
-//              enabled = Some(true),
-//              staff = None,
-//              createdAt = None,
-//              updatedAt = None
-//            )
-//          ).map(insert)
-
+          // Create an API key for the given email address
+          // unless an account already exists for the email address
           val insertAction: DBIO[Int] =
             sqlu"INSERT INTO account (key, email, enabled, staff) SELECT $newKey, $email, $enabled, $staff WHERE NOT EXISTS (SELECT id FROM account WHERE email = $email);"
 
