@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.apiKey
 import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.{AccountCreated, AccountFound, AccountNotFound, InternalFailure, InvalidParams, ParamValidator, PostgresError, RegistryResponse, ValidEmail, ValidationFailure}
 import dpla.ebookapi.v1.PostgresClient.{CreateAccount, PostgresClientCommand}
 import ParamValidator.{ValidateEmail, ValidationCommand}

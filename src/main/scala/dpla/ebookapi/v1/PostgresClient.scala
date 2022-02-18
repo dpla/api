@@ -68,8 +68,11 @@ object PostgresClient {
 
       val db: Database = Database.forConfig("postgres")
 
+      // Models 'account' table in database.
+      // Does not include created_at and updated_at columns b/c they are not
+      // needed, and modeling SQL dates in Java can be tricky.
+      // Query results are mapped to Account case class.
       class Accounts(tag: Tag) extends Table[Account](tag, "account") {
-
         def id = column[Int]("id", O.PrimaryKey)
         def key = column[String]("key")
         def email = column[String]("email")
@@ -83,16 +86,18 @@ object PostgresClient {
         case CreateAccount(email, replyTo) =>
           // Forcing lowercase on the API key makes it backward-compatible with
           // the old DPLA API application-level validations.
+          // TODO use md5 to generate new key
           val newKey: String = Random.alphanumeric.take(32).mkString.toLowerCase
           val staff: Boolean = if (email.endsWith(".dp.la")) true else false
           val enabled: Boolean = true
 
-          // For parsing SQL results into Account case class
+          // For mapping results of plain SQL query into Account case class
           implicit val getAccountResult: AnyRef with GetResult[Account] =
             GetResult(a => Account(a.<<, a.<<, a.<<, a.<<, a.<<))
 
           // Create an API key for the given email address
           // unless an account already exists for the email address
+          // TODO also update (upsert?) if an account has been disabled
           val insertAction =
             sql"""INSERT INTO account (key, email, enabled, staff)
                 SELECT $newKey, $email, $enabled, $staff
@@ -100,8 +105,7 @@ object PostgresClient {
                 RETURNING id, key, email, enabled, staff;"""
             .as[Account]
 
-          val result: Future[Seq[Account]] =
-            db.run(insertAction)
+          val result: Future[Seq[Account]] = db.run(insertAction)
 
           // Map the future value to a message, handled by this actor.
           context.pipeToSelf(result) {
@@ -121,15 +125,10 @@ object PostgresClient {
 
 
         case FindAccountByKey(apiKey, replyTo) =>
-          implicit val getAccountResult: AnyRef with GetResult[Account] =
-            GetResult(a => Account(a.<<, a.<<, a.<<, a.<<, a.<<))
-
           // Find all accounts with the given API key
           val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.key === apiKey)
-
-          val result: Future[Seq[Account]] =
-            db.run(query.result)
+          val result: Future[Seq[Account]] = db.run(query.result)
 
           // Map the Future value to a message, handled by this actor.
           context.pipeToSelf(result) {
@@ -146,8 +145,7 @@ object PostgresClient {
           // Find all accounts with the given email
           val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.email === email)
-          val result: Future[Seq[Account]] =
-            db.run(query.result)
+          val result: Future[Seq[Account]] = db.run(query.result)
 
           // Map the Future value to a message, handled by this actor.
           context.pipeToSelf(result) {
