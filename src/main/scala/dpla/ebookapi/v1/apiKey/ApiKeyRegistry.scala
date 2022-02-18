@@ -4,8 +4,8 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import dpla.ebookapi.v1.{AccountCreated, AccountFound, AccountNotFound, InternalFailure, InvalidParams, ParamValidator, PostgresError, RegistryResponse, UserAccount, ValidEmail, ValidationFailure}
-import dpla.ebookapi.v1.PostgresClient.{CreateAccount, FindAccountByEmail, PostgresClientCommand}
+import dpla.ebookapi.v1.{AccountCreated, AccountFound, AccountNotFound, InternalFailure, InvalidParams, ParamValidator, PostgresError, RegistryResponse, ValidEmail, ValidationFailure}
+import dpla.ebookapi.v1.PostgresClient.{CreateAccount, PostgresClientCommand}
 import ParamValidator.{ValidateEmail, ValidationCommand}
 
 /**
@@ -101,6 +101,14 @@ object ApiKeyRegistry {
         case AccountCreated(account) =>
           // TODO email new key
           replyTo ! NewApiKey(account.email)
+          Behaviors.stopped
+
+        case AccountNotFound =>
+          // This should not happen.
+          context.log.error(
+            "Read-after-attempted-write failed in Postgres database"
+          )
+          replyTo ! InternalFailure
           Behaviors.stopped
 
         case PostgresError =>

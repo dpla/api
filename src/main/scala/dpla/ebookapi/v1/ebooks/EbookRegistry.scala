@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import dpla.ebookapi.v1.{AccountFound, AccountNotFound, FetchParams, ForbiddenFailure, InternalFailure, InvalidApiKey, InvalidParams, NotFoundFailure, ParamValidator, PostgresError, RegistryResponse, SearchParams, UserAccount, ValidFetchParams, ValidSearchParams, ValidationFailure}
+import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, FetchParams, ForbiddenFailure, InternalFailure, InvalidApiKey, InvalidParams, NotFoundFailure, ParamValidator, PostgresError, RegistryResponse, SearchParams, ValidFetchParams, ValidSearchParams, ValidationFailure}
 import dpla.ebookapi.v1.PostgresClient.{FindAccountByKey, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
@@ -97,7 +97,7 @@ object EbookRegistry {
       // Both searchResult and authorizedAccount must be present before sending
       // a response back to Routes.
       var searchResult: Option[EbookList] = None
-      var authorizedAccount: Option[UserAccount] = None
+      var authorizedAccount: Option[Account] = None
 
       // This behavior is invoked if either the API key has been authorized
       // or the mapping has been complete.
@@ -203,7 +203,7 @@ object EbookRegistry {
          */
 
         case AccountFound(account) =>
-          if(account.enabled)
+          if(account.enabled.getOrElse(true))
             if (authorizedAccount.isEmpty) {
               authorizedAccount = Some(account)
               possibleSessionResolution()
@@ -249,7 +249,7 @@ object EbookRegistry {
       // Both fetchResult and authorizedAccount must be present before sending
       // a response back to Routes.
       var fetchResult: Option[SingleEbook] = None
-      var authorizedAccount: Option[UserAccount] = None
+      var authorizedAccount: Option[Account] = None
 
       // This behavior is invoked if either the API key has been authorized
       // or the mapping has been complete.
@@ -345,7 +345,7 @@ object EbookRegistry {
          */
 
         case AccountFound(account) =>
-          if(account.enabled)
+          if(account.enabled.getOrElse(true))
             if (authorizedAccount.isEmpty) {
               authorizedAccount = Some(account)
               possibleSessionResolution()

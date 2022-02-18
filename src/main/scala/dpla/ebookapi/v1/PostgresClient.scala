@@ -2,11 +2,11 @@ package dpla.ebookapi.v1
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.PostgresProfile.api.actionBasedSQLInterpolation
 import slick.jdbc.PostgresProfile.backend.Database
 
-import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scala.util.Random
@@ -15,22 +15,23 @@ import scala.util.Random
 sealed trait PostgresClientResponse
 
 final case class AccountFound(
-                         account: UserAccount
+                         account: Account
                        ) extends PostgresClientResponse
 
 final case class AccountCreated(
-                           account: UserAccount
+                           account: Account
                          ) extends PostgresClientResponse
 
 case object AccountNotFound extends PostgresClientResponse
 case object PostgresError extends PostgresClientResponse
 
-case class UserAccount(
-                        apiKey: String,
-                        email: String,
-                        staff: Boolean,
-                        enabled: Boolean
-                      )
+case class Account(
+                    id: Int,
+                    key: String,
+                    email: String,
+                    enabled: Option[Boolean],
+                    staff: Option[Boolean]
+                  )
 
 object PostgresClient {
 
@@ -52,8 +53,7 @@ object PostgresClient {
                           ) extends PostgresClientCommand
 
   private final case class ProcessFindResponse(
-                                          matches: Seq[(String, String,
-                                            Option[Boolean], Option[Boolean])],
+                                          matches: Seq[Account],
                                           replyTo: ActorRef[PostgresClientResponse]
                                         ) extends PostgresClientCommand
 
@@ -68,6 +68,16 @@ object PostgresClient {
 
       val db: Database = Database.forConfig("postgres")
 
+      class Accounts(tag: Tag) extends Table[Account](tag, "account") {
+
+        def id = column[Int]("id", O.PrimaryKey)
+        def key = column[String]("key")
+        def email = column[String]("email")
+        def enabled = column[Option[Boolean]]("enabled")
+        def staff = column[Option[Boolean]]("staff")
+        def * = (id, key, email, enabled, staff) <> (Account.tupled, Account.unapply)
+      }
+
       Behaviors.receiveMessage[PostgresClientCommand] {
 
         case CreateAccount(email, replyTo) =>
@@ -77,23 +87,31 @@ object PostgresClient {
           val staff: Boolean = if (email.endsWith(".dp.la")) true else false
           val enabled: Boolean = true
 
+          // For parsing SQL results into Account case class
+          implicit val getAccountResult: AnyRef with GetResult[Account] =
+            GetResult(a => Account(a.<<, a.<<, a.<<, a.<<, a.<<))
+
           // Create an API key for the given email address
           // unless an account already exists for the email address
-          val insertAction: DBIO[Int] =
-            sqlu"INSERT INTO account (key, email, enabled, staff) SELECT $newKey, $email, $enabled, $staff WHERE NOT EXISTS (SELECT id FROM account WHERE email = $email);"
+          val insertAction =
+            sql"""INSERT INTO account (key, email, enabled, staff)
+                SELECT $newKey, $email, $enabled, $staff
+                WHERE NOT EXISTS (SELECT id FROM account WHERE email = $email)
+                RETURNING id, key, email, enabled, staff;"""
+            .as[Account]
 
-          val result: Future[Int] = db.run(insertAction)
+          val result: Future[Seq[Account]] =
+            db.run(insertAction)
 
           // Map the future value to a message, handled by this actor.
           context.pipeToSelf(result) {
-            case Success(columns) =>
-              if (columns == 1) {
-                val newAccount = UserAccount(newKey, email, staff, enabled)
-                ReturnFinalResponse(AccountCreated(newAccount), replyTo)
+            case Success(created) =>
+              created.headOption match {
+                case Some(account) =>
+                  ReturnFinalResponse(AccountCreated(account), replyTo)
+                case None =>
+                  FindAccountByEmail(email, replyTo)
               }
-              else
-                FindAccountByEmail(email, replyTo)
-
             case Failure(e) =>
               context.log.error("Postgres error:", e)
               ReturnFinalResponse(PostgresError, replyTo)
@@ -101,12 +119,16 @@ object PostgresClient {
 
           Behaviors.same
 
+
         case FindAccountByKey(apiKey, replyTo) =>
+          implicit val getAccountResult: AnyRef with GetResult[Account] =
+            GetResult(a => Account(a.<<, a.<<, a.<<, a.<<, a.<<))
+
           // Find all accounts with the given API key
           val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.key === apiKey)
-            .map(a => (a.key, a.email, a.staff, a.enabled))
-          val result: Future[Seq[(String, String, Option[Boolean], Option[Boolean])]] =
+
+          val result: Future[Seq[Account]] =
             db.run(query.result)
 
           // Map the Future value to a message, handled by this actor.
@@ -124,10 +146,7 @@ object PostgresClient {
           // Find all accounts with the given email
           val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.email === email)
-            .map(account =>
-              (account.key, account.email, account.staff, account.enabled)
-            )
-          val result: Future[Seq[(String, String, Option[Boolean], Option[Boolean])]] =
+          val result: Future[Seq[Account]] =
             db.run(query.result)
 
           // Map the Future value to a message, handled by this actor.
@@ -144,13 +163,7 @@ object PostgresClient {
         case ProcessFindResponse(matches, replyTo) =>
           matches.headOption match {
             case Some(account) =>
-              val key = account._1
-              val email = account._2
-              val staff = account._3.getOrElse(false)
-              val enabled = account._4.getOrElse(true)
-              // TODO delete log, for testing only
-              context.log.info(s"Found $key $email $staff $enabled")
-              replyTo ! AccountFound(UserAccount(key, email, staff, enabled))
+              replyTo ! AccountFound(account)
             case None =>
               replyTo ! AccountNotFound
           }
@@ -162,30 +175,4 @@ object PostgresClient {
       }
     }
   }
-}
-
-/**
- * Database models
- */
-
-case class Account(
-                    id: Int,
-                    key: String,
-                    email: String,
-                    enabled: Option[Boolean],
-                    staff: Option[Boolean],
-                    createdAt: Option[LocalDateTime],
-                    updatedAt: Option[LocalDateTime]
-                  )
-
-class Accounts(tag: Tag) extends Table[Account](tag, "account") {
-
-  def id = column[Int]("id", O.PrimaryKey)
-  def key = column[String]("key")
-  def email = column[String]("email")
-  def enabled = column[Option[Boolean]]("enabled")
-  def staff = column[Option[Boolean]]("staff")
-  def createdAt = column[Option[LocalDateTime]]("created_at")
-  def updatedAt = column[Option[LocalDateTime]]("updated_at")
-  def * = (id, key, email, enabled, staff, createdAt, updatedAt) <> (Account.tupled, Account.unapply)
 }

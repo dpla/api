@@ -3,15 +3,16 @@ package dpla.ebookapi.mocks
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.PostgresClient._
-import dpla.ebookapi.v1.{UserAccount, AccountCreated, AccountFound}
+import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound}
 
 object MockPostgresClientExistingKey {
 
-  private val account = UserAccount(
-    apiKey = "08e3918eeb8bf4469924f062072459a8",
+  private val account = Account(
+    id = 1,
+    key = "08e3918eeb8bf4469924f062072459a8",
     email = "x@example.org",
-    staff = false,
-    enabled = true
+    staff = Some(false),
+    enabled = Some(true)
   )
 
   def apply(): Behavior[PostgresClientCommand] = {
