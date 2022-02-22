@@ -16,12 +16,12 @@ import org.apache.commons.codec.digest.DigestUtils
 sealed trait PostgresClientResponse
 
 final case class AccountFound(
-                         account: Account
-                       ) extends PostgresClientResponse
+                               account: Account
+                             ) extends PostgresClientResponse
 
 final case class AccountCreated(
-                           account: Account
-                         ) extends PostgresClientResponse
+                                 account: Account
+                               ) extends PostgresClientResponse
 
 case object AccountNotFound extends PostgresClientResponse
 case object PostgresError extends PostgresClientResponse
@@ -121,7 +121,6 @@ object PostgresClient {
 
           Behaviors.same
 
-
         case FindAccountByKey(apiKey, replyTo) =>
           // Find all accounts with the given API key
           val accounts = TableQuery[Accounts]
@@ -157,12 +156,14 @@ object PostgresClient {
           Behaviors.same
 
         case ProcessFindResponse(matches, replyTo) =>
+
           matches.headOption match {
             case Some(account) =>
               replyTo ! AccountFound(account)
             case None =>
               replyTo ! AccountNotFound
           }
+
           Behaviors.same
 
         case ReturnFinalResponse(response, replyTo) =>

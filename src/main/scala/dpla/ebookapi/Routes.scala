@@ -3,7 +3,7 @@ package dpla.ebookapi
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.Directives.{pathPrefix, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import dpla.ebookapi.v1.ebooks.EbookRegistry.{EbookRegistryCommand, Fetch, Search}
