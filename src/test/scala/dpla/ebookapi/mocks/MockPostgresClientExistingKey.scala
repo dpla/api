@@ -18,10 +18,10 @@ object MockPostgresClientExistingKey {
   def apply(): Behavior[PostgresClientCommand] = {
     Behaviors.receiveMessage[PostgresClientCommand] {
 
-      case FindAccountByKey(_, replyTo) =>
+      case FindAccountByKey(_, _) =>
         Behaviors.unhandled
 
-      case FindAccountByEmail(_, replyTo) =>
+      case FindAccountByEmail(_, _) =>
         Behaviors.unhandled
 
       case CreateAccount(_, replyTo) =>

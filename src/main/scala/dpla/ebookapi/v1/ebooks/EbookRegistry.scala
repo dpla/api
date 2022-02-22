@@ -345,7 +345,7 @@ object EbookRegistry {
          */
 
         case AccountFound(account) =>
-          if(account.enabled.getOrElse(true))
+          if (account.enabled.getOrElse(true))
             if (authorizedAccount.isEmpty) {
               authorizedAccount = Some(account)
               possibleSessionResolution()
