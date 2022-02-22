@@ -30,8 +30,12 @@ object ElasticSearchClient {
                                      replyTo: ActorRef[ElasticSearchResponse]
                                    ) extends EsClientCommand
 
-  def apply(endpoint: String): Behavior[EsClientCommand] = {
+  def apply(): Behavior[EsClientCommand] = {
     Behaviors.setup { context =>
+
+      val endpoint: String = context.system.settings.config
+        .getString("elasticSearch.ebooksUrl")
+        .stripSuffix("/")
 
       // Spawn children.
       val queryBuilder: ActorRef[EsQueryBuilderCommand] =

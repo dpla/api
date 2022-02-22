@@ -30,7 +30,7 @@ class Routes(
 
   // If ask takes more time than this to complete the request is failed
   private implicit val timeout: Timeout = Timeout.create(
-      system.settings.config.getDuration("my-app.routes.ask-timeout")
+      system.settings.config.getDuration("application.routes.askTimeout")
   )
 
   val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")

@@ -39,17 +39,11 @@ object RunApp {
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
-      val elasticSearchEndpoint: String =
-        System.getenv("ELASTICSEARCH_URL") match {
-          case "" => "http://localhost:9200/eleanor"
-          case x => x.stripSuffix("/")
-        }
-
       // Spawn top-level actors.
 
       val elasticSearchClient =
         context.spawn(
-          ElasticSearchClient(elasticSearchEndpoint),
+          ElasticSearchClient(),
           "ElasticSearchClient"
         )
 
