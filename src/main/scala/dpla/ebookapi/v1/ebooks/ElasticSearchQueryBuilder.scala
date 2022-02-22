@@ -4,21 +4,22 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import dpla.ebookapi.v1.{FieldFilter, SearchParams}
 
 /**
  * Composes Elastic Search queries from user-submitted parameters.
  */
 sealed trait EsQueryBuilderResponse
-case class ElasticSearchQuery(query: JsValue) extends EsQueryBuilderResponse
+final case class ElasticSearchQuery(query: JsValue) extends EsQueryBuilderResponse
 
 object ElasticSearchQueryBuilder extends DplaMapFields {
 
   sealed trait EsQueryBuilderCommand
 
-  case class GetSearchQuery(
-                               params: SearchParams,
-                               replyTo: ActorRef[EsQueryBuilderResponse]
-                             ) extends EsQueryBuilderCommand
+  final case class GetSearchQuery(
+                                   params: SearchParams,
+                                   replyTo: ActorRef[EsQueryBuilderResponse]
+                                  ) extends EsQueryBuilderCommand
 
   def apply(): Behavior[EsQueryBuilderCommand] = {
     Behaviors.receiveMessage[EsQueryBuilderCommand] {

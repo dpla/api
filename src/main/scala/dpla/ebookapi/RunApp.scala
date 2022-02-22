@@ -4,6 +4,8 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import dpla.ebookapi.v1.PostgresClient
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
 import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
 
 import scala.util.{Failure, Success}
@@ -37,28 +39,37 @@ object RunApp {
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
-      val elasticSearchEndpoint: String =
-        System.getenv("ELASTICSEARCH_URL") match {
-          case "" => "http://localhost:9200/eleanor"
-          case x => x.stripSuffix("/")
-        }
-
-      // Spawn EbookRegistry and ElasticSearchClient, the two top-level actors.
-      val ebookRegistry = context.spawn(EbookRegistry(), "EbookRegistry")
-      context.watch(ebookRegistry)
+      // Spawn top-level actors.
 
       val elasticSearchClient =
         context.spawn(
-          ElasticSearchClient(elasticSearchEndpoint),
+          ElasticSearchClient(),
           "ElasticSearchClient"
         )
 
+      val postgresClient =
+        context.spawn(PostgresClient(), "PostgresClient")
+
+      val ebookRegistry =
+        context.spawn(
+          EbookRegistry(elasticSearchClient, postgresClient),
+          "EbookRegistry"
+        )
+
+      val apiKeyRegistry =
+        context.spawn(
+          ApiKeyRegistry(postgresClient),
+          "ApiKeyRegistry"
+        )
+
+      context.watch(ebookRegistry)
+      context.watch(apiKeyRegistry)
       context.watch(elasticSearchClient)
+      context.watch(postgresClient)
 
       // Start the HTTP server.
-      // Pass references to the EbookRegistry and ElasticSearchClient actors to
-      // Routes.
-      val routes = new Routes(ebookRegistry, elasticSearchClient)(context.system)
+      val routes = new Routes(ebookRegistry, apiKeyRegistry)(context.system)
+
       startHttpServer(routes.applicationRoutes)(context.system)
 
       Behaviors.empty

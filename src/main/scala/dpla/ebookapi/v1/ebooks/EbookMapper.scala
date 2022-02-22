@@ -22,7 +22,7 @@ final case class MappedSingleEbook(
                                     response: SingleEbook
                                   ) extends EbookMapperResponse
 
-object MapFailure extends EbookMapperResponse
+case object MapFailure extends EbookMapperResponse
 
 /** Case classes for reading ElasticSearch responses **/
 

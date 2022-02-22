@@ -4,6 +4,7 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
+import dpla.ebookapi.v1.{FetchParams, SearchParams}
 import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.{EsQueryBuilderCommand, GetSearchQuery}
 import dpla.ebookapi.v1.ebooks.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
 
@@ -29,8 +30,12 @@ object ElasticSearchClient {
                                      replyTo: ActorRef[ElasticSearchResponse]
                                    ) extends EsClientCommand
 
-  def apply(endpoint: String): Behavior[EsClientCommand] = {
+  def apply(): Behavior[EsClientCommand] = {
     Behaviors.setup { context =>
+
+      val endpoint: String = context.system.settings.config
+        .getString("elasticSearch.ebooksUrl")
+        .stripSuffix("/")
 
       // Spawn children.
       val queryBuilder: ActorRef[EsQueryBuilderCommand] =

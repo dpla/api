@@ -11,16 +11,16 @@ import scala.util.{Failure, Success}
 
 sealed trait ElasticSearchResponse
 
-case class ElasticSearchSuccess(
+final case class ElasticSearchSuccess(
                                  body: String
                                ) extends ElasticSearchResponse
 
-case class ElasticSearchHttpFailure(
+final case class ElasticSearchHttpFailure(
                                      statusCode: StatusCode
                                    ) extends ElasticSearchResponse
 
-object ElasticSearchParseFailure extends ElasticSearchResponse
-object ElasticSearchUnreachable extends ElasticSearchResponse
+case object ElasticSearchParseFailure extends ElasticSearchResponse
+case object ElasticSearchUnreachable extends ElasticSearchResponse
 
 /**
  * Processes response streams from Elastic Search.
@@ -28,10 +28,11 @@ object ElasticSearchUnreachable extends ElasticSearchResponse
 object ElasticSearchResponseHandler {
 
   sealed trait ElasticSearchResponseHandlerCommand
-  case class ProcessElasticSearchResponse(
-                                           future: Future[HttpResponse],
-                                           replyTo: ActorRef[ElasticSearchResponse]
-                                         ) extends ElasticSearchResponseHandlerCommand
+
+  final case class ProcessElasticSearchResponse(
+                                                 future: Future[HttpResponse],
+                                                 replyTo: ActorRef[ElasticSearchResponse]
+                                               ) extends ElasticSearchResponseHandlerCommand
 
   private final case class ProcessHttpResponse(
                                                 httpResponse: HttpResponse,
@@ -53,7 +54,7 @@ object ElasticSearchResponseHandler {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
-              context.log.error("Failed to reach ElasticSearch: {}", e)
+              context.log.error("Failed to reach ElasticSearch:", e)
               ReturnFinalResponse(ElasticSearchUnreachable, replyTo)
           }
           Behaviors.same
