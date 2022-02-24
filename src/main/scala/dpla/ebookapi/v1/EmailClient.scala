@@ -12,6 +12,9 @@ sealed trait EmailClientResponse
 case object EmailSuccess extends EmailClientResponse
 case object EmailFailure extends EmailClientResponse
 
+/**
+ * Handles sending emails.
+ */
 object EmailClient {
 
   sealed trait EmailClientCommand
@@ -85,7 +88,6 @@ object EmailClient {
            case Failure(e) =>
              ReturnFinalResponse(EmailFailure, replyTo, Some(e))
          }
-
          Behaviors.same
 
        case ProcessEmailResponse(response, replyTo) =>

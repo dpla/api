@@ -155,7 +155,6 @@ trait ApiKeyRegistryBehavior {
               context.log.error("Missing account.")
               replyTo ! InternalFailure
           }
-
           Behaviors.stopped
 
         case EmailFailure =>
