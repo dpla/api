@@ -95,12 +95,10 @@ trait ApiKeyRegistryBehavior {
          * If email address is invalid, send an error message back to Routes.
          */
         case ValidEmail(email) =>
-          context.log.info("Received ValidEmail")
           postgresClient ! CreateAccount(email, context.self)
           Behaviors.same
 
         case InvalidParams(message) =>
-          context.log.info("Received InvalidParams")
           replyTo ! ValidationFailure(message)
           Behaviors.stopped
 
@@ -110,7 +108,6 @@ trait ApiKeyRegistryBehavior {
          * or an error back to Routes.
          */
         case AccountFound(account) =>
-          context.log.info("Received AccountFound")
           if (account.enabled.getOrElse(true)) {
             userAccount = Some(account)
             accountAlreadyExists = true
@@ -127,7 +124,6 @@ trait ApiKeyRegistryBehavior {
           }
 
         case AccountCreated(account) =>
-          context.log.info("Received AccountCreated")
           userAccount = Some(account)
           accountAlreadyExists = false
           emailClient ! SendEmail(
@@ -138,17 +134,7 @@ trait ApiKeyRegistryBehavior {
           )
           Behaviors.same
 
-        // TODO this should be handled in EmailClient
-        case AccountNotFound =>
-          // This should not happen.
-          context.log.error(
-            "Read-after-attempted-write failed in Postgres database"
-          )
-          replyTo ! InternalFailure
-          Behaviors.stopped
-
         case PostgresError =>
-          context.log.info("Received PostgreError")
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -158,7 +144,6 @@ trait ApiKeyRegistryBehavior {
          */
 
         case EmailSuccess =>
-          context.log.info("Received EmailSuccess")
           userAccount match {
             case Some(account) =>
               if (accountAlreadyExists)
@@ -174,7 +159,6 @@ trait ApiKeyRegistryBehavior {
           Behaviors.stopped
 
         case EmailFailure =>
-          context.log.info("Received EmailFailure")
           replyTo ! InternalFailure
           Behaviors.stopped
       }

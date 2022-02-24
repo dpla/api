@@ -52,8 +52,6 @@ object EmailClient {
      Behaviors.receiveMessage[EmailClientCommand] {
 
        case SendEmail(addressee, subject, content, replyTo) =>
-         context.log.info("Received SendEmail")
-
          val request = new SendEmailRequest()
            .withDestination(new Destination()
              .withToAddresses(addressee)
@@ -71,7 +69,6 @@ object EmailClient {
              )
            )
            .withSource(emailFrom)
-
 
          // Create a future response.
          // The SES SDK can create an async request that returns a Java future.
@@ -92,23 +89,16 @@ object EmailClient {
          Behaviors.same
 
        case ProcessEmailResponse(response, replyTo) =>
-         context.log.info("Received ProcessEmailResponse")
-         context.log.info("Response class: " + response.getClass.getName)
-
          response match {
            case Success(_) =>
-             context.log.info("This is a success.")
-             context.log.info(replyTo.toString)
              replyTo ! EmailSuccess
            case Failure(e) =>
              context.log.error("Email send failure:", e)
              replyTo ! EmailFailure
          }
-
          Behaviors.same
 
        case ReturnFinalResponse(response, replyTo, error) =>
-         context.log.info("Received ReturnFinalResponse")
          error match {
            case Some(e) =>
              context.log.error(
