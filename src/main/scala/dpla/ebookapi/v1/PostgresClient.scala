@@ -60,7 +60,8 @@ object PostgresClient {
 
   private final case class ReturnFinalResponse(
                                           response: PostgresClientResponse,
-                                          replyTo: ActorRef[PostgresClientResponse]
+                                          replyTo: ActorRef[PostgresClientResponse],
+                                          error: Option[Throwable] = None
                                         ) extends PostgresClientCommand
 
   def apply(): Behavior[PostgresClientCommand] = {
@@ -133,7 +134,7 @@ object PostgresClient {
               ProcessFindResponse(matches, replyTo)
             case Failure(e) =>
               context.log.error("Postgres error:", e)
-              ReturnFinalResponse(PostgresError, replyTo)
+              ReturnFinalResponse(PostgresError, replyTo, Some(e))
           }
 
           Behaviors.same
@@ -166,7 +167,14 @@ object PostgresClient {
 
           Behaviors.same
 
-        case ReturnFinalResponse(response, replyTo) =>
+        case ReturnFinalResponse(response, replyTo, error) =>
+          error match {
+            case Some(e) =>
+              context.log.error(
+                "Failed to process a Future", e
+              )
+            case None => // no-op
+          }
           replyTo ! response
           Behaviors.same
       }
