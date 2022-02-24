@@ -8,8 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.ApiKeyRegistryCommand
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistry
 import dpla.ebookapi.v1.ebooks.EbookRegistry.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
@@ -36,8 +35,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         testKit.spawn(MockPostgresClientError())
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+      mockApiKeyRegistry.setPostgresClient(postgresClient)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        testKit.spawn(ApiKeyRegistry(postgresClient))
+        mockApiKeyRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -55,8 +58,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         testKit.spawn(MockPostgresClientError())
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+      mockApiKeyRegistry.setPostgresClient(postgresClient)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        testKit.spawn(ApiKeyRegistry(postgresClient))
+        mockApiKeyRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -74,8 +81,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         testKit.spawn(MockPostgresClientError())
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+      mockApiKeyRegistry.setPostgresClient(postgresClient)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        testKit.spawn(ApiKeyRegistry(postgresClient))
+        mockApiKeyRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -93,8 +104,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         testKit.spawn(MockPostgresClientExistingKey())
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+      mockApiKeyRegistry.setPostgresClient(postgresClient)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        testKit.spawn(ApiKeyRegistry(postgresClient))
+        mockApiKeyRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 

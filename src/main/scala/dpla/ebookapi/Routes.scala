@@ -18,8 +18,7 @@ import scala.util.{Failure, Success}
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.{ApiKeyRegistryCommand, CreateApiKey}
-import dpla.ebookapi.v1.apiKey.{DisabledApiKey, ExistingApiKey, NewApiKey}
+import dpla.ebookapi.v1.apiKey.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, NewApiKey}
 import org.slf4j.{Logger, LoggerFactory}
 
 

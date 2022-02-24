@@ -58,7 +58,7 @@ object RunApp {
 
       val apiKeyRegistry =
         context.spawn(
-          ApiKeyRegistry(postgresClient),
+          ApiKeyRegistry(),
           "ApiKeyRegistry"
         )
 

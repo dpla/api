@@ -9,8 +9,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.ApiKeyRegistryCommand
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistry
 import dpla.ebookapi.v1.ebooks.EbookRegistry.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
@@ -28,8 +27,11 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     testKit.system.classicSystem
   val postgresClient: ActorRef[PostgresClientCommand] =
     testKit.spawn(MockPostgresClientSuccess())
+
+  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+  mockApiKeyRegistry.setPostgresClient(postgresClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    testKit.spawn(ApiKeyRegistry(postgresClient))
+    mockApiKeyRegistry.getRef
 
   val apiKey = "08e3918eeb8bf4469924f062072459a8"
 

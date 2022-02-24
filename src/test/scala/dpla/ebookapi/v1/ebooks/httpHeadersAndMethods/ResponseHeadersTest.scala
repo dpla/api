@@ -7,10 +7,9 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.helpers.FileReader
-import dpla.ebookapi.mocks.{MockEsClientSuccess, MockPostgresClientSuccess}
+import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEsClientSuccess, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry.ApiKeyRegistryCommand
+import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistry
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
@@ -32,8 +31,12 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     testKit.spawn(MockEsClientSuccess())
   val ebookRegistry: ActorRef[EbookRegistry.EbookRegistryCommand] =
     testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+
+  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+  mockApiKeyRegistry.setPostgresClient(postgresClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    testKit.spawn(ApiKeyRegistry(postgresClient))
+    mockApiKeyRegistry.getRef
+
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
