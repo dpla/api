@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEmailClientSuccess, MockEsClientSuccess, MockPostgresClientSuccess}
-import dpla.ebookapi.v1.EmailClient
 import dpla.ebookapi.v1.EmailClient.EmailClientCommand
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
@@ -33,9 +32,12 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     testKit.spawn(MockEsClientSuccess())
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+  val emailClient: ActorRef[EmailClientCommand] =
+    testKit.spawn(MockEmailClientSuccess())
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
   mockApiKeyRegistry.setPostgresClient(postgresClient)
+  mockApiKeyRegistry.setEmailClient(emailClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef
 
@@ -82,12 +84,23 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
-        contentType should ===(ContentTypes.`application/json`)
+        contentType should === (ContentTypes.`application/json`)
 
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val id = readObjectArray(entity, "docs")
           .flatMap(readString(_, "id")).headOption
         id should === (Some("wfwPJ34Bj-MaVWqX9Kac"))
+      }
+    }
+  }
+
+  "/api_key/[email]" should {
+    "be happy with valid input, successful db write, & successful email" in {
+      val validEmail = "test@example.com"
+      val request = Post(s"/v1/api_key/$validEmail")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
       }
     }
   }
