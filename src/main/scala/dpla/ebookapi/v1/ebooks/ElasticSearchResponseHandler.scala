@@ -41,7 +41,8 @@ object ElasticSearchResponseHandler {
 
   private final case class ReturnFinalResponse(
                                                 response: ElasticSearchResponse,
-                                                replyTo: ActorRef[ElasticSearchResponse]
+                                                replyTo: ActorRef[ElasticSearchResponse],
+                                                error: Option[Throwable] = None
                                               ) extends ElasticSearchResponseHandlerCommand
 
   def apply(): Behavior[ElasticSearchResponseHandlerCommand] = {
@@ -55,7 +56,7 @@ object ElasticSearchResponseHandler {
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
               context.log.error("Failed to reach ElasticSearch:", e)
-              ReturnFinalResponse(ElasticSearchUnreachable, replyTo)
+              ReturnFinalResponse(ElasticSearchUnreachable, replyTo, Some(e))
           }
           Behaviors.same
 
@@ -70,10 +71,7 @@ object ElasticSearchResponseHandler {
               case Success(body) =>
                 ReturnFinalResponse(ElasticSearchSuccess(body), replyTo)
               case Failure(e) =>
-                context.log.error(
-                  "Failed to parse ElasticSearch response String:", e
-                )
-                ReturnFinalResponse(ElasticSearchParseFailure, replyTo)
+                ReturnFinalResponse(ElasticSearchParseFailure, replyTo, Some(e))
             }
             Behaviors.same
 
@@ -91,15 +89,20 @@ object ElasticSearchResponseHandler {
                   ElasticSearchHttpFailure(httpResponse.status), replyTo
                 )
               case Failure(e) =>
-                context.log.error(
-                  "Failed to discard ElasticSearch response entity:", e
-                )
-                ReturnFinalResponse(ElasticSearchParseFailure, replyTo)
+                ReturnFinalResponse(ElasticSearchParseFailure, replyTo, Some(e))
             }
             Behaviors.same
         }
 
-        case ReturnFinalResponse(response, replyTo) =>
+        case ReturnFinalResponse(response, replyTo, error) =>
+          // Log error if there is one
+          error match {
+            case Some(e) =>
+              context.log.error(
+                "Failed to process a Future", e
+              )
+            case None => // no-op
+          }
           // Send fully processed reply to original requester.
           replyTo ! response
           Behaviors.same
