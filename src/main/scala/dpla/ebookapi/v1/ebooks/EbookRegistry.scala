@@ -126,7 +126,8 @@ object EbookRegistry {
             if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
               apiKey match {
                 case Some(key) =>
-                  analyticsClient ! TrackSearch(key, rawParams, host, path, ebookList)
+                  analyticsClient ! TrackSearch(key, rawParams, host, path,
+                    ebookList.docs)
                 case None =>
                   // no-op (this should not happen)
               }
@@ -295,7 +296,8 @@ object EbookRegistry {
             if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
               apiKey match {
                 case Some(key) =>
-                  analyticsClient ! TrackFetch(key, host, path, singleEbook)
+                  analyticsClient ! TrackFetch(key, host, path,
+                    singleEbook.docs.headOption)
                 case None =>
                 // no-op (this should not happen)
               }

@@ -23,14 +23,14 @@ object AnalyticsClient {
                           rawParams: Map[String, String],
                           host: String,
                           path: String,
-                          ebookList: EbookList
+                          ebooks: Seq[Ebook]
                         ) extends AnalyticsClientCommand
 
   case class TrackFetch(
                          apiKey: String,
                          host: String,
                          path: String,
-                         singleEbook: SingleEbook
+                         ebook: Option[Ebook]
                        ) extends AnalyticsClientCommand
 
   val collectUrl = "https://www.google-analytics.com/collect"
@@ -46,37 +46,51 @@ object AnalyticsClient {
 
       Behaviors.receiveMessage[AnalyticsClientCommand] {
 
-        case TrackSearch(apiKey, rawParams, host, path, ebookList) =>
+        case TrackSearch(apiKey, rawParams, host, path, ebooks) =>
 
           // Track pageview
           val query: String = paramString(rawParams.filterNot(_._1 == "api_key"))
-          val params = trackPageViewParams(
+          val pageViewParams: String = trackPageViewParams(
             trackingId,
             apiKey,
             host,
             s"$path?$query",
             "Ebook search results"
           )
-          postSingle(system, params)
+          postHit(system, pageViewParams)
+
+          // Track events
+          val eventParams: Seq[String] = ebooks.map(ebook =>
+            trackEventParams(
+              trackingId,
+              apiKey,
+              host,
+              path,
+              ebookEventCategory(ebook),
+              ebookEventAction(ebook),
+              ebookEventLabel(ebook)
+            )
+          )
+          postBatch(system, eventParams)
 
           Behaviors.same
 
-        case TrackFetch(apiKey, host, path, singleEbook) =>
+        case TrackFetch(apiKey, host, path, ebook) =>
 
           // Track pageview
-          val params = trackPageViewParams(
+          val pageViewParams: String = trackPageViewParams(
             trackingId,
             apiKey,
             host,
             path,
             "Fetch ebook"
           )
-          postSingle(system, params)
+          postHit(system, pageViewParams)
 
           // Track event
-          singleEbook.docs.headOption match {
+          ebook match {
             case Some(ebook) =>
-              val params = trackEventParams(
+              val eventParams: String = trackEventParams(
                 trackingId,
                 apiKey,
                 host,
@@ -85,7 +99,7 @@ object AnalyticsClient {
                 ebookEventAction(ebook),
                 ebookEventLabel(ebook)
               )
-              postSingle(system, params)
+              postHit(system, eventParams)
             case None => // no-op
           }
 
@@ -99,8 +113,8 @@ object AnalyticsClient {
                                   host: String,
                                   path: String,
                                   title: String
-                                 ): Map[String, String] =
-    Map(
+                                 ): String = {
+    val params = Map(
       "v" -> "1",
       "t" -> "pageview",
       "tid" -> trackingId,
@@ -109,6 +123,8 @@ object AnalyticsClient {
       "dp" -> path,
       "dt" -> title
     )
+    paramString(params)
+  }
 
   private def trackEventParams(
                                 trackingId: String,
@@ -118,8 +134,8 @@ object AnalyticsClient {
                                 category: String,
                                 action: String,
                                 label: String
-                              ): Map[String, String] =
-    Map(
+                              ): String = {
+    val params = Map(
       "v" -> "1",
       "t" -> "event",
       "tid" -> trackingId,
@@ -130,6 +146,8 @@ object AnalyticsClient {
       "ea" -> action,
       "el" -> label
     )
+    paramString(params)
+  }
 
   private def ebookEventCategory(ebook: Ebook): String = {
     val provider = ebook.providerName.getOrElse("")
@@ -145,17 +163,32 @@ object AnalyticsClient {
     s"$docId : $title"
   }
 
-  private def postSingle(implicit system: ActorSystem[Nothing],
-                         data: Map[String, String]): Unit = {
-
-    val dataString = paramString(data)
+  private def postHit(implicit system: ActorSystem[Nothing],
+                         data: String): Unit = {
 
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.POST,
-      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, dataString),
+      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, data),
       uri = collectUrl
     )
     Http().singleRequest(request)
+  }
+
+  private def postBatch(implicit system: ActorSystem[Nothing],
+                        data: Seq[String]): Unit = {
+
+    // Can only send up to 20 hits per batch
+    val batches: Iterator[Seq[String]] = data.grouped(20)
+
+    for (batch <- batches) {
+      val data = batch.mkString(System.lineSeparator)
+      val request: HttpRequest = HttpRequest(
+        method = HttpMethods.POST,
+        entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, data),
+        uri = batchUrl
+      )
+      Http().singleRequest(request)
+    }
   }
 
   // Turn a param map into a string that can be used in an HTTP request
