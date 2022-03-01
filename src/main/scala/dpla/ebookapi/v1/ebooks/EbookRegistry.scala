@@ -123,7 +123,7 @@ object EbookRegistry {
             replyTo ! SearchResult(ebookList)
 
             // If not a staff/internal account, send to analytics tracker
-            if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
+            if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
               apiKey match {
                 case Some(key) =>
                   analyticsClient ! TrackSearch(key, rawParams, host, path,
@@ -293,7 +293,7 @@ object EbookRegistry {
             replyTo ! FetchResult(singleEbook)
 
             // If not a staff/internal account, send to analytics tracker
-            if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
+            if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
               apiKey match {
                 case Some(key) =>
                   analyticsClient ! TrackFetch(key, host, path,

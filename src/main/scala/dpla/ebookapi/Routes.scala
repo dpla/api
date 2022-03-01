@@ -35,7 +35,6 @@ class Routes(
   val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")
 
   // Search and fetch requests are send to EbookRegistry actor for processing.
-  // These requests include a reference to the ElasticSearchClient actor.
   def searchEbooks(
                     params: Map[String, String],
                     host: String,

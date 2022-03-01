@@ -49,6 +49,7 @@ object AnalyticsClient {
         case TrackSearch(apiKey, rawParams, host, path, ebooks) =>
 
           // Track pageview
+          // Strip the API key out of the page path
           val query: String = paramString(rawParams.filterNot(_._1 == "api_key"))
           val pageViewParams: String = trackPageViewParams(
             trackingId,
@@ -60,18 +61,20 @@ object AnalyticsClient {
           postHit(system, pageViewParams)
 
           // Track events
-          val eventParams: Seq[String] = ebooks.map(ebook =>
-            trackEventParams(
-              trackingId,
-              apiKey,
-              host,
-              path,
-              ebookEventCategory(ebook),
-              ebookEventAction(ebook),
-              ebookEventLabel(ebook)
+          if (ebooks.nonEmpty) {
+            val eventParams: Seq[String] = ebooks.map(ebook =>
+              trackEventParams(
+                trackingId,
+                apiKey,
+                host,
+                path,
+                ebookEventCategory(ebook),
+                ebookEventAction(ebook),
+                ebookEventLabel(ebook)
+              )
             )
-          )
-          postBatch(system, eventParams)
+            postBatch(system, eventParams)
+          }
 
           Behaviors.same
 
@@ -83,7 +86,7 @@ object AnalyticsClient {
             apiKey,
             host,
             path,
-            "Fetch ebook"
+            "Fetch ebooks"
           )
           postHit(system, pageViewParams)
 
