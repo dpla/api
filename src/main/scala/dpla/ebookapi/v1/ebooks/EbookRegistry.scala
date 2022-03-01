@@ -4,7 +4,8 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, FetchParams, ForbiddenFailure, InternalFailure, InvalidApiKey, InvalidParams, NotFoundFailure, ParamValidator, PostgresError, RegistryResponse, SearchParams, ValidFetchParams, ValidSearchParams, ValidationFailure}
+import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackSearch}
+import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, AnalyticsClient, FetchParams, ForbiddenFailure, InternalFailure, InvalidApiKey, InvalidParams, NotFoundFailure, ParamValidator, PostgresError, RegistryResponse, SearchParams, ValidFetchParams, ValidSearchParams, ValidationFailure}
 import dpla.ebookapi.v1.PostgresClient.{FindAccountByKey, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
@@ -24,6 +25,8 @@ object EbookRegistry {
 
   final case class Search(
                            rawParams: Map[String, String],
+                           host: String,
+                           path: String,
                            replyTo: ActorRef[RegistryResponse]
                          ) extends EbookRegistryCommand
 
@@ -44,22 +47,28 @@ object EbookRegistry {
       val paramValidator: ActorRef[ValidationCommand] =
         context.spawn(
           ParamValidator(),
-          "ParamValidator"
+          "ParamValidatorForEbooks"
         )
 
       val mapper: ActorRef[MapperCommand] =
         context.spawn(
           EbookMapper(),
-          "EbookMapper"
+          "EbookMapperForEbooks"
+        )
+
+      val analyticsClient: ActorRef[AnalyticsClientCommand] =
+        context.spawn(
+          AnalyticsClient(),
+          "AnalyticsClientForEbooks"
         )
 
       Behaviors.receiveMessage[EbookRegistryCommand] {
 
-        case Search(rawParams, replyTo) =>
+        case Search(rawParams, host, path, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSearch(rawParams, replyTo, paramValidator, esClient,
-              postgresClient, mapper)
+            processSearch(rawParams, host, path, replyTo, paramValidator,
+              esClient, postgresClient, mapper, analyticsClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
@@ -81,11 +90,14 @@ object EbookRegistry {
    */
   private def processSearch(
                              rawParams: Map[String, String],
+                             host: String,
+                             path: String,
                              replyTo: ActorRef[RegistryResponse],
                              paramValidator: ActorRef[ValidationCommand],
                              esClient: ActorRef[EsClientCommand],
                              postgresClient: ActorRef[PostgresClientCommand],
-                             mapper: ActorRef[EbookMapper.MapperCommand],
+                             mapper: ActorRef[MapperCommand],
+                             analyticsClient: ActorRef[AnalyticsClientCommand]
                    ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
@@ -103,9 +115,14 @@ object EbookRegistry {
       // or the mapping has been complete.
       def possibleSessionResolution(): Behavior[AnyRef] =
         (searchResult, authorizedAccount) match {
-          case (Some(ebookList), Some(_)) =>
+          case (Some(ebookList), Some(account)) =>
             // We've received both message replies, time to complete session
+            // Send final result back to Routes
             replyTo ! SearchResult(ebookList)
+            // If not a staff/internal account, send to analytics tracker
+            if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
+              analyticsClient ! TrackSearch(rawParams, host, path, ebookList)
+            }
             Behaviors.stopped
           case _ =>
             // Still waiting for one of the message replies
