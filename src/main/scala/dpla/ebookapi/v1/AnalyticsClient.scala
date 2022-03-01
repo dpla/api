@@ -4,7 +4,7 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.ebookapi.v1.ebooks.{Ebook, EbookList, SingleEbook}
+import dpla.ebookapi.v1.ebooks.Ebook
 
 
 /**
@@ -108,12 +108,13 @@ object AnalyticsClient {
     }
   }
 
-  private def trackPageViewParams(trackingId: String,
-                                  apiKey: String,
-                                  host: String,
-                                  path: String,
-                                  title: String
-                                 ): String = {
+  private def trackPageViewParams(
+                                   trackingId: String,
+                                   apiKey: String,
+                                   host: String,
+                                   path: String,
+                                   title: String
+                                  ): String = {
     val params = Map(
       "v" -> "1",
       "t" -> "pageview",
@@ -163,8 +164,10 @@ object AnalyticsClient {
     s"$docId : $title"
   }
 
-  private def postHit(implicit system: ActorSystem[Nothing],
-                         data: String): Unit = {
+  private def postHit(
+                       implicit system: ActorSystem[Nothing],
+                       data: String
+                     ): Unit = {
 
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.POST,
@@ -174,8 +177,10 @@ object AnalyticsClient {
     Http().singleRequest(request)
   }
 
-  private def postBatch(implicit system: ActorSystem[Nothing],
-                        data: Seq[String]): Unit = {
+  private def postBatch(
+                         implicit system: ActorSystem[Nothing],
+                         data: Seq[String]
+                       ): Unit = {
 
     // Can only send up to 20 hits per batch
     val batches: Iterator[Seq[String]] = data.grouped(20)
