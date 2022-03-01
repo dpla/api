@@ -33,15 +33,15 @@ object AnalyticsClient {
                          singleEbook: SingleEbook
                        ) extends AnalyticsClientCommand
 
+  val collectUrl = "https://www.google-analytics.com/collect"
+  val batchUrl = "http://www.google-analytics.com/batch"
+
   def apply(): Behavior[AnalyticsClientCommand] = {
     Behaviors.setup{ context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
 
-      val collectUrl = "https://www.google-analytics.com/collect"
-      val batchUrl = "http://www.google-analytics.com/batch"
-
-      val trackingId: String = context.system.settings.config
+      val trackingId: String = system.settings.config
         .getString("googleAnalytics.trackingId")
 
       Behaviors.receiveMessage[AnalyticsClientCommand] {
@@ -52,51 +52,45 @@ object AnalyticsClient {
           val query: String = paramString(rawParams.filterNot(_._1 == "api_key"))
           val fullPath = s"$path?$query"
 
-          val data = Map(
-            "v" -> "1",
-            "tid" -> trackingId,
-            "t" -> "pageview",
-            "dh" -> host,
-            "dp" -> fullPath,
-            "dt" -> title,
-            "cid" -> apiKey
-          )
-          val dataString = paramString(data)
-
-          val request: HttpRequest = HttpRequest(
-            method = HttpMethods.POST,
-            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, dataString),
-            uri = collectUrl
-          )
-          Http().singleRequest(request)
-
+          trackPageView(system, trackingId, apiKey, host, fullPath, title)
           Behaviors.same
 
         case TrackFetch(apiKey, host, path, singleEbook) =>
 
           val title = "Fetch ebook"
-
-          val data = Map(
-            "v" -> "1",
-            "tid" -> trackingId,
-            "t" -> "pageview",
-            "dh" -> host,
-            "dp" -> path,
-            "dt" -> title,
-            "cid" -> apiKey
-          )
-          val dataString = paramString(data)
-
-          val request: HttpRequest = HttpRequest(
-            method = HttpMethods.POST,
-            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, dataString),
-            uri = collectUrl
-          )
-          Http().singleRequest(request)
-
+          trackPageView(system, trackingId, apiKey, host, path, title)
           Behaviors.same
       }
     }
+  }
+
+  private def trackPageView(implicit system: ActorSystem[Nothing],
+                            trackingId: String,
+                            apiKey: String,
+                            host: String,
+                            path: String,
+                            title: String
+                           ): Unit = {
+
+    val data = Map(
+      "v" -> "1",
+      "tid" -> trackingId,
+      "t" -> "pageview",
+      "dh" -> host,
+      "dp" -> path,
+      "dt" -> title,
+      "cid" -> apiKey
+    )
+    val dataString = paramString(data)
+
+    val request: HttpRequest = HttpRequest(
+      method = HttpMethods.POST,
+      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, dataString),
+      uri = collectUrl
+    )
+    Http().singleRequest(request)
+
+    Behaviors.same
   }
 
   // Turn a param map into a string that can be used in an HTTP request
