@@ -4,7 +4,7 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.ebookapi.v1.ebooks.{EbookList, SingleEbook}
+import dpla.ebookapi.v1.ebooks.{Ebook, EbookList, SingleEbook}
 
 
 /**
@@ -48,39 +48,106 @@ object AnalyticsClient {
 
         case TrackSearch(apiKey, rawParams, host, path, ebookList) =>
 
-          val title = "Ebook search results"
+          // Track pageview
           val query: String = paramString(rawParams.filterNot(_._1 == "api_key"))
-          val fullPath = s"$path?$query"
+          val params = trackPageViewParams(
+            trackingId,
+            apiKey,
+            host,
+            s"$path?$query",
+            "Ebook search results"
+          )
+          postSingle(system, params)
 
-          trackPageView(system, trackingId, apiKey, host, fullPath, title)
           Behaviors.same
 
         case TrackFetch(apiKey, host, path, singleEbook) =>
 
-          val title = "Fetch ebook"
-          trackPageView(system, trackingId, apiKey, host, path, title)
+          // Track pageview
+          val params = trackPageViewParams(
+            trackingId,
+            apiKey,
+            host,
+            path,
+            "Fetch ebook"
+          )
+          postSingle(system, params)
+
+          // Track event
+          singleEbook.docs.headOption match {
+            case Some(ebook) =>
+              val params = trackEventParams(
+                trackingId,
+                apiKey,
+                host,
+                path,
+                ebookEventCategory(ebook),
+                ebookEventAction(ebook),
+                ebookEventLabel(ebook)
+              )
+              postSingle(system, params)
+            case None => // no-op
+          }
+
           Behaviors.same
       }
     }
   }
 
-  private def trackPageView(implicit system: ActorSystem[Nothing],
-                            trackingId: String,
-                            apiKey: String,
-                            host: String,
-                            path: String,
-                            title: String
-                           ): Unit = {
-
-    val data = Map(
+  private def trackPageViewParams(trackingId: String,
+                                  apiKey: String,
+                                  host: String,
+                                  path: String,
+                                  title: String
+                                 ): Map[String, String] =
+    Map(
       "v" -> "1",
-      "tid" -> trackingId,
       "t" -> "pageview",
+      "tid" -> trackingId,
+      "cid" -> apiKey,
       "dh" -> host,
       "dp" -> path,
-      "dt" -> title,
-      "cid" -> apiKey
+      "dt" -> title
     )
+
+  private def trackEventParams(
+                                trackingId: String,
+                                apiKey: String,
+                                host: String,
+                                path: String,
+                                category: String,
+                                action: String,
+                                label: String
+                              ): Map[String, String] =
+    Map(
+      "v" -> "1",
+      "t" -> "event",
+      "tid" -> trackingId,
+      "cid" -> apiKey,
+      "dh" -> host,
+      "dp" -> path,
+      "ec" -> category,
+      "ea" -> action,
+      "el" -> label
+    )
+
+  private def ebookEventCategory(ebook: Ebook): String = {
+    val provider = ebook.providerName.getOrElse("")
+    s"View API Ebook : $provider"
+  }
+
+  private def ebookEventAction(ebook: Ebook): String =
+    ebook.providerName.getOrElse("")
+
+  private def ebookEventLabel(ebook: Ebook): String = {
+    val docId = ebook.id.getOrElse("")
+    val title = ebook.title.mkString(", ")
+    s"$docId : $title"
+  }
+
+  private def postSingle(implicit system: ActorSystem[Nothing],
+                         data: Map[String, String]): Unit = {
+
     val dataString = paramString(data)
 
     val request: HttpRequest = HttpRequest(
@@ -89,8 +156,6 @@ object AnalyticsClient {
       uri = collectUrl
     )
     Http().singleRequest(request)
-
-    Behaviors.same
   }
 
   // Turn a param map into a string that can be used in an HTTP request
