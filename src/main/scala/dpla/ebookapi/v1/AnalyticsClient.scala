@@ -74,6 +74,26 @@ object AnalyticsClient {
 
         case TrackFetch(apiKey, host, path, singleEbook) =>
 
+          val title = "Fetch ebook"
+
+          val data = Map(
+            "v" -> "1",
+            "tid" -> trackingId,
+            "t" -> "pageview",
+            "dh" -> host,
+            "dp" -> path,
+            "dt" -> title,
+            "cid" -> apiKey
+          )
+          val dataString = paramString(data)
+
+          val request: HttpRequest = HttpRequest(
+            method = HttpMethods.POST,
+            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, dataString),
+            uri = collectUrl
+          )
+          Http().singleRequest(request)
+
           Behaviors.same
       }
     }

@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackSearch}
+import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
 import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, AnalyticsClient, FetchParams, ForbiddenFailure, InternalFailure, InvalidApiKey, InvalidParams, NotFoundFailure, ParamValidator, PostgresError, RegistryResponse, SearchParams, ValidFetchParams, ValidSearchParams, ValidationFailure}
 import dpla.ebookapi.v1.PostgresClient.{FindAccountByKey, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
@@ -33,6 +33,8 @@ object EbookRegistry {
   final case class Fetch(
                           id: String,
                           rawParams: Map[String, String],
+                          host: String,
+                          path: String,
                           replyTo: ActorRef[RegistryResponse]
                         ) extends EbookRegistryCommand
 
@@ -72,11 +74,11 @@ object EbookRegistry {
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
-        case Fetch(id, rawParams, replyTo) =>
+        case Fetch(id, rawParams, host, path, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processFetch(id, rawParams, replyTo, paramValidator, esClient,
-              postgresClient, mapper)
+            processFetch(id, rawParams, host, path, replyTo, paramValidator,
+              esClient, postgresClient, mapper, analyticsClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -102,7 +104,7 @@ object EbookRegistry {
 
     Behaviors.setup[AnyRef] { context =>
 
-      // store variable that will be needed for more than one task
+      // store variables that will be needed for multiple tasks
       var searchParams: Option[SearchParams] = None
       var apiKey: Option[String] = None
 
@@ -119,6 +121,7 @@ object EbookRegistry {
             // We've received both message replies, time to complete session
             // Send final result back to Routes
             replyTo ! SearchResult(ebookList)
+
             // If not a staff/internal account, send to analytics tracker
             if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
               apiKey match {
@@ -260,14 +263,20 @@ object EbookRegistry {
   private def processFetch(
                             id: String,
                             rawParams: Map[String, String],
+                            host: String,
+                            path: String,
                             replyTo: ActorRef[RegistryResponse],
                             paramValidator: ActorRef[ValidationCommand],
                             esClient: ActorRef[EsClientCommand],
                             postgresClient: ActorRef[PostgresClientCommand],
                             mapper: ActorRef[MapperCommand],
+                            analyticsClient: ActorRef[AnalyticsClientCommand]
                    ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
+
+      // store variables that will be needed for multiple tasks
+      var apiKey: Option[String] = None
 
       // Both fetchResult and authorizedAccount must be present before sending
       // a response back to Routes.
@@ -278,9 +287,20 @@ object EbookRegistry {
       // or the mapping has been complete.
       def possibleSessionResolution(): Behavior[AnyRef] =
         (fetchResult, authorizedAccount) match {
-          case (Some(singleEbook), Some(_)) =>
+          case (Some(singleEbook), Some(account)) =>
             // We've received both message replies, time to complete session
             replyTo ! FetchResult(singleEbook)
+
+            // If not a staff/internal account, send to analytics tracker
+            if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
+              apiKey match {
+                case Some(key) =>
+                  analyticsClient ! TrackFetch(key, host, path, singleEbook)
+                case None =>
+                // no-op (this should not happen)
+              }
+            }
+
             Behaviors.stopped
           case _ =>
             // Still waiting for one of the message replies
@@ -297,9 +317,10 @@ object EbookRegistry {
          * fetch result.
          * If params are invalid, send an error message back to Routes.
          */
-        case ValidFetchParams(apiKey: String, params: FetchParams) =>
+        case ValidFetchParams(key: String, params: FetchParams) =>
+          apiKey = Some(key)
           // Calls to Postgres and ElasticSearch can happen concurrently.
-          postgresClient ! FindAccountByKey(apiKey, context.self)
+          postgresClient ! FindAccountByKey(key, context.self)
           esClient ! GetEsFetchResult(params, context.self)
           Behaviors.same
 
