@@ -4,7 +4,7 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.ebookapi.v1.ebooks.EbookList
+import dpla.ebookapi.v1.ebooks.{EbookList, SingleEbook}
 
 
 /**
@@ -19,6 +19,7 @@ object AnalyticsClient {
   sealed trait AnalyticsClientCommand
 
   case class TrackSearch(
+                          apiKey: String,
                           rawParams: Map[String, String],
                           host: String,
                           path: String,
@@ -26,7 +27,10 @@ object AnalyticsClient {
                         ) extends AnalyticsClientCommand
 
   case class TrackFetch(
-
+                         apiKey: String,
+                         host: String,
+                         path: String,
+                         singleEbook: SingleEbook
                        ) extends AnalyticsClientCommand
 
   def apply(): Behavior[AnalyticsClientCommand] = {
@@ -42,46 +46,40 @@ object AnalyticsClient {
 
       Behaviors.receiveMessage[AnalyticsClientCommand] {
 
-        case TrackSearch(rawParams, host, path, ebookList) =>
-          rawParams.get("api_key") match {
-            case Some(apiKey) =>
-              val query = rawParams
-                .filterNot(_._1 == "api_key")
-                .map{ case(key, value) => s"$key=$value" }
-                .mkString("&")
-              val fullPath = s"$path?$query"
-              val hitType = "pageview"
-              val title = "Ebook search result"
+        case TrackSearch(apiKey, rawParams, host, path, ebookList) =>
 
+          val title = "Ebook search results"
+          val query: String = paramString(rawParams.filterNot(_._1 == "api_key"))
+          val fullPath = s"$path?$query"
 
-              val data = Map(
-                "v" -> "1",
-                "tid" -> trackingId,
-                "t" -> hitType,
-                "dh" -> host,
-                "dp" -> fullPath,
-                "dt" -> title,
-                "cid" -> apiKey
-              ).map{case (key, value) => s"$key=$value" }
-                .mkString("&")
+          val data = Map(
+            "v" -> "1",
+            "tid" -> trackingId,
+            "t" -> "pageview",
+            "dh" -> host,
+            "dp" -> fullPath,
+            "dt" -> title,
+            "cid" -> apiKey
+          )
+          val dataString = paramString(data)
 
-              val request: HttpRequest = HttpRequest(
-                method = HttpMethods.POST,
-                entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, data),
-                uri = collectUrl
-              )
+          val request: HttpRequest = HttpRequest(
+            method = HttpMethods.POST,
+            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, dataString),
+            uri = collectUrl
+          )
+          Http().singleRequest(request)
 
-              Http().singleRequest(request)
+          Behaviors.same
 
-            case None =>
-              // no-op
-          }
-
-
-
+        case TrackFetch(apiKey, host, path, singleEbook) =>
 
           Behaviors.same
       }
     }
   }
+
+  // Turn a param map into a string that can be used in an HTTP request
+  private def paramString(params: Map[String, String]): String =
+    params.map{case (key, value) => s"$key=$value" }.mkString("&")
 }

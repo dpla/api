@@ -102,9 +102,9 @@ object EbookRegistry {
 
     Behaviors.setup[AnyRef] { context =>
 
-      // searchParams are stored as a session variable because they are needed
-      // for the mapping.
+      // store variable that will be needed for more than one task
       var searchParams: Option[SearchParams] = None
+      var apiKey: Option[String] = None
 
       // Both searchResult and authorizedAccount must be present before sending
       // a response back to Routes.
@@ -121,7 +121,12 @@ object EbookRegistry {
             replyTo ! SearchResult(ebookList)
             // If not a staff/internal account, send to analytics tracker
             if (!account.staff.getOrElse(false) && !account.email.endsWith(".dp.la")) {
-              analyticsClient ! TrackSearch(rawParams, host, path, ebookList)
+              apiKey match {
+                case Some(key) =>
+                  analyticsClient ! TrackSearch(key, rawParams, host, path, ebookList)
+                case None =>
+                  // no-op (this should not happen)
+              }
             }
             Behaviors.stopped
           case _ =>
@@ -140,11 +145,12 @@ object EbookRegistry {
          * search result.
          * If params are invalid, send an error message back to Routes.
          */
-        case ValidSearchParams(apiKey: String, params: SearchParams) =>
+        case ValidSearchParams(key: String, params: SearchParams) =>
           if (searchParams.isEmpty) {
             searchParams = Some(params)
+            apiKey = Some(key)
             // Calls to Postgres and ElasticSearch can happen concurrently.
-            postgresClient ! FindAccountByKey(apiKey, context.self)
+            postgresClient ! FindAccountByKey(key, context.self)
             esClient ! GetEsSearchResult(params, context.self)
           }
           Behaviors.same
