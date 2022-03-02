@@ -1,7 +1,7 @@
 package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.ebooks.JsonFormats._
 import spray.json._
 
@@ -86,6 +86,7 @@ object EbookMapper {
 
   def apply(): Behavior[MapperCommand] = {
     Behaviors.setup[MapperCommand] { context =>
+
       Behaviors.receiveMessage[MapperCommand] {
         case MapSearchResponse(body, page, pageSize, replyTo) =>
 

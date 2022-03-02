@@ -35,12 +35,20 @@ class Routes(
   val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")
 
   // Search and fetch requests are send to EbookRegistry actor for processing.
-  // These requests include a reference to the ElasticSearchClient actor.
-  def searchEbooks(params: Map[String, String]): Future[RegistryResponse] =
-    ebookRegistry.ask(Search(params, _))
+  def searchEbooks(
+                    params: Map[String, String],
+                    host: String,
+                    path: String
+                  ): Future[RegistryResponse] =
+    ebookRegistry.ask(Search(params, host, path, _))
 
-  def fetchEbooks(id: String, params: Map[String, String]): Future[RegistryResponse] =
-    ebookRegistry.ask(Fetch(id, params, _))
+  def fetchEbooks(
+                   id: String,
+                   params: Map[String, String],
+                   host: String,
+                   path: String
+                 ): Future[RegistryResponse] =
+    ebookRegistry.ask(Fetch(id, params, host, path, _))
 
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
@@ -61,37 +69,41 @@ class Routes(
     concat(
       pathEnd {
         get {
-          parameterMap { params =>
-            // Get the API key from Authorization header if it exists.
-            optionalHeaderValueByName("Authorization") { auth =>
-              val updatedParams = auth match {
-                case Some(key) => params + ("api_key" -> key)
-                case None => params
-              }
-              respondWithHeaders(securityResponseHeaders) {
-                onComplete(searchEbooks(updatedParams)) {
-                  case Success(response) =>
-                    response match {
-                      case SearchResult(ebookList) =>
-                        complete(ebookList)
-                      case ForbiddenFailure =>
-                        complete(HttpResponse(Forbidden, entity = forbiddenMessage))
-                      case ValidationFailure(message) =>
-                        complete(HttpResponse(BadRequest, entity = message))
-                      case InternalFailure =>
-                        complete(HttpResponse(ImATeapot, entity = teapotMessage))
-                      case _ =>
+          extractHost { host =>
+            extractMatchedPath { path =>
+              parameterMap { params =>
+                // Get the API key from Authorization header if it exists.
+                optionalHeaderValueByName("Authorization") { auth =>
+                  val updatedParams = auth match {
+                    case Some(key) => params + ("api_key" -> key)
+                    case None => params
+                  }
+                  respondWithHeaders(securityResponseHeaders) {
+                    onComplete(searchEbooks(updatedParams, host, path.toString)) {
+                      case Success(response) =>
+                        response match {
+                          case SearchResult(ebookList) =>
+                            complete(ebookList)
+                          case ForbiddenFailure =>
+                            complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                          case ValidationFailure(message) =>
+                            complete(HttpResponse(BadRequest, entity = message))
+                          case InternalFailure =>
+                            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                          case _ =>
+                            log.error(
+                              "Routes /ebooks received unexpected RegistryResponse {}",
+                              response.getClass.getName
+                            )
+                            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                        }
+                      case Failure(e) =>
                         log.error(
-                          "Routes /ebooks received unexpected RegistryResponse {}",
-                          response.getClass.getName
+                          "Routes /ebooks failed to get response from Registry:", e
                         )
                         complete(HttpResponse(ImATeapot, entity = teapotMessage))
                     }
-                  case Failure(e) =>
-                    log.error(
-                      "Routes /ebooks failed to get response from Registry:", e
-                    )
-                    complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                  }
                 }
               }
             }
@@ -100,40 +112,44 @@ class Routes(
       },
       path(Segment) { id =>
         get {
-          parameterMap { params =>
-            // Get the API key from Authorization header if it exists.
-            optionalHeaderValueByName("Authorization") { auth =>
-              val updatedParams = auth match {
-                case Some(key) => params + ("api_key" -> key)
-                case None => params
-              }
-              respondWithHeaders(securityResponseHeaders) {
-                onComplete(fetchEbooks(id, updatedParams)) {
-                  case Success(response) =>
-                    response match {
-                      case FetchResult(singleEbook) =>
-                        complete(singleEbook)
-                      case ForbiddenFailure =>
-                        complete(HttpResponse(Forbidden, entity = forbiddenMessage))
-                      case ValidationFailure(message) =>
-                        complete(HttpResponse(BadRequest, entity = message))
-                      case NotFoundFailure =>
-                        complete(HttpResponse(NotFound, entity = notFoundMessage))
-                      case InternalFailure =>
-                        complete(HttpResponse(ImATeapot, entity = teapotMessage))
-                      case _ =>
+          extractHost { host =>
+            extractMatchedPath { path =>
+              parameterMap { params =>
+                // Get the API key from Authorization header if it exists.
+                optionalHeaderValueByName("Authorization") { auth =>
+                  val updatedParams = auth match {
+                    case Some(key) => params + ("api_key" -> key)
+                    case None => params
+                  }
+                  respondWithHeaders(securityResponseHeaders) {
+                    onComplete(fetchEbooks(id, updatedParams, host, path.toString)) {
+                      case Success(response) =>
+                        response match {
+                          case FetchResult(singleEbook) =>
+                            complete(singleEbook)
+                          case ForbiddenFailure =>
+                            complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                          case ValidationFailure(message) =>
+                            complete(HttpResponse(BadRequest, entity = message))
+                          case NotFoundFailure =>
+                            complete(HttpResponse(NotFound, entity = notFoundMessage))
+                          case InternalFailure =>
+                            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                          case _ =>
+                            log.error(
+                              "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
+                              response.getClass.getName
+                            )
+                            complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                        }
+                      case Failure(e) =>
                         log.error(
-                          "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
-                          response.getClass.getName
+                          "Routes /ebooks/[ID] failed to get response from Registry:",
+                          e
                         )
                         complete(HttpResponse(ImATeapot, entity = teapotMessage))
                     }
-                  case Failure(e) =>
-                    log.error(
-                      "Routes /ebooks/[ID] failed to get response from Registry:",
-                      e
-                    )
-                    complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                  }
                 }
               }
             }
