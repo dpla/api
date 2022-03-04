@@ -5,11 +5,11 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
-import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, FetchParams, ForbiddenFailure, InternalFailure, InvalidApiKey, InvalidParams, NotFoundFailure, PostgresError, RegistryResponse, SearchParams, ValidFetchParams, ValidSearchParams, ValidationFailure}
+import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, ForbiddenFailure, InternalFailure, InvalidParams, NotFoundFailure, PostgresError, RegistryResponse, ValidationFailure}
 import dpla.ebookapi.v1.PostgresClient.{FindAccountByKey, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
-import dpla.ebookapi.v1.ParamValidator.{ValidateFetchParams, ValidateSearchParams, ValidationCommand}
+import EbookParamValidator.{ValidateFetchParams, ValidateSearchParams, EbookValidationCommand}
 
 
 final case class SearchResult(result: EbookList) extends RegistryResponse
@@ -35,7 +35,7 @@ final case class FetchEbook(
 trait EbookRegistryBehavior {
 
   def spawnParamValidator(context: ActorContext[EbookRegistryCommand]):
-    ActorRef[ValidationCommand]
+    ActorRef[EbookValidationCommand]
 
   def spawnAuthenticationClient(context: ActorContext[EbookRegistryCommand]):
     ActorRef[PostgresClientCommand]
@@ -54,7 +54,7 @@ trait EbookRegistryBehavior {
     Behaviors.setup[EbookRegistryCommand] { context =>
 
       // Spawn children.
-      val paramValidator: ActorRef[ValidationCommand] =
+      val paramValidator: ActorRef[EbookValidationCommand] =
         spawnParamValidator(context)
 
       val authenticationClient: ActorRef[PostgresClientCommand] =
@@ -100,7 +100,7 @@ trait EbookRegistryBehavior {
                              host: String,
                              path: String,
                              replyTo: ActorRef[RegistryResponse],
-                             paramValidator: ActorRef[ValidationCommand],
+                             paramValidator: ActorRef[EbookValidationCommand],
                              searchIndexClient: ActorRef[EsClientCommand],
                              authenticationClient: ActorRef[PostgresClientCommand],
                              mapper: ActorRef[MapperCommand],
@@ -272,7 +272,7 @@ trait EbookRegistryBehavior {
                             host: String,
                             path: String,
                             replyTo: ActorRef[RegistryResponse],
-                            paramValidator: ActorRef[ValidationCommand],
+                            paramValidator: ActorRef[EbookValidationCommand],
                             esClient: ActorRef[EsClientCommand],
                             postgresClient: ActorRef[PostgresClientCommand],
                             mapper: ActorRef[MapperCommand],

@@ -4,7 +4,7 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.ebookapi.v1.{FieldFilter, SearchParams}
+
 
 /**
  * Composes Elastic Search queries from user-submitted parameters.

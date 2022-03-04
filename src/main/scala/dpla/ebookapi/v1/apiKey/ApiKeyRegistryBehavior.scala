@@ -4,9 +4,9 @@ import akka.NotUsed
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dpla.ebookapi.v1.EmailClient.{EmailClientCommand, SendEmail}
-import dpla.ebookapi.v1.ParamValidator.{ValidateEmail, ValidationCommand}
 import dpla.ebookapi.v1.PostgresClient.{CreateAccount, PostgresClientCommand}
-import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound, EmailFailure, EmailSuccess, InternalFailure, InvalidParams, PostgresError, RegistryResponse, ValidEmail, ValidationFailure}
+import dpla.ebookapi.v1.apiKey.ApiKeyParamValidator.{ApiKeyValidationCommand, ValidateEmail}
+import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound, EmailFailure, EmailSuccess, InternalFailure, InvalidParams, PostgresError, RegistryResponse, ValidationFailure}
 
 
 final case class NewApiKey(
@@ -31,7 +31,7 @@ final case class CreateApiKey(
 trait ApiKeyRegistryBehavior {
 
   def spawnParamValidator(context: ActorContext[ApiKeyRegistryCommand]):
-    ActorRef[ValidationCommand]
+    ActorRef[ApiKeyValidationCommand]
 
   def spawnAuthenticationClient(context: ActorContext[ApiKeyRegistryCommand]):
     ActorRef[PostgresClientCommand]
@@ -44,7 +44,7 @@ trait ApiKeyRegistryBehavior {
     Behaviors.setup[ApiKeyRegistryCommand] { context =>
 
       // Spawn children.
-      val paramValidator: ActorRef[ValidationCommand] =
+      val paramValidator: ActorRef[ApiKeyValidationCommand] =
         spawnParamValidator(context)
 
       val authenticationClient: ActorRef[PostgresClientCommand] =
@@ -73,7 +73,7 @@ trait ApiKeyRegistryBehavior {
   def processCreateApiKey(
                            email: String,
                            replyTo: ActorRef[RegistryResponse],
-                           paramValidator: ActorRef[ValidationCommand],
+                           paramValidator: ActorRef[ApiKeyValidationCommand],
                            authentiationClient: ActorRef[PostgresClientCommand],
                            emailClient: ActorRef[EmailClientCommand]
                          ): Behavior[NotUsed] = {

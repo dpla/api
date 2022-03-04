@@ -4,7 +4,6 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
-import dpla.ebookapi.v1.{FetchParams, SearchParams}
 import dpla.ebookapi.v1.ebooks.ElasticSearchQueryBuilder.{EsQueryBuilderCommand, GetSearchQuery}
 import dpla.ebookapi.v1.ebooks.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
 

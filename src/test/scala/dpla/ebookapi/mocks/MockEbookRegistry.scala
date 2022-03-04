@@ -4,22 +4,22 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.AnalyticsClient.AnalyticsClientCommand
-import dpla.ebookapi.v1.ParamValidator.ValidationCommand
+import dpla.ebookapi.v1.ebooks.EbookParamValidator.EbookValidationCommand
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.{AnalyticsClient, ParamValidator, PostgresClient}
+import dpla.ebookapi.v1.{AnalyticsClient, PostgresClient}
 import dpla.ebookapi.v1.ebooks.EbookMapper.MapperCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
-import dpla.ebookapi.v1.ebooks.{EbookMapper, EbookRegistryBehavior, EbookRegistryCommand, ElasticSearchClient}
+import dpla.ebookapi.v1.ebooks.{EbookMapper, EbookParamValidator, EbookRegistryBehavior, EbookRegistryCommand, ElasticSearchClient}
 
 class MockEbookRegistry(testKit: ActorTestKit) {
 
-  private var paramValidator: Option[ActorRef[ValidationCommand]] = None
+  private var paramValidator: Option[ActorRef[EbookValidationCommand]] = None
   private var authenticationClient: Option[ActorRef[PostgresClientCommand]] = None
   private var searchIndexClient: Option[ActorRef[EsClientCommand]] = None
   private var ebookMapper: Option[ActorRef[MapperCommand]] = None
   private var analyticsClient: Option[ActorRef[AnalyticsClientCommand]] = None
 
-  def setParmaValidator(ref: ActorRef[ValidationCommand]): Unit =
+  def setParmaValidator(ref: ActorRef[EbookValidationCommand]): Unit =
     paramValidator = Some(ref)
 
   def setAuthenticationClient(ref: ActorRef[PostgresClientCommand]): Unit =
@@ -38,8 +38,8 @@ class MockEbookRegistry(testKit: ActorTestKit) {
 
     override def spawnParamValidator(
                                       context: ActorContext[EbookRegistryCommand]
-                                    ): ActorRef[ValidationCommand] =
-      paramValidator.getOrElse(context.spawnAnonymous(ParamValidator()))
+                                    ): ActorRef[EbookValidationCommand] =
+      paramValidator.getOrElse(context.spawnAnonymous(EbookParamValidator()))
 
     override def spawnAuthenticationClient(
                                             context: ActorContext[EbookRegistryCommand]

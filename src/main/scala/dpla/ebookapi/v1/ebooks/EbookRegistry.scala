@@ -3,11 +3,11 @@ package dpla.ebookapi.v1.ebooks
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.AnalyticsClient.AnalyticsClientCommand
-import dpla.ebookapi.v1.{AnalyticsClient, ParamValidator, PostgresClient}
+import dpla.ebookapi.v1.{AnalyticsClient, PostgresClient}
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.ebooks.EbookMapper.MapperCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
-import dpla.ebookapi.v1.ParamValidator.ValidationCommand
+import EbookParamValidator.EbookValidationCommand
 
 
 /**
@@ -18,8 +18,8 @@ object EbookRegistry extends EbookRegistryBehavior {
 
   override def spawnParamValidator(
                                     context: ActorContext[EbookRegistryCommand]
-                                  ): ActorRef[ValidationCommand] =
-    context.spawn(ParamValidator(), "ParamValidatorForEbooks")
+                                  ): ActorRef[EbookValidationCommand] =
+    context.spawn(EbookParamValidator(), "EbookParamValidator")
 
   override def spawnAuthenticationClient(
                                           context: ActorContext[EbookRegistryCommand]

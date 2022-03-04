@@ -2,8 +2,9 @@ package dpla.ebookapi.v1.ebooks.unit
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.{InvalidApiKey, InvalidParams, ParamValidator, ValidEmail, ValidFetchParams, ValidSearchParams, ValidationResponse}
-import dpla.ebookapi.v1.ParamValidator.{ValidateEmail, ValidateFetchParams, ValidateSearchParams, ValidationCommand}
+import dpla.ebookapi.v1.ebooks.{EbookParamValidator, InvalidApiKey, ValidFetchParams, ValidSearchParams}
+import dpla.ebookapi.v1.{InvalidParams, ValidationResponse}
+import dpla.ebookapi.v1.ebooks.EbookParamValidator.{ValidateFetchParams, ValidateSearchParams, EbookValidationCommand}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -11,7 +12,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Random
 
 
-class ParamValidationTest extends AnyWordSpec with Matchers
+class EbookParamValidatorTest extends AnyWordSpec with Matchers
   with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
@@ -19,8 +20,8 @@ class ParamValidationTest extends AnyWordSpec with Matchers
 
   val baseParams = Map("api_key" -> "08e3918eeb8bf4469924f062072459a8")
 
-  val paramValidator: ActorRef[ValidationCommand] =
-    testKit.spawn(ParamValidator())
+  val paramValidator: ActorRef[EbookValidationCommand] =
+    testKit.spawn(EbookParamValidator())
   val probe: TestProbe[ValidationResponse] =
     testKit.createTestProbe[ValidationResponse]
 
@@ -772,44 +773,6 @@ class ParamValidationTest extends AnyWordSpec with Matchers
       val given: String = Random.alphanumeric.take(201).mkString
       val params = baseParams ++ Map("sourceResource.title" -> given)
       paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessageType[InvalidParams]
-    }
-  }
-
-  "email validator" should {
-    "reject missing email" in {
-      val given = ""
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[InvalidParams]
-    }
-
-    "accept valid email" in {
-      val given = "Email-123@example.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[ValidEmail]
-    }
-
-    "accept special characters in username" in {
-      val given = "Email&123@example.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[ValidEmail]
-    }
-
-    "accept plus sign in username (for gmail)" in {
-      val given = "Email+123@example.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[ValidEmail]
-    }
-
-    "accept dash in domain name" in {
-      val given = "Email-123@ex-ample.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
-      probe.expectMessageType[ValidEmail]
-    }
-
-    "reject too-long email" in {
-      val given = Random.alphanumeric.take(100).mkString + "@example.com"
-      paramValidator ! ValidateEmail(given, probe.ref)
       probe.expectMessageType[InvalidParams]
     }
   }

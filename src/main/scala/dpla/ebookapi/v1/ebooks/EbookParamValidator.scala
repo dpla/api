@@ -1,9 +1,8 @@
-package dpla.ebookapi.v1
+package dpla.ebookapi.v1.ebooks
 
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.ebookapi.v1.ebooks.DplaMapFields
-import org.apache.commons.validator.routines.EmailValidator
+import dpla.ebookapi.v1.{InvalidParams, ValidationResponse}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
@@ -14,8 +13,6 @@ import scala.util.{Failure, Success, Try}
  * are logged as warnings.
  */
 
-sealed trait ValidationResponse
-
 final case class ValidSearchParams(
                                     apiKey: String,
                                     searchParams: SearchParams
@@ -25,14 +22,6 @@ final case class ValidFetchParams(
                                    apiKey: String,
                                    fetchParams: FetchParams
                                  ) extends ValidationResponse
-
-final case class ValidEmail(
-                             email: String
-                           ) extends ValidationResponse
-
-final case class InvalidParams(
-                                message: String
-                              ) extends ValidationResponse
 
 case object InvalidApiKey extends ValidationResponse
 
@@ -59,27 +48,22 @@ case class FieldFilter(
                         value: String
                       )
 
-object ParamValidator extends DplaMapFields {
+object EbookParamValidator extends DplaMapFields {
 
-  sealed trait ValidationCommand
+  sealed trait EbookValidationCommand
 
   final case class ValidateSearchParams(
                                          params: Map[String, String],
                                          replyTo: ActorRef[ValidationResponse]
-                                       ) extends ValidationCommand
+                                       ) extends EbookValidationCommand
 
   final case class ValidateFetchParams(
                                         id: String,
                                         params: Map[String, String],
                                         replyTo: ActorRef[ValidationResponse]
-                                      ) extends ValidationCommand
+                                      ) extends EbookValidationCommand
 
-  final case class ValidateEmail(
-                                  email: String,
-                                  replyTo: ActorRef[ValidationResponse]
-                                ) extends ValidationCommand
-
-  def apply(): Behavior[ValidationCommand] = {
+  def apply(): Behavior[EbookValidationCommand] = {
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
 
@@ -122,20 +106,6 @@ object ParamValidator extends DplaMapFields {
                 params.getOrElse("api_key", "")
               )
             case _ => //noop
-          }
-
-          replyTo ! response
-          Behaviors.same
-
-        case ValidateEmail(email, replyTo) =>
-          val response = getValidEmail(email)
-
-          // Log warning for invalid params.
-          response match {
-            case InvalidParams(msg) =>
-              context.log.warn(msg)
-
-            case _ => // noop
           }
 
           replyTo ! response
@@ -262,16 +232,6 @@ object ParamValidator extends DplaMapFields {
       }
     }
   }
-
-  /**
-   * Validates email format using the Apache Commons validator.
-   * Limits length to 100 characters to be in compliance with database.
-   */
-  private def getValidEmail(email: String): ValidationResponse =
-    if (EmailValidator.getInstance.isValid(email) && email.length <= 100)
-      ValidEmail(email)
-    else
-      InvalidParams(s"$email is not a valid email address.")
 
   /**
    * Method returns Failure if ID is invalid.
