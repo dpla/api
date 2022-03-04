@@ -1,12 +1,11 @@
 package dpla.ebookapi
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.ebookapi.v1.PostgresClient
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
+import dpla.ebookapi.v1.apiKey.{ApiKeyRegistry, ApiKeyRegistryCommand}
+import dpla.ebookapi.v1.ebooks.{EbookRegistry, EbookRegistryCommand}
 
 import scala.util.{Failure, Success}
 
@@ -41,31 +40,14 @@ object RunApp {
 
       // Spawn top-level actors.
 
-      val elasticSearchClient =
-        context.spawn(
-          ElasticSearchClient(),
-          "ElasticSearchClient"
-        )
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        context.spawn(EbookRegistry(), "EbookRegistry")
 
-      val postgresClient =
-        context.spawn(PostgresClient(), "PostgresClient")
-
-      val ebookRegistry =
-        context.spawn(
-          EbookRegistry(elasticSearchClient, postgresClient),
-          "EbookRegistry"
-        )
-
-      val apiKeyRegistry =
-        context.spawn(
-          ApiKeyRegistry(),
-          "ApiKeyRegistry"
-        )
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        context.spawn(ApiKeyRegistry(), "ApiKeyRegistry")
 
       context.watch(ebookRegistry)
       context.watch(apiKeyRegistry)
-      context.watch(elasticSearchClient)
-      context.watch(postgresClient)
 
       // Start the HTTP server.
       val routes = new Routes(ebookRegistry, apiKeyRegistry)(context.system)

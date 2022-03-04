@@ -7,10 +7,10 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEsClientSuccess, MockPostgresClientSuccess}
+import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEbookRegistry, MockEsClientSuccess, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.ebooks.EbookRegistry
+import dpla.ebookapi.v1.ebooks.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -28,11 +28,15 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
     testKit.spawn(MockPostgresClientSuccess())
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
-  val ebookRegistry: ActorRef[EbookRegistry.EbookRegistryCommand] =
-    testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+
+  val mockEbookRegistry = new MockEbookRegistry(testKit)
+  mockEbookRegistry.setAuthenticationClient(postgresClient)
+  mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+    mockEbookRegistry.getRef
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-  mockApiKeyRegistry.setPostgresClient(postgresClient)
+  mockApiKeyRegistry.setAuthenticationClient(postgresClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef
 

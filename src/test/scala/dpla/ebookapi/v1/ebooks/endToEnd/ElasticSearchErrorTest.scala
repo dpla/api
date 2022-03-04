@@ -10,8 +10,7 @@ import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.ebooks.EbookRegistry
-import dpla.ebookapi.v1.ebooks.EbookRegistry.EbookRegistryCommand
+import dpla.ebookapi.v1.ebooks.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -25,11 +24,12 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
+
   val postgresClient: ActorRef[PostgresClientCommand] =
     testKit.spawn(MockPostgresClientSuccess())
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-  mockApiKeyRegistry.setPostgresClient(postgresClient)
+  mockApiKeyRegistry.setAuthenticationClient(postgresClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef
 
@@ -39,8 +39,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch entity cannot be parsed" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientParseError())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -54,8 +59,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch returns server error" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientServerError())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -69,8 +79,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if call to ElasticSearch fails" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientUnreachable())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -84,8 +99,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch response cannot be mapped" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientUnmappable())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -102,8 +122,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch entity cannot be parsed" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientParseError())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -117,8 +142,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Not Found if ebook not found" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientNotFound())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -132,8 +162,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch returns server error" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientServerError())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -148,8 +183,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if call to ElasticSearch fails" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientUnreachable())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -164,8 +204,13 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch response cannot be mapped" in {
       val elasticSearchClient: ActorRef[EsClientCommand] =
         testKit.spawn(MockEsClientUnmappable())
+
+      val mockEbookRegistry = new MockEbookRegistry(testKit)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+      mockEbookRegistry.setAuthenticationClient(postgresClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+        mockEbookRegistry.getRef
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 

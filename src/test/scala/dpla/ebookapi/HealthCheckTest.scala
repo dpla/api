@@ -7,13 +7,10 @@ import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEsClientSuccess, MockPostgresClientSuccess}
-import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
+import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEbookRegistry}
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
-import dpla.ebookapi.v1.ebooks.EbookRegistry
-import dpla.ebookapi.v1.ebooks.EbookRegistry.EbookRegistryCommand
+import dpla.ebookapi.v1.ebooks.EbookRegistryCommand
+
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
@@ -23,15 +20,12 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
-  val postgresClient: ActorRef[PostgresClientCommand] =
-    testKit.spawn(MockPostgresClientSuccess())
-  val elasticSearchClient: ActorRef[EsClientCommand] =
-    testKit.spawn(MockEsClientSuccess())
+
+  val mockEbookRegistry = new MockEbookRegistry(testKit)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
-    testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
+    mockEbookRegistry.getRef
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-  mockApiKeyRegistry.setPostgresClient(postgresClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef
 

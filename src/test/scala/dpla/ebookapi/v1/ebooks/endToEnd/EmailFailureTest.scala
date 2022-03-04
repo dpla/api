@@ -6,12 +6,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEmailClientFailure, MockEsClientSuccess, MockPostgresClientSuccess}
+import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEbookRegistry, MockEmailClientFailure, MockEsClientSuccess, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.EmailClient.EmailClientCommand
 import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.ebooks.EbookRegistry.EbookRegistryCommand
-import dpla.ebookapi.v1.ebooks.EbookRegistry
+import dpla.ebookapi.v1.ebooks.{EbookRegistry, EbookRegistryCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -31,13 +30,15 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     testKit.spawn(MockPostgresClientSuccess())
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
-  val ebookRegistry: ActorRef[EbookRegistryCommand] =
-    testKit.spawn(EbookRegistry(elasticSearchClient, postgresClient))
   val emailClient: ActorRef[EmailClientCommand] =
     testKit.spawn(MockEmailClientFailure())
 
+  val mockEbookRegistry = new MockEbookRegistry(testKit)
+  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+    mockEbookRegistry.getRef
+
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-  mockApiKeyRegistry.setPostgresClient(postgresClient)
+  mockApiKeyRegistry.setAuthenticationClient(postgresClient)
   mockApiKeyRegistry.setEmailClient(emailClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef

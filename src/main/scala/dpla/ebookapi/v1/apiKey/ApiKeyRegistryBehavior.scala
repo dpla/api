@@ -6,7 +6,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dpla.ebookapi.v1.EmailClient.{EmailClientCommand, SendEmail}
 import dpla.ebookapi.v1.ParamValidator.{ValidateEmail, ValidationCommand}
 import dpla.ebookapi.v1.PostgresClient.{CreateAccount, PostgresClientCommand}
-import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound, AccountNotFound, EmailFailure, EmailSuccess, InternalFailure, InvalidParams, PostgresError, RegistryResponse, ValidEmail, ValidationFailure}
+import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound, EmailFailure, EmailSuccess, InternalFailure, InvalidParams, PostgresError, RegistryResponse, ValidEmail, ValidationFailure}
 
 
 final case class NewApiKey(
@@ -33,7 +33,7 @@ trait ApiKeyRegistryBehavior {
   def spawnParamValidator(context: ActorContext[ApiKeyRegistryCommand]):
     ActorRef[ValidationCommand]
 
-  def spawnPostgresClient(context: ActorContext[ApiKeyRegistryCommand]):
+  def spawnAuthenticationClient(context: ActorContext[ApiKeyRegistryCommand]):
     ActorRef[PostgresClientCommand]
 
   def spawnEmailClient(context: ActorContext[ApiKeyRegistryCommand]):
@@ -47,8 +47,8 @@ trait ApiKeyRegistryBehavior {
       val paramValidator: ActorRef[ValidationCommand] =
         spawnParamValidator(context)
 
-      val postgresClient: ActorRef[PostgresClientCommand] =
-        spawnPostgresClient(context)
+      val authenticationClient: ActorRef[PostgresClientCommand] =
+        spawnAuthenticationClient(context)
 
       val emailClient: ActorRef[EmailClientCommand] =
         spawnEmailClient(context)
@@ -58,7 +58,7 @@ trait ApiKeyRegistryBehavior {
         case CreateApiKey(email, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processCreateApiKey(email, replyTo, paramValidator, postgresClient, emailClient)
+            processCreateApiKey(email, replyTo, paramValidator, authenticationClient, emailClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -74,7 +74,7 @@ trait ApiKeyRegistryBehavior {
                            email: String,
                            replyTo: ActorRef[RegistryResponse],
                            paramValidator: ActorRef[ValidationCommand],
-                           postgresClient: ActorRef[PostgresClientCommand],
+                           authentiationClient: ActorRef[PostgresClientCommand],
                            emailClient: ActorRef[EmailClientCommand]
                          ): Behavior[NotUsed] = {
 
@@ -95,7 +95,7 @@ trait ApiKeyRegistryBehavior {
          * If email address is invalid, send an error message back to Routes.
          */
         case ValidEmail(email) =>
-          postgresClient ! CreateAccount(email, context.self)
+          authentiationClient ! CreateAccount(email, context.self)
           Behaviors.same
 
         case InvalidParams(message) =>

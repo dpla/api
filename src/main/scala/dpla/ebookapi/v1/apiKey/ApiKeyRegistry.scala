@@ -16,16 +16,16 @@ object ApiKeyRegistry extends ApiKeyRegistryBehavior {
   override def spawnParamValidator(
                                     context: ActorContext[ApiKeyRegistryCommand]
                                   ): ActorRef[ValidationCommand] =
-    context.spawn(ParamValidator(), "ParamValidatorForApiKeyRegistry")
+    context.spawn(ParamValidator(), "ParamValidatorForApiKeys")
 
 
-  override def spawnPostgresClient(
+  override def spawnAuthenticationClient(
                                     context: ActorContext[ApiKeyRegistryCommand]
                                   ): ActorRef[PostgresClientCommand] =
-    context.spawn(PostgresClient(), "PostgresClientForApiKeyRegistry")
+    context.spawn(PostgresClient(), "AuthenticationClientForApiKeys")
 
   override def spawnEmailClient(
                                  context: ActorContext[ApiKeyRegistryCommand]
                                ): ActorRef[EmailClientCommand] =
-    context.spawn(EmailClient(), "EmailClientForApiKeyRegistry")
+    context.spawn(EmailClient(), "EmailClientForApiKeys")
 }

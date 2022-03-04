@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.EbookRegistry.{EbookRegistryCommand, Fetch, Search}
+import dpla.ebookapi.v1.ebooks.{EbookRegistryCommand, FetchEbook, SearchEbooks}
 import dpla.ebookapi.v1.ebooks.{FetchResult, SearchResult}
 
 import scala.concurrent.Future
@@ -40,7 +40,7 @@ class Routes(
                     host: String,
                     path: String
                   ): Future[RegistryResponse] =
-    ebookRegistry.ask(Search(params, host, path, _))
+    ebookRegistry.ask(SearchEbooks(params, host, path, _))
 
   def fetchEbooks(
                    id: String,
@@ -48,7 +48,7 @@ class Routes(
                    host: String,
                    path: String
                  ): Future[RegistryResponse] =
-    ebookRegistry.ask(Fetch(id, params, host, path, _))
+    ebookRegistry.ask(FetchEbook(id, params, host, path, _))
 
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))

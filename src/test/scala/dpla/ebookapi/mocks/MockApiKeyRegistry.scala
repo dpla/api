@@ -12,14 +12,14 @@ import dpla.ebookapi.v1.apiKey.{ApiKeyRegistryBehavior, ApiKeyRegistryCommand}
 class MockApiKeyRegistry(testKit: ActorTestKit) {
 
   private var paramValidator: Option[ActorRef[ValidationCommand]] = None
-  private var postgresClient: Option[ActorRef[PostgresClientCommand]] = None
+  private var authenticationClient: Option[ActorRef[PostgresClientCommand]] = None
   private var emailClient: Option[ActorRef[EmailClientCommand]] = None
 
   def setParmaValidator(ref: ActorRef[ValidationCommand]): Unit =
     paramValidator = Some(ref)
 
-  def setPostgresClient(ref: ActorRef[PostgresClientCommand]): Unit =
-    postgresClient = Some(ref)
+  def setAuthenticationClient(ref: ActorRef[PostgresClientCommand]): Unit =
+    authenticationClient = Some(ref)
 
   def setEmailClient(ref: ActorRef[EmailClientCommand]): Unit =
     emailClient = Some(ref)
@@ -30,10 +30,10 @@ class MockApiKeyRegistry(testKit: ActorTestKit) {
                                     ): ActorRef[ValidationCommand] =
       paramValidator.getOrElse(context.spawnAnonymous(ParamValidator()))
 
-    override def spawnPostgresClient(
+    override def spawnAuthenticationClient(
                                       context: ActorContext[ApiKeyRegistryCommand]
                                     ): ActorRef[PostgresClientCommand] =
-      postgresClient.getOrElse(context.spawnAnonymous(PostgresClient()))
+      authenticationClient.getOrElse(context.spawnAnonymous(PostgresClient()))
 
     override def spawnEmailClient(
                                    context: ActorContext[ApiKeyRegistryCommand]
