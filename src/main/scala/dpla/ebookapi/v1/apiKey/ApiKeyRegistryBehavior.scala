@@ -4,11 +4,18 @@ import akka.NotUsed
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dpla.ebookapi.v1.EmailClient.{EmailClientCommand, SendEmail}
-import dpla.ebookapi.v1.PostgresClient.{CreateAccount, PostgresClientCommand}
-import dpla.ebookapi.v1.apiKey.ApiKeyParamValidator.{ApiKeyValidationCommand, ValidateEmail}
-import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound, EmailFailure, EmailSuccess, InternalFailure, InvalidParams, PostgresError, RegistryResponse, ValidationFailure}
+import dpla.ebookapi.v1.authentication.{Account, AccountCreated, AuthenticatorCommand, AuthenticatorFailure, CreateAccount, ExistingAccount, InvalidAuthParam, InvalidEmail}
+import dpla.ebookapi.v1.{EmailFailure, EmailSuccess, InternalFailure, RegistryResponse, ValidationFailure}
 
+// Command protocol
+sealed trait ApiKeyRegistryCommand
 
+final case class CreateApiKey(
+                               email: String,
+                               replyTo: ActorRef[RegistryResponse]
+                             ) extends ApiKeyRegistryCommand
+
+// Response protocol
 final case class NewApiKey(
                             email: String
                           ) extends RegistryResponse
@@ -21,20 +28,12 @@ final case class DisabledApiKey(
                                  email: String
                                ) extends RegistryResponse
 
-sealed trait ApiKeyRegistryCommand
-
-final case class CreateApiKey(
-                               email: String,
-                               replyTo: ActorRef[RegistryResponse]
-                             ) extends ApiKeyRegistryCommand
 
 trait ApiKeyRegistryBehavior {
 
-  def spawnParamValidator(context: ActorContext[ApiKeyRegistryCommand]):
-    ActorRef[ApiKeyValidationCommand]
-
-  def spawnAuthenticationClient(context: ActorContext[ApiKeyRegistryCommand]):
-    ActorRef[PostgresClientCommand]
+  // Abstract methods
+  def spawnAuthenticator(context: ActorContext[ApiKeyRegistryCommand]):
+    ActorRef[AuthenticatorCommand]
 
   def spawnEmailClient(context: ActorContext[ApiKeyRegistryCommand]):
     ActorRef[EmailClientCommand]
@@ -44,11 +43,8 @@ trait ApiKeyRegistryBehavior {
     Behaviors.setup[ApiKeyRegistryCommand] { context =>
 
       // Spawn children.
-      val paramValidator: ActorRef[ApiKeyValidationCommand] =
-        spawnParamValidator(context)
-
-      val authenticationClient: ActorRef[PostgresClientCommand] =
-        spawnAuthenticationClient(context)
+      val authenticator: ActorRef[AuthenticatorCommand] =
+        spawnAuthenticator(context)
 
       val emailClient: ActorRef[EmailClientCommand] =
         spawnEmailClient(context)
@@ -58,7 +54,7 @@ trait ApiKeyRegistryBehavior {
         case CreateApiKey(email, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processCreateApiKey(email, replyTo, paramValidator, authenticationClient, emailClient)
+            processCreateApiKey(email, replyTo, authenticator, emailClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -73,8 +69,7 @@ trait ApiKeyRegistryBehavior {
   def processCreateApiKey(
                            email: String,
                            replyTo: ActorRef[RegistryResponse],
-                           paramValidator: ActorRef[ApiKeyValidationCommand],
-                           authentiationClient: ActorRef[PostgresClientCommand],
+                           authenticator: ActorRef[AuthenticatorCommand],
                            emailClient: ActorRef[EmailClientCommand]
                          ): Behavior[NotUsed] = {
 
@@ -83,31 +78,22 @@ trait ApiKeyRegistryBehavior {
       var userAccount: Option[Account] = None
       var accountAlreadyExists: Boolean = false
 
-      // Send initial message to ParamValidator.
-      paramValidator ! ValidateEmail(email, context.self)
+      // Send initial message to Authenticator.
+      authenticator ! CreateAccount(email, context.self)
 
       Behaviors.receiveMessage {
 
         /**
-         * Possible responses from ParamValidator.
-         * If email address is valid, send a message to PostgresClient to
-         * create new account.
-         * If email address is invalid, send an error message back to Routes.
-         */
-        case ValidEmail(email) =>
-          authentiationClient ! CreateAccount(email, context.self)
-          Behaviors.same
-
-        case InvalidParams(message) =>
-          replyTo ! ValidationFailure(message)
-          Behaviors.stopped
-
-        /**
-         * Possible responses from PostgresClient.
+         * Possible responses from Authenticator.
          * Either send an email request to EmailClient
          * or an error back to Routes.
          */
-        case AccountFound(account) =>
+
+        case InvalidEmail =>
+          replyTo ! ValidationFailure("Invalid email address")
+          Behaviors.stopped
+
+        case ExistingAccount(account) =>
           if (account.enabled.getOrElse(true)) {
             userAccount = Some(account)
             accountAlreadyExists = true
@@ -134,7 +120,7 @@ trait ApiKeyRegistryBehavior {
           )
           Behaviors.same
 
-        case PostgresError =>
+        case AuthenticatorFailure =>
           replyTo ! InternalFailure
           Behaviors.stopped
 

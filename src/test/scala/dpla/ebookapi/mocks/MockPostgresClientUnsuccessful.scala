@@ -2,24 +2,21 @@ package dpla.ebookapi.mocks
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.PostgresClient._
-import dpla.ebookapi.v1.{AccountNotFound, PostgresError}
+import dpla.ebookapi.v1.authentication.PostgresClient._
+import dpla.ebookapi.v1.authentication
+import dpla.ebookapi.v1.authentication.UserNotFound
 
 object MockPostgresClientUnsuccessful {
 
   def apply(): Behavior[PostgresClientCommand] = {
     Behaviors.receiveMessage[PostgresClientCommand] {
 
-      case FindAccountByKey(_, replyTo) =>
-        replyTo ! AccountNotFound
+      case FindUserByKey(_, replyTo) =>
+        replyTo ! UserNotFound
         Behaviors.same
 
-      case FindAccountByEmail(_, replyTo) =>
-        replyTo ! AccountNotFound
-        Behaviors.same
-
-      case CreateAccount(_, replyTo) =>
-        replyTo ! PostgresError
+      case CreateUser(_, replyTo) =>
+        replyTo ! authentication.PostgresError
         Behaviors.same
     }
   }

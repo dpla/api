@@ -2,12 +2,13 @@ package dpla.ebookapi.mocks
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.PostgresClient._
-import dpla.ebookapi.v1.{Account, AccountCreated, AccountFound}
+import dpla.ebookapi.v1.authentication.PostgresClient._
+import dpla.ebookapi.v1.authentication
+import dpla.ebookapi.v1.authentication.{UserCreated, UserFound}
 
 object MockPostgresClientSuccess {
 
-  private val account = Account(
+  private val account = authentication.Account(
     id = 1,
     key = "08e3918eeb8bf4469924f062072459a8",
     email = "x@example.org",
@@ -18,16 +19,12 @@ object MockPostgresClientSuccess {
   def apply(): Behavior[PostgresClientCommand] = {
     Behaviors.receiveMessage[PostgresClientCommand] {
 
-      case FindAccountByKey(_, replyTo) =>
-        replyTo ! AccountFound(account)
+      case FindUserByKey(_, replyTo) =>
+        replyTo ! UserFound(account)
         Behaviors.same
 
-      case FindAccountByEmail(_, replyTo) =>
-        replyTo ! AccountFound(account)
-        Behaviors.same
-
-      case CreateAccount(_, replyTo) =>
-        replyTo ! AccountCreated(account)
+      case CreateUser(_, replyTo) =>
+        replyTo ! UserCreated(account)
         Behaviors.same
     }
   }

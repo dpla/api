@@ -66,7 +66,7 @@ object ElasticSearchClient {
           val futureResp: Future[HttpResponse] =
             Http().singleRequest(HttpRequest(uri = fetchUri))
 
-          context.log.info(s"ElasticSearch fetch QUERY: {}", fetchUri)
+          context.log.info("ElasticSearch fetch QUERY: {}", fetchUri)
 
           // Send the response future be processed.
           // Tell ElasticSearchResponseProcessor to reply directly to

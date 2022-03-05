@@ -5,11 +5,12 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
-import dpla.ebookapi.v1.{Account, AccountFound, AccountNotFound, ForbiddenFailure, InternalFailure, InvalidParams, NotFoundFailure, PostgresError, RegistryResponse, ValidationFailure}
-import dpla.ebookapi.v1.PostgresClient.{FindAccountByKey, PostgresClientCommand}
+import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, InvalidParams, NotFoundFailure, RegistryResponse, ValidationFailure}
+import dpla.ebookapi.v1.authentication.PostgresClient.{FindUserByKey, PostgresClientCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.{MapFetchResponse, MapSearchResponse, MapperCommand}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.{EsClientCommand, GetEsFetchResult, GetEsSearchResult}
-import EbookParamValidator.{ValidateFetchParams, ValidateSearchParams, EbookValidationCommand}
+import EbookParamValidator.{EbookValidationCommand, ValidateFetchParams, ValidateSearchParams}
+import dpla.ebookapi.v1.authentication.{Account, UserFound, UserNotFound, PostgresError}
 
 
 final case class SearchResult(result: EbookList) extends RegistryResponse
@@ -118,6 +119,8 @@ trait EbookRegistryBehavior {
       var searchResult: Option[EbookList] = None
       var authorizedAccount: Option[Account] = None
 
+      var searchResultMessage: Option[RegistryResponse] = None
+
       // This behavior is invoked if either the API key has been authorized
       // or the mapping has been complete.
       def possibleSessionResolution(): Behavior[AnyRef] =
@@ -159,7 +162,7 @@ trait EbookRegistryBehavior {
             searchParams = Some(params)
             apiKey = Some(key)
             // Calls to Postgres and ElasticSearch can happen concurrently.
-            authenticationClient ! FindAccountByKey(key, context.self)
+            authenticationClient ! FindUserByKey(key, context.self)
             searchIndexClient ! GetEsSearchResult(params, context.self)
           }
           Behaviors.same
@@ -234,7 +237,7 @@ trait EbookRegistryBehavior {
          * Otherwise, send an error to Routes.
          */
 
-        case AccountFound(account) =>
+        case UserFound(account) =>
           if(account.enabled.getOrElse(true))
             if (authorizedAccount.isEmpty) {
               authorizedAccount = Some(account)
@@ -247,7 +250,7 @@ trait EbookRegistryBehavior {
             Behaviors.stopped
           }
 
-        case AccountNotFound =>
+        case UserNotFound =>
           replyTo ! ForbiddenFailure
           Behaviors.stopped
 
@@ -327,7 +330,7 @@ trait EbookRegistryBehavior {
         case ValidFetchParams(key: String, params: FetchParams) =>
           apiKey = Some(key)
           // Calls to Postgres and ElasticSearch can happen concurrently.
-          postgresClient ! FindAccountByKey(key, context.self)
+          postgresClient ! FindUserByKey(key, context.self)
           esClient ! GetEsFetchResult(params, context.self)
           Behaviors.same
 
@@ -395,7 +398,7 @@ trait EbookRegistryBehavior {
          * Otherwise, send an error to Routes.
          */
 
-        case AccountFound(account) =>
+        case UserFound(account) =>
           if (account.enabled.getOrElse(true))
             if (authorizedAccount.isEmpty) {
               authorizedAccount = Some(account)
@@ -408,7 +411,7 @@ trait EbookRegistryBehavior {
             Behaviors.stopped
           }
 
-        case AccountNotFound =>
+        case UserNotFound =>
           replyTo ! ForbiddenFailure
           Behaviors.stopped
 

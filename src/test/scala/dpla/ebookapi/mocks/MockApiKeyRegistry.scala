@@ -4,36 +4,28 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.EmailClient.EmailClientCommand
-import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.apiKey.ApiKeyParamValidator.ApiKeyValidationCommand
-import dpla.ebookapi.v1.{EmailClient, PostgresClient}
-import dpla.ebookapi.v1.apiKey.{ApiKeyParamValidator, ApiKeyRegistryBehavior, ApiKeyRegistryCommand}
+import dpla.ebookapi.v1.EmailClient
+import dpla.ebookapi.v1.apiKey.{ApiKeyRegistryBehavior, ApiKeyRegistryCommand}
+import dpla.ebookapi.v1.authentication.{Authenticator, AuthenticatorCommand}
+
 
 class MockApiKeyRegistry(testKit: ActorTestKit) {
 
-  private var paramValidator: Option[ActorRef[ApiKeyValidationCommand]] = None
-  private var authenticationClient: Option[ActorRef[PostgresClientCommand]] = None
+  private var authenticator: Option[ActorRef[AuthenticatorCommand]] = None
   private var emailClient: Option[ActorRef[EmailClientCommand]] = None
 
-  def setParmaValidator(ref: ActorRef[ApiKeyValidationCommand]): Unit =
-    paramValidator = Some(ref)
-
-  def setAuthenticationClient(ref: ActorRef[PostgresClientCommand]): Unit =
-    authenticationClient = Some(ref)
+  def setAuthenticator(ref: ActorRef[AuthenticatorCommand]): Unit =
+    authenticator = Some(ref)
 
   def setEmailClient(ref: ActorRef[EmailClientCommand]): Unit =
     emailClient = Some(ref)
 
   object Mock extends ApiKeyRegistryBehavior {
-    override def spawnParamValidator(
-                                      context: ActorContext[ApiKeyRegistryCommand]
-                                    ): ActorRef[ApiKeyValidationCommand] =
-      paramValidator.getOrElse(context.spawnAnonymous(ApiKeyParamValidator()))
 
-    override def spawnAuthenticationClient(
-                                      context: ActorContext[ApiKeyRegistryCommand]
-                                    ): ActorRef[PostgresClientCommand] =
-      authenticationClient.getOrElse(context.spawnAnonymous(PostgresClient()))
+    override def spawnAuthenticator(
+                                     context: ActorContext[ApiKeyRegistryCommand]
+                                   ): ActorRef[AuthenticatorCommand] =
+      authenticator.getOrElse(context.spawnAnonymous(Authenticator()))
 
     override def spawnEmailClient(
                                    context: ActorContext[ApiKeyRegistryCommand]

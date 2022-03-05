@@ -5,8 +5,9 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.ebooks.EbookParamValidator.EbookValidationCommand
-import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
-import dpla.ebookapi.v1.{AnalyticsClient, PostgresClient}
+import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.AnalyticsClient
+import dpla.ebookapi.v1.authentication.PostgresClient
 import dpla.ebookapi.v1.ebooks.EbookMapper.MapperCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import dpla.ebookapi.v1.ebooks.{EbookMapper, EbookParamValidator, EbookRegistryBehavior, EbookRegistryCommand, ElasticSearchClient}

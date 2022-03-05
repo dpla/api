@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
-import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand

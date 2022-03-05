@@ -39,7 +39,6 @@ object RunApp {
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
       // Spawn top-level actors.
-
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         context.spawn(EbookRegistry(), "EbookRegistry")
 

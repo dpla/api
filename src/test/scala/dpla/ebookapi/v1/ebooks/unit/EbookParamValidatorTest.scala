@@ -63,31 +63,6 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
     }
   }
 
-  "api key validator" should {
-    "handle empty param" in {
-      val params = Map[String, String]()
-      paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessage(InvalidApiKey)
-    }
-
-    "accept valid param" in {
-      paramValidator ! ValidateSearchParams(baseParams, probe.ref)
-      probe.expectMessageType[ValidSearchParams]
-    }
-
-    "handle param with invalid length" in {
-      val params = Map("api_key" -> "123")
-      paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessage(InvalidApiKey)
-    }
-
-    "handle param with special characters" in {
-      val params = Map("api_key" -> "08e3918eeb8bf446.924f062072459a8")
-      paramValidator ! ValidateSearchParams(params, probe.ref)
-      probe.expectMessage(InvalidApiKey)
-    }
-  }
-
   "creator validator" should {
     "handle empty param" in {
       val expected = None

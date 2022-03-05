@@ -6,10 +6,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEbookRegistry, MockEmailClientSuccess, MockEsClientSuccess, MockPostgresClientSuccess}
+import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockAuthenticator, MockEbookRegistry, MockEmailClientSuccess, MockEsClientSuccess, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.EmailClient.EmailClientCommand
-import dpla.ebookapi.v1.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
+import dpla.ebookapi.v1.authentication.AuthenticatorCommand
 import dpla.ebookapi.v1.ebooks.{EbookRegistryCommand, JsonFieldReader}
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
@@ -38,8 +39,12 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     mockEbookRegistry.getRef
 
+  val mockAuthenticator = new MockAuthenticator(testKit)
+  mockAuthenticator.setPostgresClient(postgresClient)
+  val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-  mockApiKeyRegistry.setAuthenticationClient(postgresClient)
+  mockApiKeyRegistry.setAuthenticator(authenticator)
   mockApiKeyRegistry.setEmailClient(emailClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef
