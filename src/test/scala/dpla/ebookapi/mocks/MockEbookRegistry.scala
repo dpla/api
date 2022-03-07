@@ -4,27 +4,26 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.AnalyticsClient.AnalyticsClientCommand
-import dpla.ebookapi.v1.ebooks.EbookParamValidator.EbookValidationCommand
-import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.ebooks.EbookParamValidator.EbookParamValidatorCommand
 import dpla.ebookapi.v1.AnalyticsClient
-import dpla.ebookapi.v1.authentication.PostgresClient
+import dpla.ebookapi.v1.authentication.{Authenticator, AuthenticatorCommand}
 import dpla.ebookapi.v1.ebooks.EbookMapper.MapperCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import dpla.ebookapi.v1.ebooks.{EbookMapper, EbookParamValidator, EbookRegistryBehavior, EbookRegistryCommand, ElasticSearchClient}
 
 class MockEbookRegistry(testKit: ActorTestKit) {
 
-  private var paramValidator: Option[ActorRef[EbookValidationCommand]] = None
-  private var authenticationClient: Option[ActorRef[PostgresClientCommand]] = None
+  private var authenticator: Option[ActorRef[AuthenticatorCommand]] = None
+  private var paramValidator: Option[ActorRef[EbookParamValidatorCommand]] = None
   private var searchIndexClient: Option[ActorRef[EsClientCommand]] = None
   private var ebookMapper: Option[ActorRef[MapperCommand]] = None
   private var analyticsClient: Option[ActorRef[AnalyticsClientCommand]] = None
 
-  def setParmaValidator(ref: ActorRef[EbookValidationCommand]): Unit =
-    paramValidator = Some(ref)
+  def setAuthenticator(ref: ActorRef[AuthenticatorCommand]): Unit =
+    authenticator = Some(ref)
 
-  def setAuthenticationClient(ref: ActorRef[PostgresClientCommand]): Unit =
-    authenticationClient = Some(ref)
+  def setParmaValidator(ref: ActorRef[EbookParamValidatorCommand]): Unit =
+    paramValidator = Some(ref)
 
   def setSearchIndexClient(ref: ActorRef[EsClientCommand]): Unit =
     searchIndexClient = Some(ref)
@@ -37,15 +36,15 @@ class MockEbookRegistry(testKit: ActorTestKit) {
 
   object Mock extends EbookRegistryBehavior {
 
+    override def spawnAuthenticator(
+                                     context: ActorContext[EbookRegistryCommand]
+                                   ): ActorRef[AuthenticatorCommand] =
+      authenticator.getOrElse(context.spawnAnonymous(Authenticator()))
+
     override def spawnParamValidator(
                                       context: ActorContext[EbookRegistryCommand]
-                                    ): ActorRef[EbookValidationCommand] =
+                                    ): ActorRef[EbookParamValidatorCommand] =
       paramValidator.getOrElse(context.spawnAnonymous(EbookParamValidator()))
-
-    override def spawnAuthenticationClient(
-                                            context: ActorContext[EbookRegistryCommand]
-                                          ): ActorRef[PostgresClientCommand] =
-      authenticationClient.getOrElse(context.spawnAnonymous(PostgresClient()))
 
     override def spawnSearchIndexClient(
                                          context: ActorContext[EbookRegistryCommand]
@@ -61,7 +60,6 @@ class MockEbookRegistry(testKit: ActorTestKit) {
                                        context: ActorContext[EbookRegistryCommand]
                                      ): ActorRef[AnalyticsClientCommand] =
       analyticsClient.getOrElse(context.spawnAnonymous(AnalyticsClient()))
-
   }
 
   def getRef: ActorRef[EbookRegistryCommand] = testKit.spawn(Mock())

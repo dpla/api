@@ -9,6 +9,7 @@ import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
+import dpla.ebookapi.v1.authentication.AuthenticatorCommand
 import dpla.ebookapi.v1.ebooks.EbookRegistryCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
 import org.scalatest.matchers.should.Matchers
@@ -23,6 +24,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
+
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
 
@@ -34,11 +36,18 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
 
   "/v1/ebooks route" should {
     "return Forbidden if API key not found" in {
+      lazy val testKit: ActorTestKit = ActorTestKit()
+
       val postgresClient: ActorRef[PostgresClientCommand] =
         testKit.spawn(MockPostgresClientUnsuccessful())
 
+      val mockAuthenticator = new MockAuthenticator(testKit)
+      mockAuthenticator.setPostgresClient(postgresClient)
+      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
       val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -56,8 +65,13 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val postgresClient: ActorRef[PostgresClientCommand] =
         testKit.spawn(MockPostgresClientDisabled())
 
+      val mockAuthenticator = new MockAuthenticator(testKit)
+      mockAuthenticator.setPostgresClient(postgresClient)
+      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
       val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -77,8 +91,13 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val postgresClient: ActorRef[PostgresClientCommand] =
         testKit.spawn(MockPostgresClientUnsuccessful())
 
+      val mockAuthenticator = new MockAuthenticator(testKit)
+      mockAuthenticator.setPostgresClient(postgresClient)
+      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
       val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -96,8 +115,13 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val postgresClient: ActorRef[PostgresClientCommand] =
         testKit.spawn(MockPostgresClientDisabled())
 
+      val mockAuthenticator = new MockAuthenticator(testKit)
+      mockAuthenticator.setPostgresClient(postgresClient)
+      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
       val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
+      mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 

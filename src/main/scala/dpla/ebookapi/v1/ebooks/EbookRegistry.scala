@@ -7,8 +7,8 @@ import dpla.ebookapi.v1.AnalyticsClient
 import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
 import dpla.ebookapi.v1.ebooks.EbookMapper.MapperCommand
 import dpla.ebookapi.v1.ebooks.ElasticSearchClient.EsClientCommand
-import EbookParamValidator.EbookValidationCommand
-import dpla.ebookapi.v1.authentication.PostgresClient
+import EbookParamValidator.EbookParamValidatorCommand
+import dpla.ebookapi.v1.authentication.{Authenticator, AuthenticatorCommand, PostgresClient}
 
 
 /**
@@ -17,15 +17,15 @@ import dpla.ebookapi.v1.authentication.PostgresClient
 
 object EbookRegistry extends EbookRegistryBehavior {
 
+  override def spawnAuthenticator(
+                                   context: ActorContext[EbookRegistryCommand]
+                                 ): ActorRef[AuthenticatorCommand] =
+    context.spawn(Authenticator(), "EbookAuthenticator")
+
   override def spawnParamValidator(
                                     context: ActorContext[EbookRegistryCommand]
-                                  ): ActorRef[EbookValidationCommand] =
+                                  ): ActorRef[EbookParamValidatorCommand] =
     context.spawn(EbookParamValidator(), "EbookParamValidator")
-
-  override def spawnAuthenticationClient(
-                                          context: ActorContext[EbookRegistryCommand]
-                                        ): ActorRef[PostgresClientCommand] =
-    context.spawn(PostgresClient(), "AuthenticationClientForEbooks")
 
   override def spawnSearchIndexClient(
                                        context: ActorContext[EbookRegistryCommand]

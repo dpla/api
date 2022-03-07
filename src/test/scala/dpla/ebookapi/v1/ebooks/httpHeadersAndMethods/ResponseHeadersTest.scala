@@ -31,15 +31,15 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit)
-  mockEbookRegistry.setAuthenticationClient(postgresClient)
-  mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-  val ebookRegistry: ActorRef[EbookRegistryCommand] =
-    mockEbookRegistry.getRef
-
   val mockAuthenticator = new MockAuthenticator(testKit)
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
+  val mockEbookRegistry = new MockEbookRegistry(testKit)
+  mockEbookRegistry.setAuthenticator(authenticator)
+  mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+    mockEbookRegistry.getRef
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
   mockApiKeyRegistry.setAuthenticator(authenticator)

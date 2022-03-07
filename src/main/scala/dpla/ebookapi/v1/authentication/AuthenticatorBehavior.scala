@@ -23,7 +23,7 @@ case class CreateAccount(
 // Response protocol
 sealed trait AuthenticatorResponse
 
-case object Authorized extends AuthenticatorResponse
+case class Authorized (account: Account) extends AuthenticatorResponse
 case object NotAuthorized extends AuthenticatorResponse
 
 case class AccountCreated(account: Account) extends AuthenticatorResponse
@@ -97,7 +97,7 @@ trait AuthenticatorBehavior {
 
         case UserFound(account) =>
           if (account.enabled.getOrElse(false)) {
-            replyTo ! Authorized
+            replyTo ! Authorized(account)
           } else {
             replyTo ! NotAuthorized
           }

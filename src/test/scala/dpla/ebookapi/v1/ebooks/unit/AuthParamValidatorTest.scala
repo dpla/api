@@ -5,9 +5,7 @@ import akka.actor.typed.ActorRef
 import dpla.ebookapi.mocks.MockPostgresClientSuccess
 import dpla.ebookapi.v1.authentication.{AuthParamValidator, AuthParamValidatorResponse, InvalidAuthParam, PostgresClientResponse, UserCreated, UserFound}
 import dpla.ebookapi.v1.authentication.AuthParamValidator.{AuthParamValidatorCommand, ValidateApiKey, ValidateEmail}
-import dpla.ebookapi.v1.authentication.PostgresClient.{FindUserByKey, PostgresClientCommand}
-import dpla.ebookapi.v1.ebooks.EbookParamValidator.ValidateSearchParams
-import dpla.ebookapi.v1.ebooks.{InvalidApiKey, ValidSearchParams}
+import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

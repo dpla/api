@@ -25,20 +25,22 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
+
   val postgresClient: ActorRef[PostgresClientCommand] =
     testKit.spawn(MockPostgresClientSuccess())
+
   val elasticSearchClient: ActorRef[EsClientCommand] =
     testKit.spawn(MockEsClientSuccess())
-
-  val mockEbookRegistry = new MockEbookRegistry(testKit)
-  mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-  mockEbookRegistry.setAuthenticationClient(postgresClient)
-  val ebookRegistry: ActorRef[EbookRegistryCommand] =
-    mockEbookRegistry.getRef
 
   val mockAuthenticator = new MockAuthenticator(testKit)
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+
+  val mockEbookRegistry = new MockEbookRegistry(testKit)
+  mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
+  mockEbookRegistry.setAuthenticator(authenticator)
+  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+    mockEbookRegistry.getRef
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
   mockApiKeyRegistry.setAuthenticator(authenticator)

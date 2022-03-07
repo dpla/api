@@ -36,19 +36,31 @@ class Routes(
 
   // Search and fetch requests are send to EbookRegistry actor for processing.
   def searchEbooks(
+                    auth: Option[String],
                     params: Map[String, String],
                     host: String,
                     path: String
-                  ): Future[RegistryResponse] =
-    ebookRegistry.ask(SearchEbooks(params, host, path, _))
+                  ): Future[RegistryResponse] = {
+    val apiKey: Option[String] =
+      if (auth.nonEmpty) auth
+      else params.get("api_key")
+    val updatedParams = params.filterNot(_._1 == "api_key")
+    ebookRegistry.ask(SearchEbooks(apiKey, updatedParams, host, path, _))
+  }
 
   def fetchEbooks(
+                   auth: Option[String],
                    id: String,
                    params: Map[String, String],
                    host: String,
                    path: String
-                 ): Future[RegistryResponse] =
-    ebookRegistry.ask(FetchEbook(id, params, host, path, _))
+                 ): Future[RegistryResponse] = {
+    val apiKey: Option[String] =
+      if (auth.nonEmpty) auth
+      else params.get("api_key")
+    val updatedParams = params.filterNot(_._1 == "api_key")
+    ebookRegistry.ask(FetchEbook(apiKey, id, updatedParams, host, path, _))
+  }
 
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
@@ -74,12 +86,8 @@ class Routes(
               parameterMap { params =>
                 // Get the API key from Authorization header if it exists.
                 optionalHeaderValueByName("Authorization") { auth =>
-                  val updatedParams = auth match {
-                    case Some(key) => params + ("api_key" -> key)
-                    case None => params
-                  }
                   respondWithHeaders(securityResponseHeaders) {
-                    onComplete(searchEbooks(updatedParams, host, path.toString)) {
+                    onComplete(searchEbooks(auth, params, host, path.toString)) {
                       case Success(response) =>
                         response match {
                           case SearchResult(ebookList) =>
@@ -117,12 +125,8 @@ class Routes(
               parameterMap { params =>
                 // Get the API key from Authorization header if it exists.
                 optionalHeaderValueByName("Authorization") { auth =>
-                  val updatedParams = auth match {
-                    case Some(key) => params + ("api_key" -> key)
-                    case None => params
-                  }
                   respondWithHeaders(securityResponseHeaders) {
-                    onComplete(fetchEbooks(id, updatedParams, host, path.toString)) {
+                    onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
                       case Success(response) =>
                         response match {
                           case FetchResult(singleEbook) =>

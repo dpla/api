@@ -47,7 +47,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -67,7 +67,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -87,7 +87,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -107,7 +107,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -130,7 +130,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -150,7 +150,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -170,7 +170,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -191,7 +191,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -212,7 +212,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setSearchIndexClient(elasticSearchClient)
-      mockEbookRegistry.setAuthenticationClient(postgresClient)
+      mockEbookRegistry.setAuthenticator(authenticator)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
