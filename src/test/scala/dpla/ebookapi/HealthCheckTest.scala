@@ -7,6 +7,8 @@ import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import dpla.ebookapi.v1.analytics.AnalyticsClient
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.MockAuthenticator
 import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
@@ -21,10 +23,13 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
+  val analyticsClient: ActorRef[AnalyticsClientCommand] =
+    testKit.spawn(AnalyticsClient())
+
   val mockAuthenticator = new MockAuthenticator(testKit)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     mockEbookRegistry.getRef
 

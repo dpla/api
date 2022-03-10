@@ -6,6 +6,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
+import dpla.ebookapi.v1.analytics.AnalyticsClient
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
@@ -25,6 +27,8 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
+  val analyticsClient: ActorRef[AnalyticsClientCommand] =
+    testKit.spawn(AnalyticsClient())
   val postgresClient = testKit.spawn(MockPostgresClientSuccess())
 
   val mockAuthenticator = new MockAuthenticator(testKit)
@@ -35,7 +39,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
   val ebookSearch: ActorRef[SearchCommand] =
     mockEbookSearch.getRef
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
   mockEbookRegistry.setEbookSearch(ebookSearch)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     mockEbookRegistry.getRef

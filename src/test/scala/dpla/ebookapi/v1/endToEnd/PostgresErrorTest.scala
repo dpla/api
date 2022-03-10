@@ -6,6 +6,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
+import dpla.ebookapi.v1.analytics.AnalyticsClient
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.email.EmailClient.EmailClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientError, MockPostgresClientExistingKey}
@@ -26,6 +28,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
+  val analyticsClient: ActorRef[AnalyticsClientCommand] =
+    testKit.spawn(AnalyticsClient())
   val mapper = testKit.spawn(EbookMapper())
   val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
 
@@ -45,7 +49,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
@@ -73,7 +77,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
@@ -101,7 +105,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
@@ -130,7 +134,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 

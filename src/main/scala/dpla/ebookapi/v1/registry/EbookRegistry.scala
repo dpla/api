@@ -2,8 +2,6 @@ package dpla.ebookapi.v1.registry
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
-import dpla.ebookapi.v1.analytics.AnalyticsClient
 import dpla.ebookapi.v1.search.EbookSearch
 import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 
@@ -17,9 +15,4 @@ object EbookRegistry extends EbookRegistryBehavior {
                                  context: ActorContext[EbookRegistryCommand]
                                ): ActorRef[SearchCommand] =
     context.spawn(EbookSearch(), "EbookSearch")
-
-  override def spawnAnalyticsClient(
-                                     context: ActorContext[EbookRegistryCommand]
-                                   ): ActorRef[AnalyticsClientCommand] =
-    context.spawn(AnalyticsClient(), "AnalyticsClientForEbooks")
 }

@@ -38,11 +38,9 @@ trait EbookRegistryBehavior {
   def spawnEbookSearch(context: ActorContext[EbookRegistryCommand]):
     ActorRef[SearchCommand]
 
-  def spawnAnalyticsClient(context: ActorContext[EbookRegistryCommand]):
-    ActorRef[AnalyticsClientCommand]
-
   def apply(
-             authenticator: ActorRef[AuthenticationCommand]
+             authenticator: ActorRef[AuthenticationCommand],
+             analyticsClient: ActorRef[AnalyticsClientCommand]
            ): Behavior[EbookRegistryCommand] = {
 
     Behaviors.setup[EbookRegistryCommand] { context =>
@@ -50,9 +48,6 @@ trait EbookRegistryBehavior {
       // Spawn children.
       val ebookSearch: ActorRef[SearchCommand] =
         spawnEbookSearch(context)
-
-      val analyticsClient: ActorRef[AnalyticsClientCommand] =
-        spawnAnalyticsClient(context)
 
       Behaviors.receiveMessage[EbookRegistryCommand] {
 

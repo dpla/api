@@ -4,6 +4,8 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import dpla.ebookapi.v1.analytics.AnalyticsClient
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.Authenticator
 import dpla.ebookapi.v1.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, EbookRegistryCommand}
@@ -43,8 +45,13 @@ object RunApp {
       val authenticator: ActorRef[AuthenticationCommand] =
         context.spawn(Authenticator(), "Authenticator")
 
+      val analyticsClient: ActorRef[AnalyticsClientCommand] =
+        context.spawn(AnalyticsClient(), "AnalyticsClient")
+
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        context.spawn(EbookRegistry(authenticator), "EbookRegistry")
+        context.spawn(
+          EbookRegistry(authenticator, analyticsClient), "EbookRegistry"
+        )
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         context.spawn(ApiKeyRegistry(authenticator), "ApiKeyRegistry")

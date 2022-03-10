@@ -11,17 +11,14 @@ import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 
 class MockEbookRegistry(
                          testKit: ActorTestKit,
-                         authenticator: ActorRef[AuthenticationCommand]
+                         authenticator: ActorRef[AuthenticationCommand],
+                         analyticsClient: ActorRef[AnalyticsClientCommand]
                        ) {
 
   private var ebookSearch: Option[ActorRef[SearchCommand]] = None
-  private var analyticsClient: Option[ActorRef[AnalyticsClientCommand]] = None
 
   def setEbookSearch(ref: ActorRef[SearchCommand]): Unit =
     ebookSearch = Some(ref)
-
-  def setAnalyticsClient(ref: ActorRef[AnalyticsClientCommand]): Unit =
-    analyticsClient = Some(ref)
 
   object Mock extends EbookRegistryBehavior {
 
@@ -29,13 +26,8 @@ class MockEbookRegistry(
                                    context: ActorContext[EbookRegistryCommand]
                                  ): ActorRef[SearchCommand] =
       ebookSearch.getOrElse(context.spawnAnonymous(EbookSearch()))
-
-    override def spawnAnalyticsClient(
-                                       context: ActorContext[EbookRegistryCommand]
-                                     ): ActorRef[AnalyticsClientCommand] =
-      analyticsClient.getOrElse(context.spawnAnonymous(AnalyticsClient()))
   }
 
   def getRef: ActorRef[EbookRegistryCommand] =
-    testKit.spawn(Mock(authenticator))
+    testKit.spawn(Mock(authenticator, analyticsClient))
 }

@@ -6,6 +6,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
+import dpla.ebookapi.v1.analytics.AnalyticsClient
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
@@ -24,6 +26,9 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers
     testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
+
+  val analyticsClient: ActorRef[AnalyticsClientCommand] =
+    testKit.spawn(AnalyticsClient())
   val postgresClient = testKit.spawn(MockPostgresClientSuccess())
   val mapper = testKit.spawn(EbookMapper())
   val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
@@ -38,7 +43,7 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
   mockEbookRegistry.setEbookSearch(ebookSearch)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     mockEbookRegistry.getRef
