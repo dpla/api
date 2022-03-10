@@ -35,9 +35,8 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockEbookSearch = new MockEbookSearch(testKit)
   val ebookSearch: ActorRef[SearchCommand] =
-    mockEbookSearch.getRef
+    MockEbookSearch(testKit)
 
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))

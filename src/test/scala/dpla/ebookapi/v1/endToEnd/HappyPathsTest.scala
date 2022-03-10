@@ -40,11 +40,8 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockEbookSearch = new MockEbookSearch(testKit)
-  mockEbookSearch.setElasticSearchClient(elasticSearchClient)
-  mockEbookSearch.setEbookMapper(mapper)
   val ebookSearch: ActorRef[SearchCommand] =
-    mockEbookSearch.getRef
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
 
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))

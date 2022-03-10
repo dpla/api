@@ -12,6 +12,7 @@ import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 import dpla.ebookapi.v1.search.{MockEbookSearch, MockEsClientFailure, MockEsClientNotFound}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -44,9 +45,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch entity cannot be parsed" in {
       val elasticSearchClient = testKit.spawn(MockEsClientFailure())
 
-      val mockEbookSearch = new MockEbookSearch(testKit)
-      mockEbookSearch.setElasticSearchClient(elasticSearchClient)
-      val ebookSearch = mockEbookSearch.getRef
+      val ebookSearch: ActorRef[SearchCommand] =
+        MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -64,9 +64,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if call to ElasticSearch fails" in {
       val elasticSearchClient = testKit.spawn(MockEsClientFailure())
 
-      val mockEbookSearch = new MockEbookSearch(testKit)
-      mockEbookSearch.setElasticSearchClient(elasticSearchClient)
-      val ebookSearch = mockEbookSearch.getRef
+      val ebookSearch: ActorRef[SearchCommand] =
+        MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -87,9 +86,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Not Found if ebook not found" in {
       val elasticSearchClient = testKit.spawn(MockEsClientNotFound())
 
-      val mockEbookSearch = new MockEbookSearch(testKit)
-      mockEbookSearch.setElasticSearchClient(elasticSearchClient)
-      val ebookSearch = mockEbookSearch.getRef
+      val ebookSearch: ActorRef[SearchCommand] =
+        MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -107,9 +105,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     "return Teapot if call to ElasticSearch fails" in {
       val elasticSearchClient = testKit.spawn(MockEsClientFailure())
 
-      val mockEbookSearch = new MockEbookSearch(testKit)
-      mockEbookSearch.setElasticSearchClient(elasticSearchClient)
-      val ebookSearch = mockEbookSearch.getRef
+      val ebookSearch: ActorRef[SearchCommand] =
+        MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))

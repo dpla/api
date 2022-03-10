@@ -33,11 +33,8 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
   val mapper = testKit.spawn(EbookMapper())
   val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
 
-  val mockEbookSearch = new MockEbookSearch(testKit)
-  mockEbookSearch.setElasticSearchClient(elasticSearchClient)
-  mockEbookSearch.setEbookMapper(mapper)
   val ebookSearch: ActorRef[SearchCommand] =
-    mockEbookSearch.getRef
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
 
   val mockAuthenticator = new MockAuthenticator(testKit)
   mockAuthenticator.setPostgresClient(postgresClient)

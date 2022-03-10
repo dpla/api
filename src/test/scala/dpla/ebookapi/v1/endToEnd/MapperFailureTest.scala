@@ -12,6 +12,7 @@ import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 import dpla.ebookapi.v1.search.{MockEbookSearch, MockMapperFailure}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -44,9 +45,8 @@ class MapperFailureTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch response cannot be mapped" in {
       val mapper = testKit.spawn(MockMapperFailure())
 
-      val mockEbookSearch = new MockEbookSearch(testKit)
-      mockEbookSearch.setEbookMapper(mapper)
-      val ebookSearch = mockEbookSearch.getRef
+      val ebookSearch: ActorRef[SearchCommand] =
+        MockEbookSearch(testKit, None, Some(mapper))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -68,9 +68,8 @@ class MapperFailureTest extends AnyWordSpec with Matchers
     "return Teapot if ElasticSearch response cannot be mapped" in {
       val mapper = testKit.spawn(MockMapperFailure())
 
-      val mockEbookSearch = new MockEbookSearch(testKit)
-      mockEbookSearch.setEbookMapper(mapper)
-      val ebookSearch = mockEbookSearch.getRef
+      val ebookSearch: ActorRef[SearchCommand] =
+        MockEbookSearch(testKit, None, Some(mapper))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
