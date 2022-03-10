@@ -4,8 +4,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.analytics.AnalyticsClient
-import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
-import dpla.ebookapi.v1.authentication.Authenticator
 import dpla.ebookapi.v1.search.EbookSearch
 import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 
@@ -14,11 +12,6 @@ import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
  */
 
 object EbookRegistry extends EbookRegistryBehavior {
-
-  override def spawnAuthenticator(
-                                   context: ActorContext[EbookRegistryCommand]
-                                 ): ActorRef[AuthenticationCommand] =
-    context.spawn(Authenticator(), "EbookAuthenticator")
 
   override def spawnEbookSearch(
                                  context: ActorContext[EbookRegistryCommand]

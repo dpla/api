@@ -45,13 +45,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
-      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         mockApiKeyRegistry.getRef
 
@@ -74,13 +73,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
 
-      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         mockApiKeyRegistry.getRef
 
@@ -99,16 +97,15 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     "return Teapot if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        mockEbookRegistry.getRef
-
       val mockAuthenticator = new MockAuthenticator(testKit)
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-      mockApiKeyRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        mockEbookRegistry.getRef
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         mockApiKeyRegistry.getRef
 
@@ -129,16 +126,15 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val emailClient: ActorRef[EmailClientCommand] =
         testKit.spawn(MockEmailClientSuccess())
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        mockEbookRegistry.getRef
-
       val mockAuthenticator = new MockAuthenticator(testKit)
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-      mockApiKeyRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        mockEbookRegistry.getRef
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
       mockApiKeyRegistry.setEmailClient(emailClient)
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         mockApiKeyRegistry.getRef

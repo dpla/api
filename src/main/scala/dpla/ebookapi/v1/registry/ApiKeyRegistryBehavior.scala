@@ -34,20 +34,16 @@ final case class DisabledApiKey(
 trait ApiKeyRegistryBehavior {
 
   // Abstract methods
-  def spawnAuthenticator(context: ActorContext[ApiKeyRegistryCommand]):
-    ActorRef[AuthenticationCommand]
-
   def spawnEmailClient(context: ActorContext[ApiKeyRegistryCommand]):
     ActorRef[EmailClientCommand]
 
-  def apply(): Behavior[ApiKeyRegistryCommand] = {
+  def apply(
+             authenticator: ActorRef[AuthenticationCommand]
+           ): Behavior[ApiKeyRegistryCommand] = {
 
     Behaviors.setup[ApiKeyRegistryCommand] { context =>
 
       // Spawn children.
-      val authenticator: ActorRef[AuthenticationCommand] =
-        spawnAuthenticator(context)
-
       val emailClient: ActorRef[EmailClientCommand] =
         spawnEmailClient(context)
 

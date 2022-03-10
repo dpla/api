@@ -35,24 +35,19 @@ final case class FetchEbook(
 
 trait EbookRegistryBehavior {
 
-  def spawnAuthenticator(context: ActorContext[EbookRegistryCommand]):
-    ActorRef[AuthenticationCommand]
-
   def spawnEbookSearch(context: ActorContext[EbookRegistryCommand]):
     ActorRef[SearchCommand]
 
   def spawnAnalyticsClient(context: ActorContext[EbookRegistryCommand]):
     ActorRef[AnalyticsClientCommand]
 
-  def apply(): Behavior[EbookRegistryCommand] = {
+  def apply(
+             authenticator: ActorRef[AuthenticationCommand]
+           ): Behavior[EbookRegistryCommand] = {
 
     Behaviors.setup[EbookRegistryCommand] { context =>
 
       // Spawn children.
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        spawnAuthenticator(context)
-
       val ebookSearch: ActorRef[SearchCommand] =
         spawnEbookSearch(context)
 

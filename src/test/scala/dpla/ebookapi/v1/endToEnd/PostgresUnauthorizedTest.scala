@@ -32,10 +32,6 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
   mockEbookSearch.setEbookMapper(mapper)
   val ebookSearch: ActorRef[SearchCommand] = mockEbookSearch.getRef
 
-  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
-  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    mockApiKeyRegistry.getRef
-
   val apiKey = "08e3918eeb8bf4469924f062072459a8"
 
   "/v1/ebooks route" should {
@@ -48,11 +44,14 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        mockApiKeyRegistry.getRef
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
@@ -71,11 +70,14 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        mockApiKeyRegistry.getRef
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
@@ -96,11 +98,14 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        mockApiKeyRegistry.getRef
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
@@ -119,11 +124,14 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       mockAuthenticator.setPostgresClient(postgresClient)
       val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit)
-      mockEbookRegistry.setAuthenticator(authenticator)
+      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
       mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         mockEbookRegistry.getRef
+
+      val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        mockApiKeyRegistry.getRef
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes

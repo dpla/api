@@ -39,13 +39,12 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit)
-  mockEbookRegistry.setAuthenticator(authenticator)
+  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator)
   mockEbookRegistry.setEbookSearch(ebookSearch)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     mockEbookRegistry.getRef
 
-  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
+  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     mockApiKeyRegistry.getRef
 
