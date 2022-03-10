@@ -35,9 +35,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
   mockAuthenticator.setPostgresClient(postgresClient)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    mockApiKeyRegistry.getRef
+    MockApiKeyRegistry(testKit, authenticator)
 
   val apiKey = "08e3918eeb8bf4469924f062072459a8"
 
@@ -49,10 +48,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       mockEbookSearch.setElasticSearchClient(elasticSearchClient)
       val ebookSearch = mockEbookSearch.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
-      mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        mockEbookRegistry.getRef
+        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
@@ -71,10 +68,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       mockEbookSearch.setElasticSearchClient(elasticSearchClient)
       val ebookSearch = mockEbookSearch.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
-      mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        mockEbookRegistry.getRef
+        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
@@ -96,10 +91,9 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       mockEbookSearch.setElasticSearchClient(elasticSearchClient)
       val ebookSearch = mockEbookSearch.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
-      mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        mockEbookRegistry.getRef
+        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
@@ -117,10 +111,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       mockEbookSearch.setElasticSearchClient(elasticSearchClient)
       val ebookSearch = mockEbookSearch.getRef
 
-      val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
-      mockEbookRegistry.setEbookSearch(ebookSearch)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
-        mockEbookRegistry.getRef
+        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes

@@ -29,13 +29,11 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   val mockAuthenticator = new MockAuthenticator(testKit)
   val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
-    mockEbookRegistry.getRef
+    MockEbookRegistry(testKit, authenticator, analyticsClient)
 
-  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    mockApiKeyRegistry.getRef
+    MockApiKeyRegistry(testKit, authenticator)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes

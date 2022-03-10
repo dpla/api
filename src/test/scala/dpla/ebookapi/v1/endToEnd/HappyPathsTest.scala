@@ -46,15 +46,11 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val ebookSearch: ActorRef[SearchCommand] =
     mockEbookSearch.getRef
 
-  val mockEbookRegistry = new MockEbookRegistry(testKit, authenticator, analyticsClient)
-  mockEbookRegistry.setEbookSearch(ebookSearch)
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
-    mockEbookRegistry.getRef
+    MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
-  val mockApiKeyRegistry = new MockApiKeyRegistry(testKit, authenticator)
-  mockApiKeyRegistry.setEmailClient(emailClient)
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    mockApiKeyRegistry.getRef
+    MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
