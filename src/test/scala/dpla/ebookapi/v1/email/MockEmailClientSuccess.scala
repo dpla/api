@@ -1,9 +1,8 @@
-package dpla.ebookapi.mocks
+package dpla.ebookapi.v1.email
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.EmailClient.{EmailClientCommand, SendEmail}
-import dpla.ebookapi.v1.EmailSuccess
+import dpla.ebookapi.v1.email.EmailClient.{EmailClientCommand, SendEmail}
 
 object MockEmailClientSuccess {
 

@@ -1,12 +1,13 @@
-package dpla.ebookapi.v1.apiKey
+package dpla.ebookapi.v1.registry
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dpla.ebookapi.v1.EmailClient.{EmailClientCommand, SendEmail}
+import akka.actor.typed.{ActorRef, Behavior}
+import dpla.ebookapi.v1.email.EmailClient.{EmailClientCommand, SendEmail}
 import dpla.ebookapi.v1.authentication.Account
-import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountCreated, AccountFound, AuthenticationCommand, AuthenticationFailure, CreateAccount, InvalidEmail}
-import dpla.ebookapi.v1.{EmailFailure, EmailSuccess, InternalFailure, RegistryResponse, ValidationFailure}
+import dpla.ebookapi.v1.authentication.AuthProtocol._
+import dpla.ebookapi.v1.email.{EmailFailure, EmailSuccess}
+import dpla.ebookapi.v1.registry.RegistryProtocol.{InternalFailure, RegistryResponse, ValidationFailure}
 
 // Command protocol
 sealed trait ApiKeyRegistryCommand

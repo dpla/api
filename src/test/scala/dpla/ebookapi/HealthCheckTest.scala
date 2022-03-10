@@ -7,9 +7,7 @@ import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.ebookapi.mocks.{MockApiKeyRegistry, MockEbookRegistry}
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.registry.EbookRegistryCommand
+import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {

@@ -1,18 +1,18 @@
-package dpla.ebookapi.v1
+package dpla.ebookapi.v1.analytics
 
-import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, Behavior}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
 import dpla.ebookapi.v1.search.Ebook
 
-
 /**
  * Tracks use via Google Analytics Measurement Protocol
+ *
  * @see https://developers.google.com/analytics/devguides/collection/protocol/v1
  *
- * Google Analytics Measurement Protocol does not return HTTP codes, so the
- * success or failure of a request cannot be ascertained.
+ *      Google Analytics Measurement Protocol does not return HTTP codes, so the
+ *      success or failure of a request cannot be ascertained.
  */
 object AnalyticsClient {
 
@@ -37,7 +37,7 @@ object AnalyticsClient {
   val batchUrl = "http://www.google-analytics.com/batch"
 
   def apply(): Behavior[AnalyticsClientCommand] = {
-    Behaviors.setup{ context =>
+    Behaviors.setup { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
 
@@ -117,7 +117,7 @@ object AnalyticsClient {
                                    host: String,
                                    path: String,
                                    title: String
-                                  ): String = {
+                                 ): String = {
     val params = Map(
       "v" -> "1",
       "t" -> "pageview",
@@ -201,5 +201,5 @@ object AnalyticsClient {
 
   // Turn a param map into a string that can be used in an HTTP request
   private def paramString(params: Map[String, String]): String =
-    params.map{case (key, value) => s"$key=$value" }.mkString("&")
+    params.map { case (key, value) => s"$key=$value" }.mkString("&")
 }

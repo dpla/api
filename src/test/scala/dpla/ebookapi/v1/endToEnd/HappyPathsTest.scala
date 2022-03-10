@@ -6,12 +6,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
-import dpla.ebookapi.mocks._
-import dpla.ebookapi.v1.EmailClient
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.ebookapi.v1.registry.EbookRegistryCommand
+import dpla.ebookapi.v1.email.{EmailClient, MockEmailClientSuccess}
+import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 import dpla.ebookapi.v1.search.{EbookMapper, JsonFieldReader, MockEbookSearch, MockEsClientSuccess}
 import org.scalatest.matchers.should.Matchers

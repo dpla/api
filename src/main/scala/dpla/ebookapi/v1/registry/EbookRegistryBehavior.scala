@@ -3,10 +3,10 @@ package dpla.ebookapi.v1.registry
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
-import dpla.ebookapi.v1._
+import dpla.ebookapi.v1.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
 import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.ebookapi.v1.authentication._
+import dpla.ebookapi.v1.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
 import dpla.ebookapi.v1.search._
 
@@ -100,30 +100,36 @@ trait EbookRegistryBehavior {
 
       var authorizedAccount: Option[Account] = None
       var searchResult: Option[EbookList] = None
+      var searchResponse: Option[RegistryResponse] = None
 
-      // TODO always wait for authorization response
       // This behavior is invoked if either the API key has been authorized
       // or the ebook search has been complete.
       def possibleSessionResolution: Behavior[AnyRef] =
-        (searchResult, authorizedAccount) match {
-          case (Some(ebookList), Some(account)) =>
-            // We've received both message replies, time to complete session
-            // Send final result back to Routes
-            replyTo ! SearchResult(ebookList)
+        (searchResponse, authorizedAccount) match {
+          case (Some(response), Some(account)) =>
+            // We've received both message replies, time to complete session.
+            // Send final result back to Routes.
+            replyTo ! response
 
-            // If not a staff/internal account, send to analytics tracker
-            if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
-              apiKey match {
-                case Some(key) =>
-                  analyticsClient ! TrackSearch(key, rawParams, host, path,
-                    ebookList.docs)
-                case None =>
-                // no-op (this should not happen)
-              }
+            // If the search was successful...
+            searchResult match {
+              case Some(ebookList) =>
+                // ...and if account is not staff/internal...
+                if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
+                  apiKey match {
+                    case Some(key) =>
+                      // ...track analytics hit
+                      analyticsClient ! TrackSearch(key, rawParams, host, path,
+                        ebookList.docs)
+                    case None =>
+                    // no-op (this should not happen)
+                  }
+                }
+              case None => // no-op
             }
             Behaviors.stopped
           case _ =>
-            // Still waiting for one of the message replies
+            // Still waiting for one of the message replies.
             Behaviors.same
         }
 
@@ -136,6 +142,8 @@ trait EbookRegistryBehavior {
 
         /**
          * Possible responses from Authenticator.
+         * If authentication fails, no need to wait for EbookSearch to reply to
+         * Routes.
          */
 
         case AccountFound(account) =>
@@ -162,24 +170,22 @@ trait EbookRegistryBehavior {
 
         /**
          * Possible responses from EbookSearch.
+         * Always check to see if user is authenticated before replying to
+         * Routes.
          */
 
         case EbookSearchResult(ebookList) =>
-          if (searchResult.isEmpty) {
-            searchResult = Some(ebookList)
-            possibleSessionResolution
-          }
-          else {
-            Behaviors.same
-          }
+          searchResult = Some(ebookList)
+          searchResponse = Some(SearchResult(ebookList))
+          possibleSessionResolution
 
         case InvalidSearchParams(message) =>
-          replyTo ! ValidationFailure(message)
-          Behaviors.stopped
+          searchResponse = Some(ValidationFailure(message))
+          possibleSessionResolution
 
         case SearchFailure =>
-          replyTo ! InternalFailure
-          Behaviors.stopped
+          searchResponse = Some(InternalFailure)
+          possibleSessionResolution
 
         case _ =>
           Behaviors.unhandled
@@ -206,31 +212,38 @@ trait EbookRegistryBehavior {
 
     Behaviors.setup[AnyRef] { context =>
 
-      var fetchResult: Option[SingleEbook] = None
       var authorizedAccount: Option[Account] = None
+      var fetchResult: Option[SingleEbook] = None
+      var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
       // or the ebook fetch has been complete.
       def possibleSessionResolution: Behavior[AnyRef] =
-        (fetchResult, authorizedAccount) match {
-          case (Some(singleEbook), Some(account)) =>
-            // We've received both message replies, time to complete session
-            replyTo ! FetchResult(singleEbook)
+        (fetchResponse, authorizedAccount) match {
+          case (Some(response), Some(account)) =>
+            // We've received both message replies, time to complete session.
+            // Send final result back to Routes.
+            replyTo ! response
 
-            // If not a staff/internal account, send to analytics tracker
-            if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
-              apiKey match {
-                case Some(key) =>
-                  analyticsClient ! TrackFetch(key, host, path,
-                    singleEbook.docs.headOption)
-                case None =>
-                // no-op (this should not happen)
-              }
+            // If the fetch was successful...
+            fetchResult match {
+              case Some(singleEbook) =>
+                // ...and if account is not staff/internal...
+                if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
+                  apiKey match {
+                    case Some(key) =>
+                      // ...track analytics hit.
+                      analyticsClient ! TrackFetch(key, host, path,
+                        singleEbook.docs.headOption)
+                    case None =>
+                    // no-op (this should not happen)
+                  }
+                }
+              case None => // no-op
             }
-
             Behaviors.stopped
           case _ =>
-            // Still waiting for one of the message replies
+            // Still waiting for one of the message replies.
             Behaviors.same
         }
 
@@ -243,6 +256,8 @@ trait EbookRegistryBehavior {
 
         /**
          * Possible responses from Authenticator.
+         * If authentication fails, no need to wait for EbookSearch to reply to
+         * Routes.
          */
 
         case AccountFound(account) =>
@@ -268,28 +283,27 @@ trait EbookRegistryBehavior {
           Behaviors.stopped
 
         /**
-         * Possible responses from EbookSearch
+         * Possible responses from EbookSearch.
+         * Always check to see if user is authenticated before replying to
+         * Routes.
          */
 
         case EbookFetchResult(singleEbook) =>
-          if (fetchResult.isEmpty) {
-            fetchResult = Some(singleEbook)
-            possibleSessionResolution
-          }
-          else
-            Behaviors.same
+          fetchResult = Some(singleEbook)
+          fetchResponse = Some(FetchResult(singleEbook))
+          possibleSessionResolution
 
         case InvalidSearchParams(message) =>
-          replyTo ! ValidationFailure(message)
-          Behaviors.stopped
+          fetchResponse = Some(ValidationFailure(message))
+          possibleSessionResolution
 
         case FetchNotFound =>
-          replyTo ! NotFoundFailure
-          Behaviors.stopped
+          fetchResponse = Some(NotFoundFailure)
+          possibleSessionResolution
 
         case SearchFailure =>
-          replyTo ! InternalFailure
-          Behaviors.stopped
+          fetchResponse = Some(InternalFailure)
+          possibleSessionResolution
 
         case _ =>
           Behaviors.unhandled

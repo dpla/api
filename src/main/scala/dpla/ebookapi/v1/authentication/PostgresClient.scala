@@ -141,6 +141,7 @@ object PostgresClient {
           Behaviors.same
 
         case ReturnFinalResponse(response, replyTo, error) =>
+          // Log error if one exists
           error match {
             case Some(e) =>
               context.log.error(

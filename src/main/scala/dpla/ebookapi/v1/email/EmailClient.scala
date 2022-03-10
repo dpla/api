@@ -1,8 +1,8 @@
-package dpla.ebookapi.v1
+package dpla.ebookapi.v1.email
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import com.amazonaws.services.simpleemail.model.{Body, Content, Destination, Message, SendEmailRequest, SendEmailResult}
+import com.amazonaws.services.simpleemail.model._
 import com.amazonaws.services.simpleemail.{AmazonSimpleEmailService, AmazonSimpleEmailServiceClientBuilder}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}

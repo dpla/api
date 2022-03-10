@@ -4,8 +4,7 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.ebookapi.v1.apiKey.{ApiKeyRegistry, ApiKeyRegistryCommand}
-import dpla.ebookapi.v1.registry.{EbookRegistry, EbookRegistryCommand}
+import dpla.ebookapi.v1.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, EbookRegistryCommand}
 
 import scala.util.{Failure, Success}
 

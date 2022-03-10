@@ -2,8 +2,8 @@ package dpla.ebookapi.v1.registry
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dpla.ebookapi.v1.AnalyticsClient
-import dpla.ebookapi.v1.AnalyticsClient.AnalyticsClientCommand
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.ebookapi.v1.analytics.AnalyticsClient
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.Authenticator
 import dpla.ebookapi.v1.search.EbookSearch

@@ -15,9 +15,8 @@ import akka.http.scaladsl.model.headers.RawHeader
 import scala.util.{Failure, Success}
 import dpla.ebookapi.v1.search.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.ebookapi.v1.apiKey.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, NewApiKey}
-import dpla.ebookapi.v1.registry.{EbookRegistryCommand, FetchEbook, FetchResult, SearchEbooks, SearchResult}
+import dpla.ebookapi.v1.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
+import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, EbookRegistryCommand, ExistingApiKey, FetchEbook, FetchResult, NewApiKey, SearchEbooks, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
 
 
