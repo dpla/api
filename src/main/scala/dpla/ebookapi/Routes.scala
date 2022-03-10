@@ -6,8 +6,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.{EbookRegistryCommand, FetchEbook, SearchEbooks}
-import dpla.ebookapi.v1.ebooks.{FetchResult, SearchResult}
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
@@ -15,10 +13,11 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
-import dpla.ebookapi.v1.ebooks.JsonFormats._
+import dpla.ebookapi.v1.search.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.ebookapi.v1.apiKey.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, NewApiKey}
+import dpla.ebookapi.v1.registry.{EbookRegistryCommand, FetchEbook, FetchResult, SearchEbooks, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
 
 

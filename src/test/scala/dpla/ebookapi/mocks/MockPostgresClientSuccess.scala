@@ -26,6 +26,9 @@ object MockPostgresClientSuccess {
       case CreateUser(_, replyTo) =>
         replyTo ! UserCreated(account)
         Behaviors.same
+
+      case _ =>
+        Behaviors.unhandled
     }
   }
 }

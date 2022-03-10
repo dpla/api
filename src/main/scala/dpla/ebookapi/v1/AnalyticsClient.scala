@@ -4,7 +4,7 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.ebookapi.v1.ebooks.Ebook
+import dpla.ebookapi.v1.search.Ebook
 
 
 /**

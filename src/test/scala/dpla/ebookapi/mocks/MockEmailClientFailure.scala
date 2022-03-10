@@ -13,6 +13,9 @@ object MockEmailClientFailure {
       case SendEmail(_, _, _, replyTo) =>
         replyTo ! EmailFailure
         Behaviors.same
+
+      case _ =>
+        Behaviors.unhandled
     }
   }
 }

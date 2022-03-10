@@ -18,6 +18,9 @@ object MockPostgresClientUnsuccessful {
       case CreateUser(_, replyTo) =>
         replyTo ! authentication.PostgresError
         Behaviors.same
+
+      case _ =>
+        Behaviors.unhandled
     }
   }
 }

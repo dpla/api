@@ -25,6 +25,9 @@ object MockPostgresClientExistingKey {
       case CreateUser(_, replyTo) =>
         replyTo ! UserFound(account)
         Behaviors.same
+
+      case _ =>
+        Behaviors.unhandled
     }
   }
 }
