@@ -40,9 +40,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     "return Forbidden if API key not found" in {
       val postgresClient = testKit.spawn(MockPostgresClientKeyNotFound())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -63,9 +62,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     "return Forbidden if API key disabled" in {
       val postgresClient = testKit.spawn(MockPostgresClientDisabled())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -88,9 +86,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     "return Forbidden if API key not found" in {
       val postgresClient = testKit.spawn(MockPostgresClientKeyNotFound())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -111,9 +108,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     "return Forbidden if API key disabled" in {
       val postgresClient = testKit.spawn(MockPostgresClientDisabled())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))

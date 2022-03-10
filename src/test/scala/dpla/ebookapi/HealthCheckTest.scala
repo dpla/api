@@ -26,8 +26,8 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
 
-  val mockAuthenticator = new MockAuthenticator(testKit)
-  val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+  val authenticator: ActorRef[AuthenticationCommand] =
+    MockAuthenticator(testKit)
 
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient)

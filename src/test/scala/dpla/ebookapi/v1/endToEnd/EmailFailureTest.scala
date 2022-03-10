@@ -34,9 +34,8 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val emailClient: ActorRef[EmailClientCommand] =
     testKit.spawn(MockEmailClientFailure())
 
-  val mockAuthenticator = new MockAuthenticator(testKit)
-  mockAuthenticator.setPostgresClient(postgresClient)
-  val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+  val authenticator: ActorRef[AuthenticationCommand] =
+    MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient)

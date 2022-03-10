@@ -42,9 +42,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     "return Teapot if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -67,9 +66,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     "return Teapot if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -92,9 +90,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     "return Teapot if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient)
@@ -119,9 +116,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val emailClient: ActorRef[EmailClientCommand] =
         testKit.spawn(MockEmailClientSuccess())
 
-      val mockAuthenticator = new MockAuthenticator(testKit)
-      mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient)

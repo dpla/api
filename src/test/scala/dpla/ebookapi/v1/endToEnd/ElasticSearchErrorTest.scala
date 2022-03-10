@@ -32,9 +32,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
   val postgresClient = testKit.spawn(MockPostgresClientSuccess())
 
-  val mockAuthenticator = new MockAuthenticator(testKit)
-  mockAuthenticator.setPostgresClient(postgresClient)
-  val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
+  val authenticator: ActorRef[AuthenticationCommand] =
+    MockAuthenticator(testKit, Some(postgresClient))
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
