@@ -4,7 +4,8 @@ import akka.NotUsed
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dpla.ebookapi.v1.EmailClient.{EmailClientCommand, SendEmail}
-import dpla.ebookapi.v1.authentication.{Account, AccountCreated, AuthenticatorCommand, AuthenticatorFailure, CreateAccount, ExistingAccount, InvalidAuthParam, InvalidEmail}
+import dpla.ebookapi.v1.authentication.Account
+import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountCreated, AccountFound, AuthenticationCommand, AuthenticationFailure, CreateAccount, InvalidEmail}
 import dpla.ebookapi.v1.{EmailFailure, EmailSuccess, InternalFailure, RegistryResponse, ValidationFailure}
 
 // Command protocol
@@ -33,7 +34,7 @@ trait ApiKeyRegistryBehavior {
 
   // Abstract methods
   def spawnAuthenticator(context: ActorContext[ApiKeyRegistryCommand]):
-    ActorRef[AuthenticatorCommand]
+    ActorRef[AuthenticationCommand]
 
   def spawnEmailClient(context: ActorContext[ApiKeyRegistryCommand]):
     ActorRef[EmailClientCommand]
@@ -43,7 +44,7 @@ trait ApiKeyRegistryBehavior {
     Behaviors.setup[ApiKeyRegistryCommand] { context =>
 
       // Spawn children.
-      val authenticator: ActorRef[AuthenticatorCommand] =
+      val authenticator: ActorRef[AuthenticationCommand] =
         spawnAuthenticator(context)
 
       val emailClient: ActorRef[EmailClientCommand] =
@@ -69,7 +70,7 @@ trait ApiKeyRegistryBehavior {
   def processCreateApiKey(
                            email: String,
                            replyTo: ActorRef[RegistryResponse],
-                           authenticator: ActorRef[AuthenticatorCommand],
+                           authenticator: ActorRef[AuthenticationCommand],
                            emailClient: ActorRef[EmailClientCommand]
                          ): Behavior[NotUsed] = {
 
@@ -93,7 +94,7 @@ trait ApiKeyRegistryBehavior {
           replyTo ! ValidationFailure("Invalid email address")
           Behaviors.stopped
 
-        case ExistingAccount(account) =>
+        case AccountFound(account) =>
           if (account.enabled.getOrElse(true)) {
             userAccount = Some(account)
             accountAlreadyExists = true
@@ -120,7 +121,7 @@ trait ApiKeyRegistryBehavior {
           )
           Behaviors.same
 
-        case AuthenticatorFailure =>
+        case AuthenticationFailure =>
           replyTo ! InternalFailure
           Behaviors.stopped
 

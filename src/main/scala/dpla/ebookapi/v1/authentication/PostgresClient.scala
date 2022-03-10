@@ -2,6 +2,7 @@ package dpla.ebookapi.v1.authentication
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountCreated, AccountFound, AccountNotFound, AuthenticationFailure, AuthenticationResponse, IntermediateAuthResult, ValidApiKey, ValidEmail}
 import org.apache.commons.codec.digest.DigestUtils
 import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
@@ -11,20 +12,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Random, Success}
 
 
-sealed trait PostgresClientResponse
-
-final case class UserCreated(
-                              account: Account
-                            ) extends PostgresClientResponse
-
-final case class UserFound(
-                            account: Account
-                          ) extends PostgresClientResponse
-
-case object UserNotFound extends PostgresClientResponse
-//case object InvalidAuthParam extends PostgresClientResponse
-case object PostgresError extends PostgresClientResponse
-
+/** Case class for modeling a user account */
 case class Account(
                     id: Int,
                     key: String,
@@ -35,35 +23,26 @@ case class Account(
 
 object PostgresClient {
 
-  sealed trait PostgresClientCommand
+  private sealed trait PostgresClientCommand extends IntermediateAuthResult
 
-  final case class FindUserByKey(
-                                  apiKey: String,
-                                  replyTo: ActorRef[PostgresClientResponse]
-                                ) extends PostgresClientCommand
-
-  final case class CreateUser(
-                               email: String,
-                               replyTo: ActorRef[PostgresClientResponse]
-                             ) extends PostgresClientCommand
 
   private final case class FindUserByEmail(
                                             email: String,
-                                            replyTo: ActorRef[PostgresClientResponse]
+                                            replyTo: ActorRef[AuthenticationResponse]
                                           ) extends PostgresClientCommand
 
   private final case class ProcessFindResponse(
                                           matches: Seq[Account],
-                                          replyTo: ActorRef[PostgresClientResponse]
+                                          replyTo: ActorRef[AuthenticationResponse]
                                         ) extends PostgresClientCommand
 
   private final case class ReturnFinalResponse(
-                                          response: PostgresClientResponse,
-                                          replyTo: ActorRef[PostgresClientResponse],
-                                          error: Option[Throwable] = None
-                                        ) extends PostgresClientCommand
+                                                response: AuthenticationResponse,
+                                                replyTo: ActorRef[AuthenticationResponse],
+                                                error: Option[Throwable] = None
+                                              ) extends PostgresClientCommand
 
-  def apply(): Behavior[PostgresClientCommand] = {
+  def apply(): Behavior[IntermediateAuthResult] = {
 
     Behaviors.setup { context =>
 
@@ -82,9 +61,9 @@ object PostgresClient {
         def * = (id, key, email, enabled, staff) <> (Account.tupled, Account.unapply)
       }
 
-      Behaviors.receiveMessage[PostgresClientCommand] {
+      Behaviors.receiveMessage[IntermediateAuthResult] {
 
-        case CreateUser(email, replyTo) =>
+        case ValidEmail(email, replyTo) =>
           val newKey: String =
             DigestUtils.md5Hex(email + Random.alphanumeric.take(32).mkString)
           val staff: Boolean = if (email.endsWith(".dp.la")) true else false
@@ -110,17 +89,17 @@ object PostgresClient {
             case Success(created) =>
               created.headOption match {
                 case Some(account) =>
-                  ReturnFinalResponse(UserCreated(account), replyTo)
+                  ReturnFinalResponse(AccountCreated(account), replyTo)
                 case None =>
                   FindUserByEmail(email, replyTo)
               }
             case Failure(e) =>
               context.log.error("Postgres error:", e)
-              ReturnFinalResponse(PostgresError, replyTo)
+              ReturnFinalResponse(AuthenticationFailure, replyTo)
           }
           Behaviors.same
 
-        case FindUserByKey(apiKey, replyTo) =>
+        case ValidApiKey(apiKey, replyTo) =>
           // Find all accounts with the given API key
           val accounts = TableQuery[Accounts]
           val query = accounts.filter(_.key === apiKey)
@@ -132,7 +111,7 @@ object PostgresClient {
               ProcessFindResponse(matches, replyTo)
             case Failure(e) =>
               context.log.error("Postgres error:", e)
-              ReturnFinalResponse(PostgresError, replyTo, Some(e))
+              ReturnFinalResponse(AuthenticationFailure, replyTo, Some(e))
           }
           Behaviors.same
 
@@ -148,16 +127,16 @@ object PostgresClient {
               ProcessFindResponse(matches, replyTo)
             case Failure(e) =>
               context.log.error("Postgres error:", e)
-              ReturnFinalResponse(PostgresError, replyTo)
+              ReturnFinalResponse(AuthenticationFailure, replyTo)
           }
           Behaviors.same
 
         case ProcessFindResponse(matches, replyTo) =>
           matches.headOption match {
             case Some(account) =>
-              replyTo ! UserFound(account)
+              replyTo ! AccountFound(account)
             case None =>
-              replyTo ! UserNotFound
+              replyTo ! AccountNotFound
           }
           Behaviors.same
 
@@ -171,6 +150,9 @@ object PostgresClient {
           }
           replyTo ! response
           Behaviors.same
+
+        case _ =>
+          Behaviors.unhandled
       }
     }
   }

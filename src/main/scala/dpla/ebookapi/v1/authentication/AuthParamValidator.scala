@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.authentication
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.ebookapi.v1.authentication.PostgresClient.{CreateUser, FindUserByKey, PostgresClientCommand}
+import dpla.ebookapi.v1.authentication.AuthProtocol.{ValidEmail, ValidApiKey, IntermediateAuthResult, InvalidApiKey, InvalidEmail, RawApiKey, RawEmail}
 import org.apache.commons.validator.routines.EmailValidator
 
 
@@ -11,60 +11,40 @@ import org.apache.commons.validator.routines.EmailValidator
  * Bad actors may use invalid search params to try and hack the system, so they
  * are logged as warnings.
  */
-
-sealed trait AuthParamValidatorResponse
-
-case object InvalidAuthParam extends AuthParamValidatorResponse
-
 object AuthParamValidator {
 
-  sealed trait AuthParamValidatorCommand
-
-  final case class ValidateApiKey(
-                                   apiKey: String,
-                                   forwardTo: ActorRef[PostgresClientResponse],
-                                   replyTo: ActorRef[AuthParamValidatorResponse]
-                                 ) extends AuthParamValidatorCommand
-
-  final case class ValidateEmail(
-                                  email: String,
-                                  forwardTo: ActorRef[PostgresClientResponse],
-                                  replyTo: ActorRef[AuthParamValidatorResponse]
-                                ) extends AuthParamValidatorCommand
-
   def apply(
-             postgresClient: ActorRef[PostgresClientCommand]
-           ): Behavior[AuthParamValidatorCommand] = {
+             nextPhase: ActorRef[IntermediateAuthResult]
+           ): Behavior[IntermediateAuthResult] = {
 
     Behaviors.setup { context =>
 
       Behaviors.receiveMessage {
 
-        case ValidateApiKey(apiKey, forwardTo, replyTo) =>
+        case RawApiKey(apiKey, replyTo) =>
           val isValid = isValidApiKey(apiKey)
           if (!isValid) {
             context.log.warn("Invalid API key param: {}", apiKey)
-            // Send message back to Authenticator
-            replyTo ! InvalidAuthParam
+            replyTo ! InvalidApiKey
           }
           else {
-            // Forward message to PostgresClient
-            postgresClient ! FindUserByKey(apiKey, forwardTo)
+            nextPhase ! ValidApiKey(apiKey, replyTo)
           }
           Behaviors.same
 
-        case ValidateEmail(email, forwardTo, replyTo) =>
+        case RawEmail(email, replyTo) =>
           val isValid = isValidEmail(email)
           if (!isValid) {
             context.log.warn("Invalid email param: {}", email)
-            // Send message back to Authenticator
-            replyTo ! InvalidAuthParam
+            replyTo ! InvalidEmail
           }
           else {
-            // Forward message to PostgresClient
-            postgresClient ! CreateUser(email, forwardTo)
+            nextPhase ! ValidEmail(email, replyTo)
           }
           Behaviors.same
+
+        case _ =>
+          Behaviors.unhandled
       }
     }
   }

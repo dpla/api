@@ -9,8 +9,8 @@ import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.EmailClient.EmailClientCommand
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.authentication.AuthenticatorCommand
-import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
+import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientError, MockPostgresClientExistingKey}
 import dpla.ebookapi.v1.registry.EbookRegistryCommand
 import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 import dpla.ebookapi.v1.search.{EbookMapper, MockEbookSearch, MockEsClientSuccess}
@@ -40,12 +40,11 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/v1/ebooks route" should {
     "return Teapot if Postgres errors" in {
-      val postgresClient: ActorRef[PostgresClientCommand] =
-        testKit.spawn(MockPostgresClientError())
+      val postgresClient = testKit.spawn(MockPostgresClientError())
 
       val mockAuthenticator = new MockAuthenticator(testKit)
       mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setAuthenticator(authenticator)
@@ -70,12 +69,11 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/v1/ebooks[id] route" should {
     "return Teapot if Postgres errors" in {
-      val postgresClient: ActorRef[PostgresClientCommand] =
-        testKit.spawn(MockPostgresClientError())
+      val postgresClient = testKit.spawn(MockPostgresClientError())
 
       val mockAuthenticator = new MockAuthenticator(testKit)
       mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       mockEbookRegistry.setAuthenticator(authenticator)
@@ -100,8 +98,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/api_key/[email]" should {
     "return Teapot if Postgres errors" in {
-      val postgresClient: ActorRef[PostgresClientCommand] =
-        testKit.spawn(MockPostgresClientError())
+      val postgresClient = testKit.spawn(MockPostgresClientError())
 
       val mockEbookRegistry = new MockEbookRegistry(testKit)
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
@@ -109,7 +106,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
       val mockAuthenticator = new MockAuthenticator(testKit)
       mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
       val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
       mockApiKeyRegistry.setAuthenticator(authenticator)
@@ -129,8 +126,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/api_key/[email] route" should {
     "return Conflict if email has existing api key" in {
-      val postgresClient: ActorRef[PostgresClientCommand] =
-        testKit.spawn(MockPostgresClientExistingKey())
+      val postgresClient = testKit.spawn(MockPostgresClientExistingKey())
       val emailClient: ActorRef[EmailClientCommand] =
         testKit.spawn(MockEmailClientSuccess())
 
@@ -140,7 +136,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
       val mockAuthenticator = new MockAuthenticator(testKit)
       mockAuthenticator.setPostgresClient(postgresClient)
-      val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+      val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
       val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
       mockApiKeyRegistry.setAuthenticator(authenticator)

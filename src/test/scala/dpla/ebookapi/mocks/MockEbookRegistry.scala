@@ -5,18 +5,19 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.AnalyticsClient
-import dpla.ebookapi.v1.authentication.{Authenticator, AuthenticatorCommand}
+import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
+import dpla.ebookapi.v1.authentication.Authenticator
 import dpla.ebookapi.v1.registry.{EbookRegistryBehavior, EbookRegistryCommand}
 import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 import dpla.ebookapi.v1.search.EbookSearch
 
 class MockEbookRegistry(testKit: ActorTestKit) {
 
-  private var authenticator: Option[ActorRef[AuthenticatorCommand]] = None
+  private var authenticator: Option[ActorRef[AuthenticationCommand]] = None
   private var ebookSearch: Option[ActorRef[SearchCommand]] = None
   private var analyticsClient: Option[ActorRef[AnalyticsClientCommand]] = None
 
-  def setAuthenticator(ref: ActorRef[AuthenticatorCommand]): Unit =
+  def setAuthenticator(ref: ActorRef[AuthenticationCommand]): Unit =
     authenticator = Some(ref)
 
   def setEbookSearch(ref: ActorRef[SearchCommand]): Unit =
@@ -29,7 +30,7 @@ class MockEbookRegistry(testKit: ActorTestKit) {
 
     override def spawnAuthenticator(
                                      context: ActorContext[EbookRegistryCommand]
-                                   ): ActorRef[AuthenticatorCommand] =
+                                   ): ActorRef[AuthenticationCommand] =
       authenticator.getOrElse(context.spawnAnonymous(Authenticator()))
 
     override def spawnEbookSearch(

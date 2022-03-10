@@ -1,10 +1,9 @@
-package dpla.ebookapi.mocks
+package dpla.ebookapi.v1.authentication
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.authentication.PostgresClient._
 import dpla.ebookapi.v1.authentication
-import dpla.ebookapi.v1.authentication.{UserCreated, UserFound}
+import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountCreated, AccountFound, IntermediateAuthResult, ValidApiKey, ValidEmail}
 
 object MockPostgresClientDisabled {
 
@@ -16,15 +15,15 @@ object MockPostgresClientDisabled {
     enabled = Some(false)
   )
 
-  def apply(): Behavior[PostgresClientCommand] = {
-    Behaviors.receiveMessage[PostgresClientCommand] {
+  def apply(): Behavior[IntermediateAuthResult] = {
+    Behaviors.receiveMessage[IntermediateAuthResult] {
 
-      case FindUserByKey(_, replyTo) =>
-        replyTo ! UserFound(account)
+      case ValidApiKey(_, replyTo) =>
+        replyTo ! AccountFound(account)
         Behaviors.same
 
-      case CreateUser(_, replyTo) =>
-        replyTo ! UserCreated(account)
+      case ValidEmail(_, replyTo) =>
+        replyTo ! AccountCreated(account)
         Behaviors.same
 
       case _ =>

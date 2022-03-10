@@ -9,10 +9,10 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.authentication.AuthenticatorCommand
-import dpla.ebookapi.v1.authentication.PostgresClient.PostgresClientCommand
+import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
+import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.registry.EbookRegistryCommand
-import dpla.ebookapi.v1.search.{MockEsClientFailure, MockEsClientNotFound, MockEbookSearch}
+import dpla.ebookapi.v1.search.{MockEbookSearch, MockEsClientFailure, MockEsClientNotFound}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -26,12 +26,11 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val postgresClient: ActorRef[PostgresClientCommand] =
-    testKit.spawn(MockPostgresClientSuccess())
+  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
 
   val mockAuthenticator = new MockAuthenticator(testKit)
   mockAuthenticator.setPostgresClient(postgresClient)
-  val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+  val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
   val mockApiKeyRegistry = new MockApiKeyRegistry(testKit)
   mockApiKeyRegistry.setAuthenticator(authenticator)

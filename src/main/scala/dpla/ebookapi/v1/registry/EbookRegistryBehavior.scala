@@ -1,10 +1,11 @@
 package dpla.ebookapi.v1.registry
 
 import akka.NotUsed
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dpla.ebookapi.v1.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
 import dpla.ebookapi.v1._
+import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.ebookapi.v1.authentication._
 import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
 import dpla.ebookapi.v1.search._
@@ -35,7 +36,7 @@ final case class FetchEbook(
 trait EbookRegistryBehavior {
 
   def spawnAuthenticator(context: ActorContext[EbookRegistryCommand]):
-    ActorRef[AuthenticatorCommand]
+    ActorRef[AuthenticationCommand]
 
   def spawnEbookSearch(context: ActorContext[EbookRegistryCommand]):
     ActorRef[SearchCommand]
@@ -49,7 +50,7 @@ trait EbookRegistryBehavior {
 
       // Spawn children.
 
-      val authenticator: ActorRef[AuthenticatorCommand] =
+      val authenticator: ActorRef[AuthenticationCommand] =
         spawnAuthenticator(context)
 
       val ebookSearch: ActorRef[SearchCommand] =
@@ -90,7 +91,7 @@ trait EbookRegistryBehavior {
                              host: String,
                              path: String,
                              replyTo: ActorRef[RegistryResponse],
-                             authenticator: ActorRef[AuthenticatorCommand],
+                             authenticator: ActorRef[AuthenticationCommand],
                              ebookSearch: ActorRef[SearchCommand],
                              analyticsClient: ActorRef[AnalyticsClientCommand]
                            ): Behavior[NotUsed] = {
@@ -128,7 +129,7 @@ trait EbookRegistryBehavior {
 
       // TODO change authenticator so it accepts Option for apiKey
       // Send initial messages
-      authenticator ! Authorize(apiKey.getOrElse(""), context.self)
+      authenticator ! FindAccountByKey(apiKey.getOrElse(""), context.self)
       ebookSearch ! Search(rawParams, context.self)
 
       Behaviors.receiveMessage {
@@ -137,15 +138,25 @@ trait EbookRegistryBehavior {
          * Possible responses from Authenticator.
          */
 
-        case Authorized(account) =>
-          authorizedAccount = Some(account)
-          possibleSessionResolution
+        case AccountFound(account) =>
+          if (account.enabled.getOrElse(false)) {
+            authorizedAccount = Some(account)
+            possibleSessionResolution
+          }
+          else {
+            replyTo ! ForbiddenFailure
+            Behaviors.stopped
+          }
 
-        case NotAuthorized =>
+        case AccountNotFound =>
           replyTo ! ForbiddenFailure
           Behaviors.stopped
 
-        case AuthenticatorFailure =>
+        case InvalidApiKey =>
+          replyTo ! ForbiddenFailure
+          Behaviors.stopped
+
+        case AuthenticationFailure =>
           replyTo ! InternalFailure
           Behaviors.stopped
 
@@ -158,8 +169,9 @@ trait EbookRegistryBehavior {
             searchResult = Some(ebookList)
             possibleSessionResolution
           }
-          else
+          else {
             Behaviors.same
+          }
 
         case InvalidSearchParams(message) =>
           replyTo ! ValidationFailure(message)
@@ -187,7 +199,7 @@ trait EbookRegistryBehavior {
                             host: String,
                             path: String,
                             replyTo: ActorRef[RegistryResponse],
-                            authenticator: ActorRef[AuthenticatorCommand],
+                            authenticator: ActorRef[AuthenticationCommand],
                             ebookSearch: ActorRef[SearchCommand],
                             analyticsClient: ActorRef[AnalyticsClientCommand]
                           ): Behavior[NotUsed] = {
@@ -224,7 +236,7 @@ trait EbookRegistryBehavior {
 
       // TODO change authenticator so it accepts Option for apiKey
       // Send initial messages.
-      authenticator ! Authorize(apiKey.getOrElse(""), context.self)
+      authenticator ! FindAccountByKey(apiKey.getOrElse(""), context.self)
       ebookSearch ! Fetch(id, rawParams, context.self)
 
       Behaviors.receiveMessage {
@@ -233,15 +245,25 @@ trait EbookRegistryBehavior {
          * Possible responses from Authenticator.
          */
 
-        case Authorized(account) =>
-          authorizedAccount = Some(account)
-          possibleSessionResolution
+        case AccountFound(account) =>
+          if (account.enabled.getOrElse(false)) {
+            authorizedAccount = Some(account)
+            possibleSessionResolution
+          }
+          else {
+            replyTo ! ForbiddenFailure
+            Behaviors.stopped
+          }
 
-        case NotAuthorized =>
+        case AccountNotFound =>
           replyTo ! ForbiddenFailure
           Behaviors.stopped
 
-        case AuthenticatorFailure =>
+        case InvalidApiKey =>
+          replyTo ! ForbiddenFailure
+          Behaviors.stopped
+
+        case AuthenticationFailure =>
           replyTo ! InternalFailure
           Behaviors.stopped
 

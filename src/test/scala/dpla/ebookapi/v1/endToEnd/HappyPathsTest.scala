@@ -9,7 +9,8 @@ import dpla.ebookapi.Routes
 import dpla.ebookapi.mocks._
 import dpla.ebookapi.v1.EmailClient
 import dpla.ebookapi.v1.apiKey.ApiKeyRegistryCommand
-import dpla.ebookapi.v1.authentication.{AuthenticatorCommand, PostgresClient}
+import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
+import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.ebookapi.v1.registry.EbookRegistryCommand
 import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 import dpla.ebookapi.v1.search.{EbookMapper, JsonFieldReader, MockEbookSearch, MockEsClientSuccess}
@@ -27,8 +28,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val postgresClient: ActorRef[PostgresClient.PostgresClientCommand] =
-    testKit.spawn(MockPostgresClientSuccess())
+  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
   val emailClient: ActorRef[EmailClient.EmailClientCommand] =
     testKit.spawn(MockEmailClientSuccess())
   val mapper = testKit.spawn(EbookMapper())
@@ -36,7 +36,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   val mockAuthenticator = new MockAuthenticator(testKit)
   mockAuthenticator.setPostgresClient(postgresClient)
-  val authenticator: ActorRef[AuthenticatorCommand] = mockAuthenticator.getRef
+  val authenticator: ActorRef[AuthenticationCommand] = mockAuthenticator.getRef
 
   val mockEbookSearch = new MockEbookSearch(testKit)
   mockEbookSearch.setElasticSearchClient(elasticSearchClient)

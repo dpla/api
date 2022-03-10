@@ -76,8 +76,9 @@ object EmailClient {
          // Create a future response.
          // The SES SDK can create an async request that returns a Java future.
          // We need a Scala future, so we're creating it ourselves.
+         // TODO is it safe to use context.executionContext here?
          implicit val executor: ExecutionContextExecutor =
-           context.executionContext
+          context.executionContext
          val responseFuture: Future[Try[SendEmailResult]] =
            Future{ Try{ awsClient.sendEmail(request) } }
 
