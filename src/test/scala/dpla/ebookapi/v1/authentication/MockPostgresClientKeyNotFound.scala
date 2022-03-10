@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.authentication
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountNotFound, AuthenticationFailure, IntermediateAuthResult, ValidApiKey, ValidEmail}
+import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountNotFound, IntermediateAuthResult, ValidApiKey}
 
 object MockPostgresClientKeyNotFound {
 

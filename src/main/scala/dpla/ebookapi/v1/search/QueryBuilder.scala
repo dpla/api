@@ -11,7 +11,7 @@ import dpla.ebookapi.v1.search.SearchProtocol.{SearchQuery, ValidSearchParams, I
  * Composes ElasticSearch queries from user-submitted parameters.
  */
 
-object QueryBuilder extends DplaMapFields {
+object QueryBuilder extends EbookFields {
 
   def apply(nextPhase: ActorRef[IntermediateSearchResult]): Behavior[IntermediateSearchResult] = {
 

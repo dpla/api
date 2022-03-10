@@ -35,7 +35,7 @@ private[search] case class FieldFilter(
                                         value: String
                                       )
 
-object EbookParamValidator extends DplaMapFields {
+object EbookParamValidator extends EbookFields {
 
   def apply(
              nextSearchPhase: ActorRef[IntermediateSearchResult],

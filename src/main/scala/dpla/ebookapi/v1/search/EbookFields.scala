@@ -1,9 +1,10 @@
 package dpla.ebookapi.v1.search
 
 /**
- * Holds information about DPLA MAP fields.
+ * Holds information about Ebook DPLA MAP fields and their equivalents in
+ * ElasticSearch.
  */
-trait DplaMapFields {
+trait EbookFields {
 
   sealed trait DplaFieldType
   case object TextField extends DplaFieldType

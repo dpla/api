@@ -3,10 +3,10 @@ package dpla.ebookapi.v1.search
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class DplaMapFieldsTest extends AnyWordSpec with Matchers {
+class EbookFieldsTest extends AnyWordSpec with Matchers {
 
-  class DplaMapFieldsTester extends DplaMapFields
-  val tester = new DplaMapFieldsTester
+  class EbookFieldsTester extends EbookFields
+  val tester = new EbookFieldsTester
 
   "DplaMapFieldsTest" should {
     "map DPLA MAP fields to ElasticSearch fields" in {
