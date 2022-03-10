@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.authentication
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dpla.ebookapi.v1.authentication.AuthProtocol.{AuthenticationCommand, CreateAccount, FindAccountByKey, IntermediateAuthResult, RawApiKey, RawEmail}
+import dpla.ebookapi.v1.authentication.AuthProtocol.{AuthenticationCommand, CreateAccount, FindAccountByKey, IntermediateAuthResult, InvalidApiKey, RawApiKey, RawEmail}
 
 
 trait AuthenticatorBehavior {
@@ -25,8 +25,13 @@ trait AuthenticatorBehavior {
 
       Behaviors.receiveMessage[AuthenticationCommand] {
 
-        case FindAccountByKey(key, replyTo) =>
-          paramValidator ! RawApiKey(key, replyTo)
+        case FindAccountByKey(keyOpt, replyTo) =>
+          keyOpt match {
+            case Some(key) =>
+              paramValidator ! RawApiKey (key, replyTo)
+            case None =>
+              replyTo ! InvalidApiKey
+          }
           Behaviors.same
 
         case CreateAccount(email, replyTo) =>

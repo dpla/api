@@ -133,9 +133,8 @@ trait EbookRegistryBehavior {
             Behaviors.same
         }
 
-      // TODO change authenticator so it accepts Option for apiKey
       // Send initial messages
-      authenticator ! FindAccountByKey(apiKey.getOrElse(""), context.self)
+      authenticator ! FindAccountByKey(apiKey, context.self)
       ebookSearch ! Search(rawParams, context.self)
 
       Behaviors.receiveMessage {
@@ -247,9 +246,8 @@ trait EbookRegistryBehavior {
             Behaviors.same
         }
 
-      // TODO change authenticator so it accepts Option for apiKey
       // Send initial messages.
-      authenticator ! FindAccountByKey(apiKey.getOrElse(""), context.self)
+      authenticator ! FindAccountByKey(apiKey, context.self)
       ebookSearch ! Fetch(id, rawParams, context.self)
 
       Behaviors.receiveMessage {

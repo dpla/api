@@ -8,7 +8,7 @@ object AuthProtocol {
   sealed trait AuthenticationCommand
 
   case class FindAccountByKey(
-                               apiKey: String,
+                               apiKey: Option[String],
                                replyTo: ActorRef[AuthenticationResponse]
                              ) extends AuthenticationCommand
 
