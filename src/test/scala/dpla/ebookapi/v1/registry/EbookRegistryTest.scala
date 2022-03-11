@@ -31,7 +31,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
 
   val replyProbe: TestProbe[RegistryResponse] =
     testKit.createTestProbe[RegistryResponse]
-  
+
   "EbookRegistry Search" should {
 
     "send analytics message if account is non-staff" in {

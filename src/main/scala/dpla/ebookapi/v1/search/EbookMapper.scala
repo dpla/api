@@ -14,7 +14,6 @@ import scala.util.{Failure, Success, Try}
  */
 
 /** Case classes for reading ElasticSearch responses **/
-
 case class SingleEbook(
                         docs: Seq[Ebook]
                       )

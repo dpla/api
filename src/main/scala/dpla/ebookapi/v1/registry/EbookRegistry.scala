@@ -8,7 +8,6 @@ import dpla.ebookapi.v1.search.SearchProtocol.SearchCommand
 /**
  * Handles the control flow for processing an ebooks request from Routes.
  */
-
 object EbookRegistry extends EbookRegistryBehavior {
 
   override def spawnEbookSearch(

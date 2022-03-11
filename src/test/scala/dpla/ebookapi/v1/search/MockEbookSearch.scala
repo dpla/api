@@ -32,13 +32,21 @@ object MockEbookSearch {
         )
       }
 
+      override def spawnQueryBuilder(
+                                      context: ActorContext[SearchCommand],
+                                      elasticSearchClient: ActorRef[IntermediateSearchResult]
+                                    ): ActorRef[IntermediateSearchResult] =
+        context.spawnAnonymous(
+          QueryBuilder(elasticSearchClient)
+        )
+
       override def spawnSearchParamValidator(
                                               context: ActorContext[SearchCommand],
                                               queryBuilder: ActorRef[IntermediateSearchResult],
                                               elasticSearchClient: ActorRef[IntermediateSearchResult]
                                             ): ActorRef[IntermediateSearchResult] =
-        context.spawn(
-          EbookParamValidator(queryBuilder, elasticSearchClient), "EbookParamValidator"
+        context.spawnAnonymous(
+          EbookParamValidator(queryBuilder, elasticSearchClient)
         )
     }
 

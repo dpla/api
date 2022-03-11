@@ -9,6 +9,10 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
+/**
+ * Processes response streams from Elastic Search.
+ */
+
 sealed trait ElasticSearchResponse
 
 final case class ElasticSearchSuccess(
@@ -21,9 +25,7 @@ final case class ElasticSearchHttpError(
 
 case object ElasticSearchResponseFailure extends ElasticSearchResponse
 
-/**
- * Processes response streams from Elastic Search.
- */
+
 object ElasticSearchResponseHandler {
 
   sealed trait ElasticSearchResponseHandlerCommand

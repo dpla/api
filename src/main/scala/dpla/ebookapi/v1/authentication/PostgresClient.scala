@@ -12,6 +12,10 @@ import scala.concurrent.Future
 import scala.util.{Failure, Random, Success}
 
 
+/**
+ * Handles interactions with the postgres database.
+ */
+
 /** Case class for modeling a user account */
 case class Account(
                     id: Int,
@@ -32,9 +36,9 @@ object PostgresClient {
                                           ) extends PostgresClientCommand
 
   private final case class ProcessFindResponse(
-                                          matches: Seq[Account],
-                                          replyTo: ActorRef[AuthenticationResponse]
-                                        ) extends PostgresClientCommand
+                                                matches: Seq[Account],
+                                                replyTo: ActorRef[AuthenticationResponse]
+                                              ) extends PostgresClientCommand
 
   private final case class ReturnFinalResponse(
                                                 response: AuthenticationResponse,
@@ -76,7 +80,7 @@ object PostgresClient {
           // Create an API key for the given email address
           // unless an account already exists for the email address
           val insertAction =
-          sql"""INSERT INTO account (key, email, enabled, staff)
+            sql"""INSERT INTO account (key, email, enabled, staff)
                 SELECT $newKey, $email, $enabled, $staff
                 WHERE NOT EXISTS (SELECT id FROM account WHERE email = $email)
                 RETURNING id, key, email, enabled, staff;"""

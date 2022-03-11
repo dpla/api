@@ -23,12 +23,12 @@ object SearchProtocol {
   sealed trait SearchResponse
 
   final case class EbookSearchResult(
-                                ebookList: EbookList
-                              ) extends SearchResponse
+                                      ebookList: EbookList
+                                    ) extends SearchResponse
 
   final case class EbookFetchResult(
-                               singleEbook: SingleEbook
-                             ) extends SearchResponse
+                                     singleEbook: SingleEbook
+                                   ) extends SearchResponse
 
   final case class InvalidSearchParams(
                                         message: String
@@ -36,7 +36,6 @@ object SearchProtocol {
 
   final case object FetchNotFound extends SearchResponse
   final case object SearchFailure extends SearchResponse
-
 
   /**
    * Internal command protocol.

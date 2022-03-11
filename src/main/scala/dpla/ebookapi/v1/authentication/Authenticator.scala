@@ -3,6 +3,9 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.authentication.AuthProtocol.{AuthenticationCommand, IntermediateAuthResult}
 
+/**
+ * Handles user accounts and api keys.
+ */
 object Authenticator extends AuthenticatorBehavior {
 
   override def spawnPostgresClient(

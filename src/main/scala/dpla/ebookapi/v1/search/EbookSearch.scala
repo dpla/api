@@ -3,6 +3,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.ebookapi.v1.search.SearchProtocol.{SearchCommand, IntermediateSearchResult}
 
+/**
+ * Handles control flow for conducting ebook searches and fetches.
+ * Public interface for the package.
+ */
 object EbookSearch extends SearchBehavior {
 
   override def spawnMapper(
@@ -23,6 +27,14 @@ object EbookSearch extends SearchBehavior {
       ElasticSearchClient(endpoint, mapper), "EbookElasticSearchClient"
     )
   }
+
+  override def spawnQueryBuilder(
+                                  context: ActorContext[SearchCommand],
+                                  elasticSearchClient: ActorRef[IntermediateSearchResult]
+                                ): ActorRef[IntermediateSearchResult] =
+    context.spawn(
+      QueryBuilder(elasticSearchClient), "EbookQueryBuilder"
+    )
 
   override def spawnSearchParamValidator(
                                           context: ActorContext[SearchCommand],

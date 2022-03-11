@@ -7,14 +7,19 @@ import dpla.ebookapi.v1.search.SearchProtocol.{Fetch, Search, SearchCommand, Int
 trait SearchBehavior {
 
   // Abstract methods
+  def spawnMapper(
+                   context: ActorContext[SearchCommand]
+                 ): ActorRef[IntermediateSearchResult]
+
   def spawnElasticSearchClient(
                                 context: ActorContext[SearchCommand],
                                 mapper: ActorRef[IntermediateSearchResult]
                               ): ActorRef[IntermediateSearchResult]
 
-  def spawnMapper(
-                   context: ActorContext[SearchCommand]
-                 ): ActorRef[IntermediateSearchResult]
+  def spawnQueryBuilder(
+                         context: ActorContext[SearchCommand],
+                         elasticSearchClient: ActorRef[IntermediateSearchResult]
+                       ): ActorRef[IntermediateSearchResult]
 
   def spawnSearchParamValidator(
                                  context: ActorContext[SearchCommand],
@@ -34,9 +39,7 @@ trait SearchBehavior {
         spawnElasticSearchClient(context, mapper)
 
       val queryBuilder: ActorRef[IntermediateSearchResult] =
-        context.spawn(
-          QueryBuilder(elasticSearchClient), "QueryBuilder"
-        )
+        spawnQueryBuilder(context, elasticSearchClient)
 
       val searchParamValidator: ActorRef[IntermediateSearchResult] =
         spawnSearchParamValidator(context, queryBuilder, elasticSearchClient)

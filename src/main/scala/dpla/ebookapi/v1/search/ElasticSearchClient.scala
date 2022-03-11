@@ -11,7 +11,7 @@ import spray.json.JsValue
 import scala.concurrent.Future
 
 /**
- * Composes and sends requests to Elastic Search and processes response streams.
+ * Sends requests to Elastic Search.
  */
 object ElasticSearchClient {
 
@@ -38,6 +38,7 @@ object ElasticSearchClient {
           Behaviors.same
 
         case ValidFetchId(params, replyTo) =>
+          // Create a session child actor to process the request.
           val sessionChildActor = processFetch(params, endpoint, replyTo,
             responseHandler, nextPhase)
           context.spawnAnonymous(sessionChildActor)

@@ -6,7 +6,7 @@ import dpla.ebookapi.v1.email.EmailClient.EmailClientCommand
 import dpla.ebookapi.v1.email.EmailClient
 
 /**
- * Handles the control flow for processing a request from Routes.
+ * Handles the control flow for processing an api_key request from Routes.
  */
 object ApiKeyRegistry extends ApiKeyRegistryBehavior {
 
