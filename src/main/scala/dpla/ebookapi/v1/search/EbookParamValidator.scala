@@ -44,7 +44,7 @@ object EbookParamValidator extends EbookFields {
 
     Behaviors.setup { context =>
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case RawSearchParams(rawParams, replyTo) =>
           getSearchParams(rawParams) match {
@@ -111,7 +111,7 @@ object EbookParamValidator extends EbookFields {
       "sort_order"
     )
 
-  final case class ValidationException(
+  private final case class ValidationException(
                                         private val message: String = ""
                                       ) extends Exception(message)
 
