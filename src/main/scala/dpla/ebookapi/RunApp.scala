@@ -1,12 +1,14 @@
 package dpla.ebookapi
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.ebookapi.v1.PostgresClient
-import dpla.ebookapi.v1.apiKey.ApiKeyRegistry
-import dpla.ebookapi.v1.ebooks.{EbookRegistry, ElasticSearchClient}
+import dpla.ebookapi.v1.analytics.AnalyticsClient
+import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
+import dpla.ebookapi.v1.authentication.Authenticator
+import dpla.ebookapi.v1.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, EbookRegistryCommand}
 
 import scala.util.{Failure, Success}
 
@@ -40,32 +42,22 @@ object RunApp {
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
       // Spawn top-level actors.
+      val authenticator: ActorRef[AuthenticationCommand] =
+        context.spawn(Authenticator(), "Authenticator")
 
-      val elasticSearchClient =
+      val analyticsClient: ActorRef[AnalyticsClientCommand] =
+        context.spawn(AnalyticsClient(), "AnalyticsClient")
+
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
         context.spawn(
-          ElasticSearchClient(),
-          "ElasticSearchClient"
+          EbookRegistry(authenticator, analyticsClient), "EbookRegistry"
         )
 
-      val postgresClient =
-        context.spawn(PostgresClient(), "PostgresClient")
-
-      val ebookRegistry =
-        context.spawn(
-          EbookRegistry(elasticSearchClient, postgresClient),
-          "EbookRegistry"
-        )
-
-      val apiKeyRegistry =
-        context.spawn(
-          ApiKeyRegistry(),
-          "ApiKeyRegistry"
-        )
+      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+        context.spawn(ApiKeyRegistry(authenticator), "ApiKeyRegistry")
 
       context.watch(ebookRegistry)
       context.watch(apiKeyRegistry)
-      context.watch(elasticSearchClient)
-      context.watch(postgresClient)
 
       // Start the HTTP server.
       val routes = new Routes(ebookRegistry, apiKeyRegistry)(context.system)

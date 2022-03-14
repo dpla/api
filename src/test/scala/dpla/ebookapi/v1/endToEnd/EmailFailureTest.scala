@@ -1,49 +1,58 @@
-package dpla.ebookapi
+package dpla.ebookapi.v1.endToEnd
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import dpla.ebookapi.Routes
 import dpla.ebookapi.v1.analytics.AnalyticsClient
 import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.ebookapi.v1.email.EmailClient.EmailClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
-import dpla.ebookapi.v1.authentication.MockAuthenticator
+import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientSuccess}
+import dpla.ebookapi.v1.email.MockEmailClientFailure
 import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-
-class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
+class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
-  override def afterAll(): Unit = testKit.shutdownTestKit()
+
+  override def afterAll(): Unit = testKit.shutdownTestKit
 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
+
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
 
+  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
+  val emailClient: ActorRef[EmailClientCommand] =
+    testKit.spawn(MockEmailClientFailure())
+
   val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit)
+    MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookRegistry: ActorRef[EbookRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient)
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    MockApiKeyRegistry(testKit, authenticator)
+    MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-  "Health check" should {
-    "return OK" in {
-      val request = Get("/health-check")
+  "/api_key/[email]" should {
+    "return Teapot if email fails" in {
+      val validEmail = "test@example.com"
+      val request = Post(s"/v1/api_key/$validEmail")
 
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.ImATeapot
       }
     }
   }

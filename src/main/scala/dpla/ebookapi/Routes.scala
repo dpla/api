@@ -6,8 +6,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import dpla.ebookapi.v1.ebooks.EbookRegistry.{EbookRegistryCommand, Fetch, Search}
-import dpla.ebookapi.v1.ebooks.{FetchResult, SearchResult}
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
@@ -15,10 +13,10 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
-import dpla.ebookapi.v1.ebooks.JsonFormats._
+import dpla.ebookapi.v1.search.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import dpla.ebookapi.v1.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.ebookapi.v1.apiKey.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, NewApiKey}
+import dpla.ebookapi.v1.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
+import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, EbookRegistryCommand, ExistingApiKey, FetchEbook, FetchResult, NewApiKey, SearchEbooks, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
 
 
@@ -36,19 +34,31 @@ class Routes(
 
   // Search and fetch requests are send to EbookRegistry actor for processing.
   def searchEbooks(
+                    auth: Option[String],
                     params: Map[String, String],
                     host: String,
                     path: String
-                  ): Future[RegistryResponse] =
-    ebookRegistry.ask(Search(params, host, path, _))
+                  ): Future[RegistryResponse] = {
+    val apiKey: Option[String] =
+      if (auth.nonEmpty) auth
+      else params.get("api_key")
+    val updatedParams = params.filterNot(_._1 == "api_key")
+    ebookRegistry.ask(SearchEbooks(apiKey, updatedParams, host, path, _))
+  }
 
   def fetchEbooks(
+                   auth: Option[String],
                    id: String,
                    params: Map[String, String],
                    host: String,
                    path: String
-                 ): Future[RegistryResponse] =
-    ebookRegistry.ask(Fetch(id, params, host, path, _))
+                 ): Future[RegistryResponse] = {
+    val apiKey: Option[String] =
+      if (auth.nonEmpty) auth
+      else params.get("api_key")
+    val updatedParams = params.filterNot(_._1 == "api_key")
+    ebookRegistry.ask(FetchEbook(apiKey, id, updatedParams, host, path, _))
+  }
 
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
@@ -74,12 +84,8 @@ class Routes(
               parameterMap { params =>
                 // Get the API key from Authorization header if it exists.
                 optionalHeaderValueByName("Authorization") { auth =>
-                  val updatedParams = auth match {
-                    case Some(key) => params + ("api_key" -> key)
-                    case None => params
-                  }
                   respondWithHeaders(securityResponseHeaders) {
-                    onComplete(searchEbooks(updatedParams, host, path.toString)) {
+                    onComplete(searchEbooks(auth, params, host, path.toString)) {
                       case Success(response) =>
                         response match {
                           case SearchResult(ebookList) =>
@@ -117,12 +123,8 @@ class Routes(
               parameterMap { params =>
                 // Get the API key from Authorization header if it exists.
                 optionalHeaderValueByName("Authorization") { auth =>
-                  val updatedParams = auth match {
-                    case Some(key) => params + ("api_key" -> key)
-                    case None => params
-                  }
                   respondWithHeaders(securityResponseHeaders) {
-                    onComplete(fetchEbooks(id, updatedParams, host, path.toString)) {
+                    onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
                       case Success(response) =>
                         response match {
                           case FetchResult(singleEbook) =>
