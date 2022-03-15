@@ -28,12 +28,6 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
       assert(traversed == expected)
     }
 
-    "generate type" in {
-      val expected = Some("ebook")
-      val traversed = readString(firstDoc, "sourceResource", "type")
-      assert(traversed == expected)
-    }
-
     /** Field mappings */
 
     "map author" in {

@@ -47,7 +47,7 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
       val id = "ufwPJ34Bj-MaVWqX9KZL"
       paramValidator ! RawFetchParams(id, Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidFetchIds]
-      assert(msg.ids == id)
+      msg.ids should contain only id
     }
 
     "reject ID with special characters" in {
