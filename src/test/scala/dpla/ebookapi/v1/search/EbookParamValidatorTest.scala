@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams, SearchResponse, ValidFetchId, ValidSearchParams}
+import dpla.ebookapi.v1.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams, SearchResponse, ValidFetchIds, ValidSearchParams}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -46,8 +46,8 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
     "accept valid ID" in {
       val id = "ufwPJ34Bj-MaVWqX9KZL"
       paramValidator ! RawFetchParams(id, Map(), replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidFetchId]
-      assert(msg.id == id)
+      val msg = interProbe.expectMessageType[ValidFetchIds]
+      assert(msg.ids == id)
     }
 
     "reject ID with special characters" in {

@@ -50,12 +50,15 @@ object AnalyticsClient {
 
           // Track pageview
           // Strip the API key out of the page path
-          val query: String = paramString(rawParams.filterNot(_._1 == "api_key"))
+          val cleanParams = rawParams.filterNot(_._1 == "api_key")
+          val query: String = paramString(cleanParams)
+          val pathWithQuery: String = Seq(path, query).mkString("?")
+
           val pageViewParams: String = trackPageViewParams(
             trackingId,
             apiKey,
             host,
-            s"$path?$query",
+            pathWithQuery,
             "Ebook search results"
           )
           postHit(system, pageViewParams)

@@ -4,7 +4,7 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.ebookapi.v1.search.SearchProtocol.{SearchQuery, ValidSearchParams, IntermediateSearchResult}
+import dpla.ebookapi.v1.search.SearchProtocol.{IntermediateSearchResult, MultiFetchQuery, SearchQuery, FetchQuery, ValidFetchIds, ValidSearchParams}
 
 
 /**
@@ -21,9 +21,35 @@ object QueryBuilder extends EbookFields {
           composeSearchQuery(searchParams), replyTo)
         Behaviors.same
 
+      case ValidFetchIds(ids, replyTo) =>
+        if (ids.size == 1) {
+          nextPhase ! FetchQuery(ids.head, replyTo)
+        }
+        else {
+          nextPhase ! MultiFetchQuery(composeMultiFetchQuery(ids), replyTo)
+        }
+        Behaviors.same
+
       case _ =>
         Behaviors.unhandled
     }
+  }
+
+  def composeMultiFetchQuery(ids: Seq[String]): JsValue = {
+    JsObject(
+      "from" -> 0.toJson,
+      "size" -> ids.size.toJson,
+      "query" -> JsObject(
+        "terms" -> JsObject(
+          "id" -> ids.toJson
+        )
+      ),
+      "sort" -> JsObject(
+        "id" -> JsObject(
+          "order" -> "asc".toJson
+        )
+      )
+    ).toJson
   }
 
   def composeSearchQuery(params: SearchParams): JsValue = {
@@ -33,7 +59,8 @@ object QueryBuilder extends EbookFields {
       "query" -> query(params.q, params.filters, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
       "sort" -> sort(params.sortBy, params.sortOrder),
-      "_source" -> fieldRetrieval(params.fields)
+      "_source" -> fieldRetrieval(params.fields),
+      "track_total_hits" -> true.toJson
     ).toJson
   }
 

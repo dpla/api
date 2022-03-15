@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.search
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.ebookapi.v1.search.SearchProtocol.{FetchNotFound, IntermediateSearchResult, SearchFailure, SearchQuery, ValidFetchId}
+import dpla.ebookapi.v1.search.SearchProtocol.{FetchNotFound, IntermediateSearchResult, SearchFailure, SearchQuery, ValidFetchIds}
 
 
 object MockEsClientNotFound {
@@ -14,7 +14,7 @@ object MockEsClientNotFound {
         replyTo ! SearchFailure
         Behaviors.same
 
-      case ValidFetchId(_, replyTo) =>
+      case ValidFetchIds(_, replyTo) =>
         replyTo ! FetchNotFound
         Behaviors.same
 

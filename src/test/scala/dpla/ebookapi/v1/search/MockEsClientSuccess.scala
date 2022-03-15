@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.search
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import dpla.ebookapi.helpers.FileReader
-import dpla.ebookapi.v1.search.SearchProtocol.{ValidFetchId, SearchQuery, IntermediateSearchResult, FetchQueryResponse, SearchQueryResponse}
+import dpla.ebookapi.v1.search.SearchProtocol.{ValidFetchIds, SearchQuery, IntermediateSearchResult, FetchQueryResponse, SearchQueryResponse}
 
 
 object MockEsClientSuccess extends FileReader {
@@ -21,7 +21,7 @@ object MockEsClientSuccess extends FileReader {
         mapper ! SearchQueryResponse(params, searchBody, replyTo)
         Behaviors.same
 
-      case ValidFetchId(_, replyTo) =>
+      case ValidFetchIds(_, replyTo) =>
         mapper ! FetchQueryResponse(fetchBody, replyTo)
         Behaviors.same
 

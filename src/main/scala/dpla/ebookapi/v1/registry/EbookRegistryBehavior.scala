@@ -13,6 +13,7 @@ import dpla.ebookapi.v1.search._
 
 final case class SearchResult(result: EbookList) extends RegistryResponse
 final case class FetchResult(result: SingleEbook) extends RegistryResponse
+final case class MultiFetchResult(result: EbookList) extends RegistryResponse
 
 sealed trait EbookRegistryCommand
 
@@ -202,7 +203,7 @@ trait EbookRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var fetchResult: Option[SingleEbook] = None
+      var fetchResult: Option[Either[SingleEbook, EbookList]] = None
       var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -216,14 +217,21 @@ trait EbookRegistryBehavior {
 
             // If the fetch was successful...
             fetchResult match {
-              case Some(singleEbook) =>
+              case Some(either) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   apiKey match {
                     case Some(key) =>
                       // ...track analytics hit.
-                      analyticsClient ! TrackFetch(key, host, path,
-                        singleEbook.docs.headOption)
+                      either match {
+                        case Left(singleEbook) =>
+                          analyticsClient ! TrackFetch(key, host, path,
+                            singleEbook.docs.headOption)
+                        case Right(ebookList) =>
+                          analyticsClient ! TrackSearch(key, rawParams, host,
+                            path, ebookList.docs)
+                      }
+
                     case None =>
                     // no-op (this should not happen)
                   }
@@ -277,8 +285,13 @@ trait EbookRegistryBehavior {
          */
 
         case EbookFetchResult(singleEbook) =>
-          fetchResult = Some(singleEbook)
+          fetchResult = Some(Left(singleEbook))
           fetchResponse = Some(FetchResult(singleEbook))
+          possibleSessionResolution
+
+        case EbookSearchResult(ebookList) =>
+          fetchResult = Some(Right(ebookList))
+          fetchResponse = Some(MultiFetchResult(ebookList))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
