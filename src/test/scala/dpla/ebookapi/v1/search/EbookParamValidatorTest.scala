@@ -23,7 +23,7 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
     testKit.createTestProbe[IntermediateSearchResult]
 
   val paramValidator: ActorRef[IntermediateSearchResult] =
-    testKit.spawn(EbookParamValidator(interProbe.ref, interProbe.ref))
+    testKit.spawn(EbookParamValidator(interProbe.ref))
 
   "search param validator" should {
     "reject unrecognized params" in {

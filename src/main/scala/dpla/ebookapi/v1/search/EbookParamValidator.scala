@@ -128,7 +128,11 @@ object EbookParamValidator extends EbookFields {
           "Unrecognized parameter: " + rawParams.keys.mkString(", ")
         )
       else {
-        id.split(",").map(getValidId)
+        val ids = id.split(",")
+        if (ids.size > maxPageSize) throw ValidationException(
+          s"The number of ids cannot exceed $maxPageSize"
+        )
+        ids.map(getValidId)
       }
     }
 
