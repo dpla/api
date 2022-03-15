@@ -89,10 +89,10 @@ object EbookParamValidator extends EbookFields {
   private val defaultOp: String = "AND"
   private val defaultPage: Int = 1
   private val minPage: Int = 1
-  private val maxPage: Int = 1000
+  private val maxPage: Int = 100
   private val defaultPageSize: Int = 10
   private val minPageSize: Int = 0
-  private val maxPageSize: Int = 1000
+  private val maxPageSize: Int = 500
   private val defaultSortOrder: String = "asc"
 
   // A user can give any of the following parameters in a search request.
