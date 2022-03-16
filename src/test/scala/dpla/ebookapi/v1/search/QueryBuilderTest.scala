@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.search
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.ebookapi.v1.search
-import dpla.ebookapi.v1.search.SearchProtocol.{IntermediateSearchResult, SearchQuery, SearchResponse, ValidSearchParams}
+import dpla.ebookapi.v1.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, SearchQuery, SearchResponse, ValidFetchIds, ValidSearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
@@ -24,13 +24,19 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   val queryBuilder: ActorRef[IntermediateSearchResult] =
     testKit.spawn(QueryBuilder(interProbe.ref))
 
-  def getJsQuery(params: SearchParams): JsObject = {
+  def getJsSearchQuery(params: SearchParams): JsObject = {
     queryBuilder ! ValidSearchParams(params, replyProbe.ref)
     val msg: SearchQuery = interProbe.expectMessageType[SearchQuery]
     msg.query.asJsObject
   }
 
-  val minSearchParams: SearchParams = search.SearchParams(
+  def getJsFetchQuery(ids: Seq[String]): JsObject = {
+    queryBuilder ! ValidFetchIds(ids, replyProbe.ref)
+    val msg: MultiFetchQuery = interProbe.expectMessageType[MultiFetchQuery]
+    msg.query.asJsObject
+  }
+
+  val minSearchParams: SearchParams = SearchParams(
     exactFieldMatch = false,
     facets = None,
     facetSize = 100,
@@ -44,7 +50,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     sortOrder = "asc"
   )
 
-  val minQuery: JsObject = getJsQuery(minSearchParams)
+  val minQuery: JsObject = getJsSearchQuery(minSearchParams)
 
   val detailSearchParams: SearchParams = SearchParams(
     exactFieldMatch = false,
@@ -66,7 +72,14 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     sortOrder = "desc"
   )
 
-  val detailQuery: JsObject = getJsQuery(detailSearchParams)
+  val detailQuery: JsObject = getJsSearchQuery(detailSearchParams)
+
+  val multiFetchIds = Seq(
+    "b70107e4fe29fe4a247ae46e118ce192",
+    "17b0da7b05805d78daf8753a6641b3f5"
+  )
+
+  val multiFetchQuery: JsObject = getJsFetchQuery(multiFetchIds)
 
   val elasticSearchField: PrivateMethod[String] =
     PrivateMethod[String](Symbol("elasticSearchField"))
@@ -74,7 +87,41 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   val exactMatchElasticSearchField: PrivateMethod[String] =
     PrivateMethod[String](Symbol("exactMatchElasticSearchField"))
 
-  "query builder" should {
+  "fetch query builder" should {
+    "specify id" in {
+      val id = "b70107e4fe29fe4a247ae46e118ce192"
+      queryBuilder ! ValidFetchIds(Seq(id), replyProbe.ref)
+      val msg = interProbe.expectMessageType[FetchQuery]
+      assert(msg.id == id)
+    }
+  }
+
+  "multi-fetch query builder" should {
+    "specify from" in {
+      val expected = Some(0)
+      val traversed = readInt(multiFetchQuery, "from")
+      assert(traversed == expected)
+    }
+
+    "specify size" in {
+      val expected = Some(2)
+      val traversed = readInt(multiFetchQuery, "size")
+      assert(traversed == expected)
+    }
+
+    "specify ids" in {
+      val traversed = readStringArray(multiFetchQuery, "query", "terms", "id")
+      traversed should contain allElementsOf multiFetchIds
+    }
+
+    "specify sort order" in {
+      val expected = Some("asc")
+      val traversed = readString(multiFetchQuery, "sort", "id", "order")
+      assert(traversed == expected)
+    }
+  }
+
+  "search query builder" should {
     "specify from" in {
       val expected = Some(40)
       val traversed = readInt(minQuery, "from")
@@ -84,6 +131,12 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "specify size" in {
       val expected = Some(20)
       val traversed = readInt(minQuery, "size")
+      assert(traversed == expected)
+    }
+
+    "specify track_total_hits" in {
+      val expected = Some(true)
+      val traversed = readBoolean(minQuery, "track_total_hits")
       assert(traversed == expected)
     }
   }
@@ -143,7 +196,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   "field filter query builder" should {
     "handle no field search with q" in {
       val params = minSearchParams.copy(q=Some("dogs"))
-      val query = getJsQuery(params)
+      val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
         boolMust.flatMap(obj => readObject(obj, "query_string"))
@@ -153,7 +206,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "handle field search with no q" in {
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
-      val query = getJsQuery(params)
+      val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
 
@@ -167,7 +220,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         FieldFilter("provider.@id", "http://standardebooks.org")
       )
       val params = minSearchParams.copy(filters=filters)
-      val query = getJsQuery(params)
+      val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryMatch =
         boolMust.flatMap(obj => readObject(obj, "query_string"))
@@ -178,7 +231,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = Some("london")
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
-      val query = getJsQuery(params)
+      val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
         boolMust.flatMap(obj => readObject(obj, "query_string")).head
@@ -190,7 +243,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = Seq("genre")
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
-      val query = getJsQuery(params)
+      val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
         boolMust.flatMap(obj => readObject(obj, "query_string")).head
@@ -202,7 +255,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
       "use 'term' query" in {
         val params = detailSearchParams.copy(exactFieldMatch = true)
-        val query = getJsQuery(params)
+        val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm = boolMust.flatMap(obj => readObject(obj, "term"))
         assert(queryTerm.size == 1)
@@ -211,7 +264,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       "specify exact field match field and term" in {
         val expected = Some("adventure")
         val params = detailSearchParams.copy(exactFieldMatch = true)
-        val query = getJsQuery(params)
+        val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
           boolMust.flatMap(obj => readObject(obj, "term")).head
@@ -224,7 +277,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val filters =
           Seq(FieldFilter("sourceResource.subject.name", "\"Mystery fiction\""))
         val params = minSearchParams.copy(filters=filters, exactFieldMatch=true)
-        val query = getJsQuery(params)
+        val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
           boolMust.flatMap(obj => readObject(obj, "term")).head
@@ -245,7 +298,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "set should for OR" in  {
       val expected = "should"
       val params = detailSearchParams.copy(op="OR")
-      val query = getJsQuery(params)
+      val query = getJsSearchQuery(params)
       val parent = readObject(query, "query", "bool")
       val fieldNames = parent.get.fields.keys
       fieldNames should contain only expected
