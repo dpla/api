@@ -197,11 +197,5 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "description"
     }
-
-    "ignore empty title" in {
-      val parent = readObject(minFirstDoc, "sourceResource")
-      val fieldNames = parent.get.fields.keys
-      fieldNames should not contain "title"
-    }
   }
 }
