@@ -186,7 +186,7 @@ object ElasticSearchClient {
         Http().singleRequest(request)
 
       context.log.info2(
-        "ElasticSearch search QUERY: {}: {}",
+        "ElasticSearch multi-fetch QUERY: {}: {}",
         searchUri,
         query.toString
       )
