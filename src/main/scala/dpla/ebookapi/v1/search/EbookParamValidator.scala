@@ -60,7 +60,7 @@ object EbookParamValidator extends EbookFields {
           Behaviors.same
 
         case RawFetchParams(id, rawParams, replyTo) =>
-          getFetchId(id, rawParams) match {
+          getFetchIds(id, rawParams) match {
             case Success(validIds) =>
               nextPhase ! ValidFetchIds(validIds, replyTo)
             case Failure(e) =>
@@ -111,16 +111,17 @@ object EbookParamValidator extends EbookFields {
     )
 
   private final case class ValidationException(
-                                        private val message: String = ""
-                                      ) extends Exception(message)
+                                                private val message: String = ""
+                                              ) extends Exception(message)
 
   /**
    * Get valid fetch params.
    * Fails with ValidationException if id or any raw params are invalid.
    */
-  private def getFetchId(id: String,
-                         rawParams: Map[String, String]
-                        ): Try[Seq[String]] =
+  private def getFetchIds(
+                           id: String,
+                           rawParams: Map[String, String]
+                         ): Try[Seq[String]] =
     Try {
       // There are no recognized params for a fetch request
       if (rawParams.nonEmpty)

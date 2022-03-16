@@ -30,6 +30,10 @@ object SearchProtocol {
                                      singleEbook: SingleEbook
                                    ) extends SearchResponse
 
+  final case class EbookMultiFetchResult(
+                                          ebookList: EbookList
+                                        ) extends SearchResponse
+
   final case class InvalidSearchParams(
                                         message: String
                                       ) extends SearchResponse

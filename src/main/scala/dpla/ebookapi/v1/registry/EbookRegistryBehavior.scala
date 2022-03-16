@@ -7,7 +7,7 @@ import dpla.ebookapi.v1.analytics.AnalyticsClient.{AnalyticsClientCommand, Track
 import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.ebookapi.v1.authentication._
 import dpla.ebookapi.v1.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
+import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookMultiFetchResult, EbookSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
 import dpla.ebookapi.v1.search._
 
 
@@ -289,7 +289,7 @@ trait EbookRegistryBehavior {
           fetchResponse = Some(FetchResult(singleEbook))
           possibleSessionResolution
 
-        case EbookSearchResult(ebookList) =>
+        case EbookMultiFetchResult(ebookList) =>
           fetchResult = Some(Right(ebookList))
           fetchResponse = Some(MultiFetchResult(ebookList))
           possibleSessionResolution

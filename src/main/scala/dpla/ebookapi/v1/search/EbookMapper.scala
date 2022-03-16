@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.search
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.ebookapi.v1.search.JsonFormats._
-import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse}
+import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookMultiFetchResult, EbookSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse}
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -90,9 +90,9 @@ object EbookMapper {
           Behaviors.same
 
         case MultiFetchQueryResponse(body, replyTo) =>
-          mapFetchResult(body) match {
+          mapMultiFetch(body) match {
             case Success(multiEbook) =>
-              replyTo ! EbookSearchResult(multiEbook)
+              replyTo ! EbookMultiFetchResult(multiEbook)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse EbookList from ElasticSearch response:", e
@@ -119,7 +119,7 @@ object EbookMapper {
       body.parseJson.convertTo[SingleEbook]
     }
 
-  private def mapFetchResult(body: String): Try[EbookList] =
+  private def mapMultiFetch(body: String): Try[EbookList] =
     Try{
       body.parseJson.convertTo[EbookList]
     }
