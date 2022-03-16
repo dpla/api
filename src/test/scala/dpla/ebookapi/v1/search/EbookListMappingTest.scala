@@ -39,16 +39,16 @@ class EbookListMappingTest extends AnyWordSpec with Matchers
 
     "map doc fields" in {
       val expected = Seq(
-        "ufwPJ34Bj-MaVWqX9KZL",
-        "uvwPJ34Bj-MaVWqX9KZL",
-        "u_wPJ34Bj-MaVWqX9KZZ",
-        "vPwPJ34Bj-MaVWqX9KZZ",
-        "vfwPJ34Bj-MaVWqX9KZZ",
-        "vvwPJ34Bj-MaVWqX9KZZ",
-        "v_wPJ34Bj-MaVWqX9Kac",
-        "wPwPJ34Bj-MaVWqX9Kac",
-        "wfwPJ34Bj-MaVWqX9Kac",
-        "wvwPJ34Bj-MaVWqX9Kac"
+        "ufwPJ34BjqMaVWqX9KZL",
+        "uvwPJ34BjqMaVWqX9KZL",
+        "uqwPJ34BjqMaVWqX9KZZ",
+        "vPwPJ34BjqMaVWqX9KZZ",
+        "vfwPJ34BjqMaVWqX9KZZ",
+        "vvwPJ34BjqMaVWqX9KZZ",
+        "vqwPJ34BjqMaVWqX9Kac",
+        "wPwPJ34BjqMaVWqX9Kac",
+        "wfwPJ34BjqMaVWqX9Kac",
+        "wvwPJ34BjqMaVWqX9Kac"
       )
       val ids = readObjectArray(ebookList, "docs")
         .flatMap(readString(_, "id"))
