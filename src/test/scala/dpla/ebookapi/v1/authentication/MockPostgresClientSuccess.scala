@@ -2,6 +2,7 @@ package dpla.ebookapi.v1.authentication
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import dpla.ebookapi.helpers.Utils.fakeApiKey
 import dpla.ebookapi.v1.authentication
 import dpla.ebookapi.v1.authentication.AuthProtocol.{AccountCreated, AccountFound, IntermediateAuthResult, ValidApiKey, ValidEmail}
 
@@ -9,7 +10,7 @@ object MockPostgresClientSuccess {
 
   private val account = authentication.Account(
     id = 1,
-    key = "08e3918eeb8bf4469924f062072459a8",
+    key = fakeApiKey,
     email = "x@example.org",
     staff = Some(false),
     enabled = Some(true)

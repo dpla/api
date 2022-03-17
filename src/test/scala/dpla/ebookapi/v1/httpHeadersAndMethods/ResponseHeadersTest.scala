@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
 import dpla.ebookapi.helpers.FileReader
+import dpla.ebookapi.helpers.Utils.fakeApiKey
 import dpla.ebookapi.v1.analytics.AnalyticsClient
 import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
@@ -49,11 +50,9 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-  val apiKey = "08e3918eeb8bf4469924f062072459a8"
-
   "/v1/ebooks response header" should {
     "include correct Content-Type" in {
-      val request = Get(s"/v1/ebooks?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         contentType.mediaType shouldEqual MediaTypes.`application/json`
@@ -61,7 +60,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     }
 
     "include correct Content-Security-Policy" in {
-      val request = Get(s"/v1/ebooks?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?api_key=$fakeApiKey")
       val expected =
         "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
 
@@ -71,7 +70,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     }
 
     "include correct X-Content-Type-Options" in {
-      val request = Get(s"/v1/ebooks?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         header("X-Content-Type-Options").get.value shouldEqual "nosniff"
@@ -79,7 +78,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     }
 
     "include correct X-Frame-Options" in {
-      val request = Get(s"/v1/ebooks?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         header("X-Frame-Options").get.value shouldEqual "DENY"
@@ -89,7 +88,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
 
   "/v1/ebooks[id] response header" should {
     "include correct Content-Type" in {
-      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         contentType.mediaType shouldEqual MediaTypes.`application/json`
@@ -97,7 +96,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     }
 
     "include correct Content-Security-Policy" in {
-      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
       val expected =
         "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
 
@@ -107,7 +106,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     }
 
     "include correct X-Content-Type-Options" in {
-      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         header("X-Content-Type-Options").get.value shouldEqual "nosniff"
@@ -115,7 +114,7 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
     }
 
     "include correct X-Frame-Options" in {
-      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         header("X-Frame-Options").get.value shouldEqual "DENY"

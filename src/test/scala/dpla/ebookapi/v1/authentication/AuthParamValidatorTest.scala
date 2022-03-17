@@ -2,6 +2,7 @@ package dpla.ebookapi.v1.authentication
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
+import dpla.ebookapi.helpers.Utils.fakeApiKey
 import dpla.ebookapi.v1.authentication.AuthProtocol.{AuthenticationResponse, IntermediateAuthResult, InvalidApiKey, InvalidEmail, RawApiKey, RawEmail, ValidApiKey, ValidEmail}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -15,8 +16,6 @@ class AuthParamValidatorTest extends AnyWordSpec with Matchers
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
-
-  val baseParams = Map("api_key" -> "08e3918eeb8bf4469924f062072459a8")
 
   val interProbe: TestProbe[IntermediateAuthResult] =
     testKit.createTestProbe[IntermediateAuthResult]
@@ -63,7 +62,7 @@ class AuthParamValidatorTest extends AnyWordSpec with Matchers
   "api key validator" should {
 
     "accept valid api key" in {
-      val given = "08e3918eeb8bf4469924f062072459a8"
+      val given = fakeApiKey
       paramValidator ! RawApiKey(given, replyProbe.ref)
       interProbe.expectMessageType[ValidApiKey]
     }

@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
+import dpla.ebookapi.helpers.Utils.fakeApiKey
 import dpla.ebookapi.v1.analytics.AnalyticsClient
 import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
@@ -48,12 +49,10 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-  val apiKey = "08e3918eeb8bf4469924f062072459a8"
-
   "/v1/ebooks route" should {
     "accept API key in HTTP header" in {
       val request = Get(s"/v1/ebooks")
-        .withHeaders(RawHeader("Authorization", apiKey))
+        .withHeaders(RawHeader("Authorization", fakeApiKey))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -62,7 +61,7 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
 
     "privilege API key in HTTP header over that in query" in {
       val request = Get(s"/v1/ebooks?api_key=foo")
-        .withHeaders(RawHeader("Authorization", apiKey))
+        .withHeaders(RawHeader("Authorization", fakeApiKey))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -81,7 +80,7 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
   "/v1/ebooks[id] route" should {
     "accept API key in HTTP header" in {
       val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt")
-        .withHeaders(RawHeader("Authorization", apiKey))
+        .withHeaders(RawHeader("Authorization", fakeApiKey))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -90,7 +89,7 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
 
     "privilege API key in HTTP header over that in query" in {
       val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=foo")
-        .withHeaders(RawHeader("Authorization", apiKey))
+        .withHeaders(RawHeader("Authorization", fakeApiKey))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
