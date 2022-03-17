@@ -2,7 +2,8 @@ package dpla.ebookapi.v1.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.ebookapi.v1.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams, SearchResponse, ValidFetchId, ValidSearchParams}
+import dpla.ebookapi.v1.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams, SearchResponse, ValidFetchIds, ValidSearchParams}
+import org.scalactic.TimesOnInt.convertIntToRepeater
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -23,7 +24,7 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
     testKit.createTestProbe[IntermediateSearchResult]
 
   val paramValidator: ActorRef[IntermediateSearchResult] =
-    testKit.spawn(EbookParamValidator(interProbe.ref, interProbe.ref))
+    testKit.spawn(EbookParamValidator(interProbe.ref))
 
   "search param validator" should {
     "reject unrecognized params" in {
@@ -46,8 +47,16 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
     "accept valid ID" in {
       val id = "ufwPJ34Bj-MaVWqX9KZL"
       paramValidator ! RawFetchParams(id, Map(), replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidFetchId]
-      assert(msg.id == id)
+      val msg = interProbe.expectMessageType[ValidFetchIds]
+      msg.ids should contain only id
+    }
+
+    "accept multiple valid IDs" in {
+      val ids = "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5"
+      val expected = Seq("b70107e4fe29fe4a247ae46e118ce192", "17b0da7b05805d78daf8753a6641b3f5")
+      paramValidator ! RawFetchParams(ids, Map(), replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidFetchIds]
+      msg.ids should contain allElementsOf expected
     }
 
     "reject ID with special characters" in {
@@ -59,6 +68,14 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
     "reject too-long ID" in {
       val id = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf"
       paramValidator ! RawFetchParams(id, Map(), replyProbe.ref)
+      replyProbe.expectMessageType[InvalidSearchParams]
+    }
+
+    "reject too many IDs" in {
+      var idSeq = Seq[String]()
+      501.times { idSeq = idSeq :+ Random.alphanumeric.take(32).mkString }
+      val ids = idSeq.mkString(",")
+      paramValidator ! RawFetchParams(ids, Map(), replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
     }
   }

@@ -28,12 +28,6 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
       assert(traversed == expected)
     }
 
-    "generate type" in {
-      val expected = Some("ebook")
-      val traversed = readString(firstDoc, "sourceResource", "type")
-      assert(traversed == expected)
-    }
-
     /** Field mappings */
 
     "map author" in {
@@ -202,12 +196,6 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
       val parent = readObject(minFirstDoc, "sourceResource")
       val fieldNames = parent.get.fields.keys
       fieldNames should not contain "description"
-    }
-
-    "ignore empty title" in {
-      val parent = readObject(minFirstDoc, "sourceResource")
-      val fieldNames = parent.get.fields.keys
-      fieldNames should not contain "title"
     }
   }
 }

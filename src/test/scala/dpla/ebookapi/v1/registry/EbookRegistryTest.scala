@@ -97,4 +97,39 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       analyticsProbe.expectNoMessage
     }
   }
+
+  "EbookRegistry Multi-Fetch" should {
+
+    "send analytics message if account is non-staff" in {
+      val postgresClient = testKit.spawn(MockPostgresClientSuccess())
+
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
+
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
+
+      ebookRegistry ! FetchEbook(Some("08e3918eeb8bf4469924f062072459a8"),
+        "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
+        Map(), "", "", replyProbe.ref)
+
+      analyticsProbe.expectMessageType[TrackSearch]
+    }
+
+    "not send analytics message if account is staff" in {
+      val postgresClient = testKit.spawn(MockPostgresClientStaff())
+
+      val authenticator: ActorRef[AuthenticationCommand] =
+        MockAuthenticator(testKit, Some(postgresClient))
+
+      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+        MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
+
+      ebookRegistry ! FetchEbook(Some("08e3918eeb8bf4469924f062072459a8"),
+        "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
+        Map(), "", "", replyProbe.ref)
+
+      analyticsProbe.expectNoMessage
+    }
+  }
 }

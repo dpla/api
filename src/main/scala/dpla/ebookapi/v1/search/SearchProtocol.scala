@@ -30,6 +30,10 @@ object SearchProtocol {
                                      singleEbook: SingleEbook
                                    ) extends SearchResponse
 
+  final case class EbookMultiFetchResult(
+                                          ebookList: EbookList
+                                        ) extends SearchResponse
+
   final case class InvalidSearchParams(
                                         message: String
                                       ) extends SearchResponse
@@ -59,16 +63,26 @@ object SearchProtocol {
                                                       replyTo: ActorRef[SearchResponse]
                                                     ) extends IntermediateSearchResult
 
-  private[search] final case class ValidFetchId(
-                                                 id: String,
-                                                 replyTo: ActorRef[SearchResponse]
-                                               ) extends IntermediateSearchResult
+  private[search] final case class ValidFetchIds(
+                                                  ids: Seq[String],
+                                                  replyTo: ActorRef[SearchResponse]
+                                                ) extends IntermediateSearchResult
 
   private[search] final case class SearchQuery(
                                                 params: SearchParams,
                                                 query: JsValue,
                                                 replyTo: ActorRef[SearchResponse]
                                               ) extends IntermediateSearchResult
+
+  private[search] final case class FetchQuery(
+                                               id: String,
+                                               replyTo: ActorRef[SearchResponse]
+                                             ) extends IntermediateSearchResult
+
+  private[search] final case class MultiFetchQuery(
+                                                    query: JsValue,
+                                                    replyTo: ActorRef[SearchResponse]
+                                                  ) extends IntermediateSearchResult
 
   private[search] final case class SearchQueryResponse(
                                                         params: SearchParams,
@@ -80,4 +94,9 @@ object SearchProtocol {
                                                        esResponseBody: String,
                                                        replyTo: ActorRef[SearchResponse]
                                                      ) extends IntermediateSearchResult
+                                                     
+  private[search] final case class MultiFetchQueryResponse(
+                                                            esResponseBody: String,
+                                                            replyTo: ActorRef[SearchResponse]
+                                                          ) extends IntermediateSearchResult
 }

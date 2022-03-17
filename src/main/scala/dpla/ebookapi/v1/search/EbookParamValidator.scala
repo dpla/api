@@ -2,7 +2,7 @@ package dpla.ebookapi.v1.search
 
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.ebookapi.v1.search.SearchProtocol.{ValidFetchId, ValidSearchParams, IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams}
+import dpla.ebookapi.v1.search.SearchProtocol.{ValidFetchIds, ValidSearchParams, IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
@@ -38,18 +38,17 @@ private[search] case class FieldFilter(
 object EbookParamValidator extends EbookFields {
 
   def apply(
-             nextSearchPhase: ActorRef[IntermediateSearchResult],
-             nextFetchPhase: ActorRef[IntermediateSearchResult]
+             nextPhase: ActorRef[IntermediateSearchResult]
            ): Behavior[IntermediateSearchResult] = {
 
     Behaviors.setup { context =>
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case RawSearchParams(rawParams, replyTo) =>
           getSearchParams(rawParams) match {
             case Success(searchParams) =>
-              nextSearchPhase ! ValidSearchParams(searchParams, replyTo)
+              nextPhase ! ValidSearchParams(searchParams, replyTo)
             case Failure(e) =>
               context.log.warn2(
                 "Invalid search params: '{}' for params '{}'",
@@ -61,9 +60,9 @@ object EbookParamValidator extends EbookFields {
           Behaviors.same
 
         case RawFetchParams(id, rawParams, replyTo) =>
-          getFetchId(id, rawParams) match {
-            case Success(validId) =>
-              nextFetchPhase ! ValidFetchId(validId, replyTo)
+          getFetchIds(id, rawParams) match {
+            case Success(validIds) =>
+              nextPhase ! ValidFetchIds(validIds, replyTo)
             case Failure(e) =>
               context.log.warn2(
                 "Invalid fetch params: '{}' params '{}'",
@@ -90,10 +89,10 @@ object EbookParamValidator extends EbookFields {
   private val defaultOp: String = "AND"
   private val defaultPage: Int = 1
   private val minPage: Int = 1
-  private val maxPage: Int = 1000
+  private val maxPage: Int = 100
   private val defaultPageSize: Int = 10
   private val minPageSize: Int = 0
-  private val maxPageSize: Int = 1000
+  private val maxPageSize: Int = 500
   private val defaultSortOrder: String = "asc"
 
   // A user can give any of the following parameters in a search request.
@@ -111,25 +110,31 @@ object EbookParamValidator extends EbookFields {
       "sort_order"
     )
 
-  final case class ValidationException(
-                                        private val message: String = ""
-                                      ) extends Exception(message)
+  private final case class ValidationException(
+                                                private val message: String = ""
+                                              ) extends Exception(message)
 
   /**
    * Get valid fetch params.
    * Fails with ValidationException if id or any raw params are invalid.
    */
-  private def getFetchId(id: String,
-                         rawParams: Map[String, String]
-                        ): Try[String] =
+  private def getFetchIds(
+                           id: String,
+                           rawParams: Map[String, String]
+                         ): Try[Seq[String]] =
     Try {
       // There are no recognized params for a fetch request
       if (rawParams.nonEmpty)
         throw ValidationException(
           "Unrecognized parameter: " + rawParams.keys.mkString(", ")
         )
-      else
-        getValidId(id)
+      else {
+        val ids = id.split(",")
+        if (ids.size > maxPageSize) throw ValidationException(
+          s"The number of ids cannot exceed $maxPageSize"
+        )
+        ids.map(getValidId)
+      }
     }
 
   /**

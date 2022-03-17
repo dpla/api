@@ -42,11 +42,10 @@ object MockEbookSearch {
 
       override def spawnSearchParamValidator(
                                               context: ActorContext[SearchCommand],
-                                              queryBuilder: ActorRef[IntermediateSearchResult],
-                                              elasticSearchClient: ActorRef[IntermediateSearchResult]
+                                              queryBuilder: ActorRef[IntermediateSearchResult]
                                             ): ActorRef[IntermediateSearchResult] =
         context.spawnAnonymous(
-          EbookParamValidator(queryBuilder, elasticSearchClient)
+          EbookParamValidator(queryBuilder)
         )
     }
 

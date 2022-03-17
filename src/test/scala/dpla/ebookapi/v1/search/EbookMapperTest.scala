@@ -3,7 +3,7 @@ package dpla.ebookapi.v1.search
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.ebookapi.helpers.FileReader
-import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookSearchResult, FetchQueryResponse, IntermediateSearchResult, SearchFailure, SearchQueryResponse, SearchResponse}
+import dpla.ebookapi.v1.search.SearchProtocol.{EbookFetchResult, EbookMultiFetchResult, EbookSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -56,6 +56,19 @@ class EbookMapperTest extends AnyWordSpec with Matchers with FileReader
     "return success for mappable response" in {
       ebookMapper ! FetchQueryResponse(minEsEbook, probe.ref)
       probe.expectMessageType[EbookFetchResult]
+    }
+
+    "fetch failure for unmappable response" in {
+      val unmappable: String = ""
+      ebookMapper ! FetchQueryResponse(unmappable, probe.ref)
+      probe.expectMessage(SearchFailure)
+    }
+  }
+
+  "multi-fetch response mapper" should {
+    "return success for mappable response" in {
+      ebookMapper ! MultiFetchQueryResponse(minEsEbookList, probe.ref)
+      probe.expectMessageType[EbookMultiFetchResult]
     }
 
     "fetch failure for unmappable response" in {
