@@ -38,7 +38,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
 
-  val apiKey = "08e3918eeb8bf4469924f062072459a8"
+  // This is not a real API key, used for testing only.
+  val fakeApiKey = "08e3918eeb8bf4469924f062072459a8"
 
   "/v1/ebooks route" should {
     "return Teapot if ElasticSearch entity cannot be parsed" in {
@@ -53,7 +54,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-      val request = Get(s"/v1/ebooks?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.ImATeapot
@@ -72,7 +73,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-      val request = Get(s"/v1/ebooks?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.ImATeapot
@@ -94,7 +95,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -113,7 +114,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       lazy val routes: Route =
         new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {

@@ -38,10 +38,9 @@ object EbookSearch extends SearchBehavior {
 
   override def spawnSearchParamValidator(
                                           context: ActorContext[SearchCommand],
-                                          queryBuilder: ActorRef[IntermediateSearchResult],
-                                          elasticSearchClient: ActorRef[IntermediateSearchResult]
+                                          queryBuilder: ActorRef[IntermediateSearchResult]
                                         ): ActorRef[IntermediateSearchResult] =
     context.spawn(
-      EbookParamValidator(queryBuilder, elasticSearchClient), "EbookParamValidator"
+      EbookParamValidator(queryBuilder), "EbookParamValidator"
     )
 }

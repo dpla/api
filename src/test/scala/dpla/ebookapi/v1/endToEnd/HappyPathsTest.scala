@@ -67,16 +67,16 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
         limit should === (Some(100))
 
         val expected = Seq(
-          "ufwPJ34Bj-MaVWqX9KZL",
-          "uvwPJ34Bj-MaVWqX9KZL",
-          "u_wPJ34Bj-MaVWqX9KZZ",
-          "vPwPJ34Bj-MaVWqX9KZZ",
-          "vfwPJ34Bj-MaVWqX9KZZ",
-          "vvwPJ34Bj-MaVWqX9KZZ",
-          "v_wPJ34Bj-MaVWqX9Kac",
-          "wPwPJ34Bj-MaVWqX9Kac",
-          "wfwPJ34Bj-MaVWqX9Kac",
-          "wvwPJ34Bj-MaVWqX9Kac"
+          "ufwPJ34BjqMaVWqX9KZL",
+          "uvwPJ34BjqMaVWqX9KZL",
+          "uqwPJ34BjqMaVWqX9KZZ",
+          "vPwPJ34BjqMaVWqX9KZZ",
+          "vfwPJ34BjqMaVWqX9KZZ",
+          "vvwPJ34BjqMaVWqX9KZZ",
+          "vqwPJ34BjqMaVWqX9Kac",
+          "wPwPJ34BjqMaVWqX9Kac",
+          "wfwPJ34BjqMaVWqX9Kac",
+          "wvwPJ34BjqMaVWqX9Kac"
         )
         val ids = readObjectArray(entity, "docs")
           .flatMap(readString(_, "id"))
@@ -86,7 +86,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "/v1/ebooks/[id] route" should {
-    "be happy with valid user inputs and successful es response" in {
+    "be happy with valid single ID and successful es response" in {
       val request = Get(s"/v1/ebooks/wfwPJ34Bj-MaVWqX9Kac?api_key=$apiKey")
 
       request ~> Route.seal(routes) ~> check {
@@ -97,6 +97,33 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
         val id = readObjectArray(entity, "docs")
           .flatMap(readString(_, "id")).headOption
         id should === (Some("wfwPJ34Bj-MaVWqX9Kac"))
+      }
+    }
+
+    "be happy with valid multiple IDs and successful es response" in {
+      val idSeq = Seq(
+        "ufwPJ34BjqMaVWqX9KZL",
+        "uvwPJ34BjqMaVWqX9KZL",
+        "uqwPJ34BjqMaVWqX9KZZ",
+        "vPwPJ34BjqMaVWqX9KZZ",
+        "vfwPJ34BjqMaVWqX9KZZ",
+        "vvwPJ34BjqMaVWqX9KZZ",
+        "vqwPJ34BjqMaVWqX9Kac",
+        "wPwPJ34BjqMaVWqX9Kac",
+        "wfwPJ34BjqMaVWqX9Kac",
+        "wvwPJ34BjqMaVWqX9Kac"
+      )
+      val ids = idSeq.mkString(",")
+      val request = Get(s"/v1/ebooks/$ids?api_key=$apiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
+        contentType should === (ContentTypes.`application/json`)
+
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val ids = readObjectArray(entity, "docs")
+          .flatMap(readString(_, "id"))
+        ids should contain allElementsOf idSeq
       }
     }
   }

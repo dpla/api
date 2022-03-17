@@ -34,6 +34,15 @@ trait EbookFields {
 
   private final val fields = Seq(
     DplaField(
+      name = "id",
+      fieldType = TextField,
+      searchable = true,
+      facetable = false,
+      sortable = true,
+      elasticSearchDefault = "id",
+      elasticSearchNotAnalyzed = Some("id")
+    ),
+    DplaField(
       name = "isShownAt",
       fieldType = URLField,
       searchable = true,

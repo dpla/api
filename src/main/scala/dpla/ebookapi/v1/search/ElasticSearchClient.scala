@@ -5,7 +5,7 @@ import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 import dpla.ebookapi.v1.search.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
-import dpla.ebookapi.v1.search.SearchProtocol.{FetchNotFound, ValidFetchId, SearchQuery, IntermediateSearchResult, FetchQueryResponse, SearchQueryResponse, SearchFailure, SearchResponse}
+import dpla.ebookapi.v1.search.SearchProtocol.{FetchNotFound, FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, SearchFailure, SearchQuery, SearchQueryResponse, SearchResponse, ValidFetchIds}
 import spray.json.JsValue
 
 import scala.concurrent.Future
@@ -37,9 +37,15 @@ object ElasticSearchClient {
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
-        case ValidFetchId(params, replyTo) =>
+        case FetchQuery(id, replyTo) =>
           // Create a session child actor to process the request.
-          val sessionChildActor = processFetch(params, endpoint, replyTo,
+          val sessionChildActor = processFetch(id, endpoint, replyTo,
+            responseHandler, nextPhase)
+          context.spawnAnonymous(sessionChildActor)
+          Behaviors.same
+
+        case MultiFetchQuery(query, replyTo) =>
+          val sessionChildActor = processMultiFetch(query, endpoint, replyTo,
             responseHandler, nextPhase)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
@@ -61,7 +67,7 @@ object ElasticSearchClient {
                              endpoint: String,
                              replyTo: ActorRef[SearchResponse],
                              responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
-                             mapper: ActorRef[IntermediateSearchResult]
+                             nextPhase: ActorRef[IntermediateSearchResult]
                            ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -90,7 +96,7 @@ object ElasticSearchClient {
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
         case ElasticSearchSuccess(body) =>
-          mapper ! SearchQueryResponse(params, body, replyTo)
+          nextPhase ! SearchQueryResponse(params, body, replyTo)
           Behaviors.stopped
 
         case ElasticSearchHttpError(_) =>
@@ -112,7 +118,7 @@ object ElasticSearchClient {
                             endpoint: String,
                             replyTo: ActorRef[SearchResponse],
                             responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
-                            mapper: ActorRef[IntermediateSearchResult]
+                            nextPhase: ActorRef[IntermediateSearchResult]
                           ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -132,7 +138,7 @@ object ElasticSearchClient {
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
         case ElasticSearchSuccess(body) =>
-          mapper ! FetchQueryResponse(body, replyTo)
+          nextPhase ! FetchQueryResponse(body, replyTo)
           Behaviors.stopped
 
         case ElasticSearchHttpError(statusCode) =>
@@ -140,6 +146,62 @@ object ElasticSearchClient {
             replyTo ! FetchNotFound
           else
             replyTo ! SearchFailure
+          Behaviors.stopped
+
+        case ElasticSearchResponseFailure =>
+          replyTo ! SearchFailure
+          Behaviors.stopped
+
+        case _ =>
+          Behaviors.unhandled
+      }
+    }
+  }
+
+  /**
+   * Per session actor behavior for handling a multi-fetch request.
+   * The session actor has its own internal state and its own ActorRef for
+   * sending/receiving messages.
+   */
+  private def processMultiFetch(
+                                 query: JsValue,
+                                 endpoint: String,
+                                 replyTo: ActorRef[SearchResponse],
+                                 responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
+                                 nextPhase: ActorRef[IntermediateSearchResult]
+                               ): Behavior[ElasticSearchResponse] = {
+
+    Behaviors.setup { context =>
+
+      implicit val system: ActorSystem[Nothing] = context.system
+
+      // Make an HTTP request to elastic search.
+      val searchUri: String = s"$endpoint/_search"
+      val request: HttpRequest = HttpRequest(
+        method = HttpMethods.GET,
+        uri = searchUri,
+        entity = HttpEntity(ContentTypes.`application/json`, query.toString)
+      )
+      val futureResp: Future[HttpResponse] =
+        Http().singleRequest(request)
+
+      context.log.info2(
+        "ElasticSearch multi-fetch QUERY: {}: {}",
+        searchUri,
+        query.toString
+      )
+
+      // Send response future to ElasticSearchResponseProcessor
+      responseProcessor ! ProcessElasticSearchResponse(futureResp, context.self)
+
+      Behaviors.receiveMessage[ElasticSearchResponse] {
+
+        case ElasticSearchSuccess(body) =>
+          nextPhase ! MultiFetchQueryResponse(body, replyTo)
+          Behaviors.stopped
+
+        case ElasticSearchHttpError(_) =>
+          replyTo ! SearchFailure
           Behaviors.stopped
 
         case ElasticSearchResponseFailure =>

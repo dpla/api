@@ -23,8 +23,7 @@ trait SearchBehavior {
 
   def spawnSearchParamValidator(
                                  context: ActorContext[SearchCommand],
-                                 queryBuilder: ActorRef[IntermediateSearchResult],
-                                 elasticSearchClient: ActorRef[IntermediateSearchResult]
+                                 queryBuilder: ActorRef[IntermediateSearchResult]
                                ): ActorRef[IntermediateSearchResult]
 
   def apply(): Behavior[SearchCommand] = {
@@ -42,7 +41,7 @@ trait SearchBehavior {
         spawnQueryBuilder(context, elasticSearchClient)
 
       val searchParamValidator: ActorRef[IntermediateSearchResult] =
-        spawnSearchParamValidator(context, queryBuilder, elasticSearchClient)
+        spawnSearchParamValidator(context, queryBuilder)
 
       Behaviors.receiveMessage[SearchCommand] {
 

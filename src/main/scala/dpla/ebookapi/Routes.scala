@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 import dpla.ebookapi.v1.search.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.ebookapi.v1.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, EbookRegistryCommand, ExistingApiKey, FetchEbook, FetchResult, NewApiKey, SearchEbooks, SearchResult}
+import dpla.ebookapi.v1.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, EbookRegistryCommand, ExistingApiKey, FetchEbook, FetchResult, MultiFetchResult, NewApiKey, SearchEbooks, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
 
 
@@ -129,6 +129,8 @@ class Routes(
                         response match {
                           case FetchResult(singleEbook) =>
                             complete(singleEbook)
+                          case MultiFetchResult(ebookList) =>
+                            complete(ebookList)
                           case ForbiddenFailure =>
                             complete(HttpResponse(Forbidden, entity = forbiddenMessage))
                           case ValidationFailure(message) =>

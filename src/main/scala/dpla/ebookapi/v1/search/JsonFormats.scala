@@ -16,7 +16,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       Ebook(
         author = readStringArray(root, "_source", "author"),
         genre = readStringArray(root, "_source", "genre"),
-        id = readString(root, "_id"),
+        id = readString(root, "_source", "id"),
         itemUri = readString(root, "_source", "itemUri"),
         medium = readStringArray(root, "_source", "medium"),
         language = readStringArray(root, "_source", "language"),
@@ -56,8 +56,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
             "name" -> ebook.genre.toJson
           )),
           "subtitle" -> ebook.subtitle.toJson,
-          "title" -> ebook.title.toJson,
-          "type" -> JsString("ebook")
+          "title" -> ebook.title.toJson
         ))
       )).toJson
     }
