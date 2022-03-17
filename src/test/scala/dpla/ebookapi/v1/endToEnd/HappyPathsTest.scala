@@ -6,6 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.ebookapi.Routes
+import dpla.ebookapi.helpers.Utils.fakeApiKey
 import dpla.ebookapi.v1.analytics.AnalyticsClient
 import dpla.ebookapi.v1.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
@@ -51,11 +52,9 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   lazy val routes: Route =
     new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
 
-  val apiKey = "08e3918eeb8bf4469924f062072459a8"
-
   "/v1/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {
-      val request = Get(s"/v1/ebooks?page_size=100&api_key=$apiKey")
+      val request = Get(s"/v1/ebooks?page_size=100&api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -87,7 +86,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "/v1/ebooks/[id] route" should {
     "be happy with valid single ID and successful es response" in {
-      val request = Get(s"/v1/ebooks/wfwPJ34Bj-MaVWqX9Kac?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/wfwPJ34Bj-MaVWqX9Kac?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -114,7 +113,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
         "wvwPJ34BjqMaVWqX9Kac"
       )
       val ids = idSeq.mkString(",")
-      val request = Get(s"/v1/ebooks/$ids?api_key=$apiKey")
+      val request = Get(s"/v1/ebooks/$ids?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK

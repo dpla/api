@@ -3,6 +3,7 @@ package dpla.ebookapi.v1.registry
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.ebookapi.helpers.FileReader
+import dpla.ebookapi.helpers.Utils.fakeApiKey
 import dpla.ebookapi.v1.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
 import dpla.ebookapi.v1.authentication.AuthProtocol.AuthenticationCommand
 import dpla.ebookapi.v1.authentication.{MockAuthenticator, MockPostgresClientStaff, MockPostgresClientSuccess}
@@ -43,7 +44,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! SearchEbooks(Some("08e3918eeb8bf4469924f062072459a8"),
+      ebookRegistry ! SearchEbooks(Some(fakeApiKey),
         Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectMessageType[TrackSearch]
@@ -58,7 +59,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! SearchEbooks(Some("08e3918eeb8bf4469924f062072459a8"),
+      ebookRegistry ! SearchEbooks(Some(fakeApiKey),
         Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectNoMessage
@@ -76,7 +77,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some("08e3918eeb8bf4469924f062072459a8"),
+      ebookRegistry ! FetchEbook(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectMessageType[TrackFetch]
@@ -91,7 +92,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some("08e3918eeb8bf4469924f062072459a8"),
+      ebookRegistry ! FetchEbook(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectNoMessage
@@ -109,7 +110,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some("08e3918eeb8bf4469924f062072459a8"),
+      ebookRegistry ! FetchEbook(Some(fakeApiKey),
         "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
         Map(), "", "", replyProbe.ref)
 
@@ -125,7 +126,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val ebookRegistry: ActorRef[EbookRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some("08e3918eeb8bf4469924f062072459a8"),
+      ebookRegistry ! FetchEbook(Some(fakeApiKey),
         "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
         Map(), "", "", replyProbe.ref)
 
