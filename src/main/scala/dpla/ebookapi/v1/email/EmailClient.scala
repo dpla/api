@@ -5,7 +5,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.amazonaws.services.simpleemail.model._
 import com.amazonaws.services.simpleemail.{AmazonSimpleEmailService, AmazonSimpleEmailServiceClientBuilder}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 sealed trait EmailClientResponse
@@ -76,11 +76,10 @@ object EmailClient {
          // Create a future response.
          // The SES SDK can create an async request that returns a Java future.
          // We need a Scala future, so we're creating it ourselves.
-         // TODO is it safe to use context.executionContext here?
-         implicit val executor: ExecutionContextExecutor =
-          context.executionContext
          val responseFuture: Future[Try[SendEmailResult]] =
-           Future{ Try{ awsClient.sendEmail(request) } }
+           Future{
+             Try{ awsClient.sendEmail(request) }
+           }(ExecutionContext.global)
 
          // Map the Future value to a message, handled by this actor.
          context.pipeToSelf(responseFuture) {
