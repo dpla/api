@@ -1,7 +1,7 @@
 package dpla.ebookapi.v1.email
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, DispatcherSelector}
 import com.amazonaws.services.simpleemail.model._
 import com.amazonaws.services.simpleemail.{AmazonSimpleEmailService, AmazonSimpleEmailServiceClientBuilder}
 
@@ -73,13 +73,23 @@ object EmailClient {
            )
            .withSource(emailFrom)
 
+         // The SES SDK can only create an async request that returns a Java
+         // future, which cannot be converted to Scala.
+         // Therefore, we're employing a synchronous request that will run on
+         // a dedicated dispatcher with a fixed thread pool.
+         val blockingExecutionContext: ExecutionContext =
+           context.system.dispatchers.lookup(
+             DispatcherSelector.fromConfig("dispatchers.blockingDispatcher")
+           )
+
          // Create a future response.
-         // The SES SDK can create an async request that returns a Java future.
-         // We need a Scala future, so we're creating it ourselves.
          val responseFuture: Future[Try[SendEmailResult]] =
            Future{
-             Try{ awsClient.sendEmail(request) }
-           }(ExecutionContext.global)
+             Try{
+               // The blocking operation.
+               awsClient.sendEmail(request)
+             }
+           }(blockingExecutionContext)
 
          // Map the Future value to a message, handled by this actor.
          context.pipeToSelf(responseFuture) {
