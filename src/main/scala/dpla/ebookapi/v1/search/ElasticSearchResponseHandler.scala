@@ -58,7 +58,7 @@ object ElasticSearchResponseHandler {
       // [failures] number of times in a row, don't attempt any more external
       // call for [reset] seconds.
       // While waiting for reset, requests to this actor will fail fast.
-      
+
       val failures: Int = context.system.settings.config
         .getInt("elasticSearch.circuitBreaker.failures")
 
@@ -83,6 +83,7 @@ object ElasticSearchResponseHandler {
 
         case ProcessElasticSearchResponse(futureHttpResponse, replyTo) =>
           // Map the Future value to a message, handled by this actor.
+          // Use circuit breaker.
           context.pipeToSelf(breaker.withCircuitBreaker(futureHttpResponse)) {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
