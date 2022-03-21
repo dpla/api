@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.pattern.CircuitBreaker
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 import scala.jdk.DurationConverters._
@@ -54,10 +54,11 @@ object ElasticSearchResponseHandler {
     Behaviors.setup { context =>
 
       // Set up circuit breaker.
-      // If call to external service takes [timeout] seconds to complete
-      // [failures] number of times in a row, don't attempt any more external
-      // call for [reset] seconds.
-      // While waiting for reset, requests to this actor will fail fast.
+      // If calls to ElasticSearch takes [timeout] seconds to complete
+      // [failures] number of times, assume ElasticSearch is struggling and
+      // don't attempt any more calls for [reset] seconds.
+      // While waiting for reset, requests to this actor will quickly return
+      // an ElasticSearchResponseFailure message.
 
       val failures: Int = context.system.settings.config
         .getInt("elasticSearch.circuitBreaker.failures")
