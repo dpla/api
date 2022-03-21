@@ -54,7 +54,7 @@ object ElasticSearchResponseHandler {
     Behaviors.setup { context =>
 
       // Set up circuit breaker.
-      // If calls to ElasticSearch takes [timeout] seconds to complete
+      // If calls to ElasticSearch take at least [timeout] seconds to complete
       // [failures] number of times, assume ElasticSearch is struggling and
       // don't attempt any more calls for [reset] seconds.
       // While waiting for reset, requests to this actor will quickly return
