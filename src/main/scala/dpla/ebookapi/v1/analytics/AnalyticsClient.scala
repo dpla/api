@@ -11,15 +11,14 @@ import dpla.ebookapi.v1.search.Ebook
  *
  * @see https://developers.google.com/analytics/devguides/collection/protocol/v1
  *
- *      Google Analytics Measurement Protocol does not return HTTP codes, so the
- *      success or failure of a request cannot be ascertained.
+ * Google Analytics Measurement Protocol does not return HTTP codes, so the
+ * success or failure of a request cannot be ascertained.
  */
 object AnalyticsClient {
 
   sealed trait AnalyticsClientCommand
 
   case class TrackSearch(
-                          apiKey: String,
                           rawParams: Map[String, String],
                           host: String,
                           path: String,
@@ -27,7 +26,6 @@ object AnalyticsClient {
                         ) extends AnalyticsClientCommand
 
   case class TrackFetch(
-                         apiKey: String,
                          host: String,
                          path: String,
                          ebook: Option[Ebook]
@@ -44,9 +42,12 @@ object AnalyticsClient {
       val trackingId: String = system.settings.config
         .getString("googleAnalytics.trackingId")
 
+      val clientId: String = system.settings.config
+        .getString("googleAnalytics.clientId")
+
       Behaviors.receiveMessage[AnalyticsClientCommand] {
 
-        case TrackSearch(apiKey, rawParams, host, path, ebooks) =>
+        case TrackSearch(rawParams, host, path, ebooks) =>
 
           // Track pageview
           // Strip the API key out of the page path
@@ -56,7 +57,7 @@ object AnalyticsClient {
 
           val pageViewParams: String = trackPageViewParams(
             trackingId,
-            apiKey,
+            clientId,
             host,
             pathWithQuery,
             "Ebook search results"
@@ -68,7 +69,7 @@ object AnalyticsClient {
             val eventParams: Seq[String] = ebooks.map(ebook =>
               trackEventParams(
                 trackingId,
-                apiKey,
+                clientId,
                 host,
                 path,
                 ebookEventCategory(ebook),
@@ -81,12 +82,12 @@ object AnalyticsClient {
 
           Behaviors.same
 
-        case TrackFetch(apiKey, host, path, ebook) =>
+        case TrackFetch(host, path, ebook) =>
 
           // Track pageview
           val pageViewParams: String = trackPageViewParams(
             trackingId,
-            apiKey,
+            clientId,
             host,
             path,
             "Fetch ebooks"
@@ -98,7 +99,7 @@ object AnalyticsClient {
             case Some(ebook) =>
               val eventParams: String = trackEventParams(
                 trackingId,
-                apiKey,
+                clientId,
                 host,
                 path,
                 ebookEventCategory(ebook),
@@ -116,7 +117,7 @@ object AnalyticsClient {
 
   private def trackPageViewParams(
                                    trackingId: String,
-                                   apiKey: String,
+                                   clientId: String,
                                    host: String,
                                    path: String,
                                    title: String
@@ -125,7 +126,7 @@ object AnalyticsClient {
       "v" -> "1",
       "t" -> "pageview",
       "tid" -> trackingId,
-      "cid" -> apiKey,
+      "cid" -> clientId,
       "dh" -> host,
       "dp" -> path,
       "dt" -> title
@@ -135,7 +136,7 @@ object AnalyticsClient {
 
   private def trackEventParams(
                                 trackingId: String,
-                                apiKey: String,
+                                clientId: String,
                                 host: String,
                                 path: String,
                                 category: String,
@@ -146,7 +147,7 @@ object AnalyticsClient {
       "v" -> "1",
       "t" -> "event",
       "tid" -> trackingId,
-      "cid" -> apiKey,
+      "cid" -> clientId,
       "dh" -> host,
       "dp" -> path,
       "ec" -> category,

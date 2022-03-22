@@ -107,14 +107,9 @@ trait EbookRegistryBehavior {
               case Some(ebookList) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
-                  apiKey match {
-                    case Some(key) =>
-                      // ...track analytics hit
-                      analyticsClient ! TrackSearch(key, rawParams, host, path,
-                        ebookList.docs)
-                    case None =>
-                    // no-op (this should not happen)
-                  }
+                  // ...track analytics hit
+                  analyticsClient ! TrackSearch(rawParams, host, path,
+                    ebookList.docs)
                 }
               case None => // no-op
             }
@@ -220,20 +215,14 @@ trait EbookRegistryBehavior {
               case Some(either) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
-                  apiKey match {
-                    case Some(key) =>
-                      // ...track analytics hit.
-                      either match {
-                        case Left(singleEbook) =>
-                          analyticsClient ! TrackFetch(key, host, path,
-                            singleEbook.docs.headOption)
-                        case Right(ebookList) =>
-                          analyticsClient ! TrackSearch(key, rawParams, host,
-                            path, ebookList.docs)
-                      }
-
-                    case None =>
-                    // no-op (this should not happen)
+                  // ...track analytics hit.
+                  either match {
+                    case Left(singleEbook) =>
+                      analyticsClient ! TrackFetch(host, path,
+                        singleEbook.docs.headOption)
+                    case Right(ebookList) =>
+                      analyticsClient ! TrackSearch(rawParams, host, path,
+                        ebookList.docs)
                   }
                 }
               case None => // no-op
