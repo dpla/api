@@ -66,6 +66,7 @@ class Routes(
   lazy val applicationRoutes: Route =
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
+      pathPrefix("api_key")(apiKeyRoute),
       pathPrefix("v1") {
         concat(
           pathPrefix("ebooks")(ebooksRoutes),
