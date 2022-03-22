@@ -77,9 +77,10 @@ object EmailClient {
          // future, which cannot be converted to Scala.
          // Therefore, we're employing a synchronous request that will run on
          // a dedicated dispatcher with a fixed thread pool.
+         // See https://doc.akka.io/docs/akka/current/typed/dispatchers.html#blocking-needs-careful-management
          val blockingExecutionContext: ExecutionContext =
            context.system.dispatchers.lookup(
-             DispatcherSelector.fromConfig("dispatchers.blockingDispatcher")
+             DispatcherSelector.fromConfig("dispatchers.emailDispatcher")
            )
 
          // Create a future response.
