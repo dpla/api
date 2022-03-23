@@ -265,6 +265,15 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
       paramValidator ! RawSearchParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
     }
+
+    "ignore valid DPLA Map fields not applicable to ebooks" in {
+      val given = "rightsCategory"
+      val expected = Some(Seq())
+      val params = Map("facets" -> given)
+      paramValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      msg.params.facets shouldEqual expected
+    }
   }
 
   "facet size validator" should {

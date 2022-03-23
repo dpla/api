@@ -55,6 +55,14 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
         status shouldEqual StatusCodes.BadRequest
       }
     }
+
+    "ignore empty params" in {
+      val request = Get(s"/v1/ebooks?page=&api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status should not be StatusCodes.BadRequest
+      }
+    }
   }
 
   "/v1/ebooks[id] route" should {

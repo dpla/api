@@ -42,7 +42,7 @@ class Routes(
     val apiKey: Option[String] =
       if (auth.nonEmpty) auth
       else params.get("api_key")
-    val updatedParams = params.filterNot(_._1 == "api_key")
+    val updatedParams = params.filterNot(_._1 == "api_key").filterNot(_._2.trim.isEmpty)
     ebookRegistry.ask(SearchEbooks(apiKey, updatedParams, host, path, _))
   }
 
@@ -56,7 +56,7 @@ class Routes(
     val apiKey: Option[String] =
       if (auth.nonEmpty) auth
       else params.get("api_key")
-    val updatedParams = params.filterNot(_._1 == "api_key")
+    val updatedParams = params.filterNot(_._1 == "api_key").filterNot(_._2.trim.isEmpty)
     ebookRegistry.ask(FetchEbook(apiKey, id, updatedParams, host, path, _))
   }
 
