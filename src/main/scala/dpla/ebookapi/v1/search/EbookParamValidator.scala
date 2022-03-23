@@ -110,6 +110,18 @@ object EbookParamValidator extends EbookFields {
       "sort_order"
     )
 
+  // These fields are valid for DPLA item search & facets, but not for ebooks.
+  // Rather than returning an error, they should be ignored.
+  private val ignoredFields: Seq[String] = Seq(
+    "admin.contributingInstitution",
+    "rightsCategory",
+    "sourceResource.collection.title",
+    "sourceResource.date.begin",
+    "sourceResource.date.end",
+    "sourceResource.spatial.name",
+    "sourceResource.type"
+  )
+
   private final case class ValidationException(
                                                 private val message: String = ""
                                               ) extends Exception(message)
@@ -269,21 +281,16 @@ object EbookParamValidator extends EbookFields {
       case _ => Seq[String]()
     }
 
-    val filtered = fieldString.split(",").map(candidate => {
+    fieldString.split(",").flatMap(candidate => {
       if (acceptedFields.contains(candidate))
-        candidate
+        Some(candidate)
+      else if (ignoredFields.contains(candidate))
+        None
       else
         throw ValidationException(
           s"'$candidate' is not an allowable value for '$param'"
         )
     })
-
-    if (filtered.nonEmpty)
-      filtered
-    else
-      throw ValidationException(
-        s"$param must contain at least one valid field"
-      )
   }
 
   // Must be an integer between the min and the max for the given param.
