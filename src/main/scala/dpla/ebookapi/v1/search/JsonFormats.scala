@@ -43,18 +43,18 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         )),
         "sourceResource" -> filterIfEmpty(JsObject(
           "creator" -> ebook.author.toJson,
-          "date" -> filterIfEmpty(JsObject(
-            "displayDate" -> ebook.publicationDate.toJson
-          )),
+          "date" -> ebook.publicationDate.map(displayDate =>
+            JsObject("displayDate" -> displayDate.toJson)
+          ).toJson,
           "description" -> ebook.summary.toJson,
           "format" -> ebook.medium.toJson,
-          "language" -> filterIfEmpty(JsObject(
-            "name" -> ebook.language.toJson,
-          )),
+          "language" -> ebook.language.map(name =>
+            JsObject("name" -> name.toJson)
+          ).toJson,
           "publisher" -> ebook.publisher.toJson,
-          "subject" -> filterIfEmpty(JsObject(
-            "name" -> ebook.genre.toJson
-          )),
+          "subject" -> ebook.genre.map(name =>
+            JsObject("name" -> name.toJson)
+          ).toJson,
           "subtitle" -> ebook.subtitle.toJson,
           "title" -> ebook.title.toJson
         ))
