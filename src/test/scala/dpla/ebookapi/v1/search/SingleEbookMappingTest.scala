@@ -44,8 +44,9 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
         "Lawyers -- Fiction",
         "London (England) -- Social life and customs -- 20th century -- Fiction"
       )
-      val traversed =
-        readStringArray(firstDoc, "sourceResource", "subject", "name")
+      val subjects =
+        readObjectArray(firstDoc, "sourceResource", "subject")
+      val traversed = subjects.flatMap(s => readString(s, "name"))
       traversed should contain allElementsOf expected
     }
 
@@ -66,8 +67,9 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
 
     "map language" in {
       val expected = "en-GB"
-      val traversed =
-        readStringArray(firstDoc, "sourceResource", "language", "name")
+      val languages =
+        readObjectArray(firstDoc, "sourceResource", "language")
+      val traversed = languages.flatMap(s => readString(s, "name"))
       traversed should contain only expected
     }
 
@@ -99,8 +101,9 @@ class SingleEbookMappingTest extends AnyWordSpec with Matchers
 
     "map publicationDate" in {
       val expected = "1922"
-      val traversed =
-        readStringArray(firstDoc, "sourceResource", "date", "displayDate")
+      val dates =
+        readObjectArray(firstDoc, "sourceResource", "date")
+      val traversed = dates.flatMap(s => readString(s, "displayDate"))
       traversed should contain only expected
     }
 
