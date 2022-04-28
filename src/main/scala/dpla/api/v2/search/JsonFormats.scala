@@ -176,6 +176,59 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
     }
   }
 
+  implicit object SingleDPLADocFormat extends RootJsonFormat[SingleDPLADoc] {
+
+    def read(json: JsValue): SingleDPLADoc = {
+      val root: JsObject = json.asJsObject
+
+      SingleDPLADoc(
+        docs = Seq(readObject(root, "_source").getOrElse(JsObject()))
+      )
+    }
+
+    def write(singleDPLADoc: SingleDPLADoc): JsValue = {
+      JsObject(
+        "count" -> JsNumber(1),
+        "docs" -> singleDPLADoc.docs.toJson
+      ).toJson
+    }
+  }
+
+  implicit object DPLADocListFormat extends RootJsonFormat[DPLADocList] {
+
+    def read(json: JsValue): DPLADocList = {
+      val root = json.asJsObject
+
+      DPLADocList(
+        count = readInt(root, "hits", "total", "value"),
+        limit = None,
+        start = None,
+        docs = readObjectArray(root, "hits", "hits")
+          .map{hit => readObject(hit, "_source").getOrElse(JsObject()).toJson},
+        facets = readObject(root, "aggregations")
+          .map(_.toJson.convertTo[FacetList])
+      )
+    }
+
+    def write(dplaDocList: DPLADocList): JsValue = {
+      val base: JsObject = JsObject(
+        "count" -> dplaDocList.count.toJson,
+        "start" -> dplaDocList.start.toJson,
+        "limit" -> dplaDocList.limit.toJson,
+        "docs" -> dplaDocList.docs.toJson
+      )
+
+      // Add facets if there are any
+      val complete: JsObject =
+        if (dplaDocList.facets.nonEmpty)
+          JsObject(base.fields + ("facets" -> dplaDocList.facets.toJson))
+        else
+          base
+
+      complete.toJson
+    }
+  }
+
   /** Methods for writing JSON **/
 
   // Filter out fields whose values are:

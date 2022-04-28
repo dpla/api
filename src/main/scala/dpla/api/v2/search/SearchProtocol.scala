@@ -34,6 +34,18 @@ object SearchProtocol {
                                           ebookList: EbookList
                                         ) extends SearchResponse
 
+  final case class DPLADocSearchResult(
+                                        dplaDocList: DPLADocList
+                                      ) extends SearchResponse
+
+  final case class DPLADocFetchResult(
+                                       singleDPLADoc: SingleDPLADoc
+                                     ) extends SearchResponse
+
+  final case class DPLADocMultiFetchResult(
+                                            dplaDocList: DPLADocList
+                                          ) extends SearchResponse
+
   final case class InvalidSearchParams(
                                         message: String
                                       ) extends SearchResponse

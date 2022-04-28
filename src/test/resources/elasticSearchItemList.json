@@ -1,0 +1,266 @@
+{
+  "took" : 54,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 3,
+    "successful" : 3,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 167,
+      "relation" : "eq"
+    },
+    "max_score" : 23.14576,
+    "hits" : [
+      {
+        "_index" : "dpla-staging-all-20220217-200255",
+        "_type" : "item",
+        "_id" : "4d85a6bd965dde8352c8235c43fe1c44",
+        "_score" : 23.14576,
+        "_source" : {
+          "id" : "4d85a6bd965dde8352c8235c43fe1c44",
+          "@context" : "http://dp.la/api/items/context",
+          "@id" : "http://dp.la/api/items/4d85a6bd965dde8352c8235c43fe1c44",
+          "aggregatedCHO" : "#sourceResource",
+          "dataProvider" : {
+            "name" : "University of Southern California Digital Library",
+            "@id" : "",
+            "exactMatch" : [
+              ""
+            ]
+          },
+          "ingestDate" : "2022-01-18T20:18:54.259Z",
+          "ingestType" : "item",
+          "isShownAt" : "http://doi.org/10.25549/berndt-m584",
+          "object" : "https://thumbnails.calisphere.org/clip/150x150/a13932ec86f46b89140e6bb915ff1913",
+          "originalRecord" : {
+            "stringValue" : "{\n  \"url_item\" : \"http://doi.org/10.25549/berndt-m584\",\n  \"description\" : [ \"Photograph of Children playing with hamsters, Saint Vincent Center, Los Angeles, 1996. Three children gather on one side of a table, watching two dwarf hamsters. One hamster is on the table, walking across a piece of paper. The other hamster is on an adult's hands. The three children are focused on the hamster on the table, with one girl reaching for the hamster with her left hand.\" ],\n  \"publisher\" : [ \"University of Southern California. Libraries\" ],\n  \"publisher_ss\" : [ \"University of Southern California. Libraries\" ],\n  \"facet_decade\" : [ \"1990s\" ],\n  \"title\" : [ \"Children play with hamsters, Saint Vincent Center, Los Angeles, 1996\" ],\n  \"title_ss\" : [ \"Children play with hamsters, Saint Vincent Center, Los Angeles, 1996\" ],\n  \"spatial\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"spatial_ss\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"subject\" : [ \"Children\", \"Dwarf hamsters\", \"Saint Vincent Center (Los Angeles)\" ],\n  \"subject_ss\" : [ \"Children\", \"Dwarf hamsters\", \"Saint Vincent Center (Los Angeles)\" ],\n  \"sort_title\" : \"children play with hamsters saint vincent center los angeles 1996\",\n  \"date\" : [ \"circa 1996\" ],\n  \"date_ss\" : [ \"circa 1996\" ],\n  \"creator\" : [ \"Berndt, Jerry\" ],\n  \"creator_ss\" : [ \"Berndt, Jerry\" ],\n  \"relation\" : [ \"Jerry Berndt Collection\", \"Soul of Los Angeles Collection\", \"berndt-m452\" ],\n  \"relation_ss\" : [ \"Jerry Berndt Collection\", \"Soul of Los Angeles Collection\", \"berndt-m452\" ],\n  \"sort_date_start\" : \"1996-01-01T00:00:00Z\",\n  \"coverage\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"coverage_ss\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"repository_url\" : [ \"https://registry.cdlib.org/api/v1/repository/247/\" ],\n  \"id\" : \"1e3ee37468faa3b9dd3ff17b6288ff90\",\n  \"harvest_id_s\" : \"27343--oai:digitallibrary.usc.edu:berndt/berndt-m584\",\n  \"collection_url\" : [ \"https://registry.cdlib.org/api/v1/collection/27343/\" ],\n  \"repository_name\" : [ \"University of Southern California Digital Library\" ],\n  \"reference_image_md5\" : \"a13932ec86f46b89140e6bb915ff1913\",\n  \"repository_data\" : [ \"https://registry.cdlib.org/api/v1/repository/247/::University of Southern California Digital Library\" ],\n  \"rights\" : [ \"Berndt, Jerry\", \"Private collections\", \"The Jerry Berndt Estate, Nils Grossien, managing director; email: ngrossien@mac.com ; phone: +49.176.96974098 (Germany); web: www.jerryberndt-estate.com/koken\", \"ngrossien@mac.com\" ],\n  \"rights_ss\" : [ \"Berndt, Jerry\", \"Private collections\", \"The Jerry Berndt Estate, Nils Grossien, managing director; email: ngrossien@mac.com ; phone: +49.176.96974098 (Germany); web: www.jerryberndt-estate.com/koken\", \"ngrossien@mac.com\" ],\n  \"reference_image_dimensions\" : \"300:216\",\n  \"temporal\" : [ \"circa 1996\" ],\n  \"temporal_ss\" : [ \"circa 1996\" ],\n  \"format\" : [ \"1 photograph : photoprint, b&w\", \"photographic prints\", \"photographs\" ],\n  \"format_ss\" : [ \"1 photograph : photoprint, b&w\", \"photographic prints\", \"photographs\" ],\n  \"collection_data\" : [ \"https://registry.cdlib.org/api/v1/collection/27343/::Jerry Berndt Collection\" ],\n  \"source\" : [ \"Private collection [Contributing entity]\", \"photo no: soul-la15-9 [Identifying Number]\" ],\n  \"source_ss\" : [ \"Private collection [Contributing entity]\", \"photo no: soul-la15-9 [Identifying Number]\" ],\n  \"sort_collection_data\" : [ \"jerry berndt collection:Jerry Berndt Collection:https://registry.cdlib.org/api/v1/collection/27343/\" ],\n  \"collection_name\" : [ \"Jerry Berndt Collection\" ],\n  \"sort_date_end\" : \"1996-01-01T00:00:00Z\",\n  \"identifier\" : [ \"berndt-m584\", \"berndt-soul-la15-9-1996\", \"http://doi.org/10.25549/berndt-m584\", \"http://thumbnails.digitallibrary.usc.edu/berndt-soul-la15-9-1996.jpg\" ],\n  \"identifier_ss\" : [ \"berndt-m584\", \"berndt-soul-la15-9-1996\", \"http://doi.org/10.25549/berndt-m584\", \"http://thumbnails.digitallibrary.usc.edu/berndt-soul-la15-9-1996.jpg\" ],\n  \"type\" : [ \"image\" ],\n  \"type_ss\" : [ \"image\" ],\n  \"_version_\" : 1674856905959276544,\n  \"timestamp\" : \"2020-08-12T21:33:34.869Z\"\n}"
+          },
+          "provider" : {
+            "@id" : "http://dp.la/api/contributor/cdl",
+            "name" : "California Digital Library"
+          },
+          "sourceResource" : {
+            "@id" : "http://dp.la/api/items/4d85a6bd965dde8352c8235c43fe1c44#SourceResource",
+            "collection" : [
+              {
+                "title" : "Jerry Berndt Collection"
+              }
+            ],
+            "creator" : [
+              "Berndt, Jerry"
+            ],
+            "date" : [
+              {
+                "displayDate" : "circa 1996"
+              }
+            ],
+            "description" : [
+              "Photograph of Children playing with hamsters, Saint Vincent Center, Los Angeles, 1996. Three children gather on one side of a table, watching two dwarf hamsters. One hamster is on the table, walking across a piece of paper. The other hamster is on an adult's hands. The three children are focused on the hamster on the table, with one girl reaching for the hamster with her left hand."
+            ],
+            "extent" : [
+              "1 photograph : photoprint, b&w"
+            ],
+            "format" : [
+              "Photographic prints",
+              "Photographs"
+            ],
+            "identifier" : [
+              "berndt-m584",
+              "berndt-soul-la15-9-1996",
+              "http://doi.org/10.25549/berndt-m584",
+              "http://thumbnails.digitallibrary.usc.edu/berndt-soul-la15-9-1996.jpg"
+            ],
+            "publisher" : [
+              "University of Southern California. Libraries"
+            ],
+            "relation" : [
+              "Jerry Berndt Collection",
+              "Soul of Los Angeles Collection",
+              "berndt-m452"
+            ],
+            "rights" : [
+              "Berndt, Jerry",
+              "Private collections",
+              "The Jerry Berndt Estate, Nils Grossien, managing director; email: ngrossien@mac.com ; phone: +49.176.96974098 (Germany); web: www.jerryberndt-estate.com/koken",
+              "ngrossien@mac.com"
+            ],
+            "spatial" : [
+              {
+                "name" : "California"
+              },
+              {
+                "name" : "Los Angeles"
+              },
+              {
+                "name" : "USA"
+              },
+              {
+                "name" : "religious facilities: Saint Vincent Center"
+              }
+            ],
+            "subject" : [
+              {
+                "name" : "Children"
+              },
+              {
+                "name" : "Dwarf hamsters"
+              },
+              {
+                "name" : "Saint Vincent Center (Los Angeles)"
+              }
+            ],
+            "temporal" : [
+              {
+                "displayDate" : "circa 1996"
+              }
+            ],
+            "title" : [
+              "Children play with hamsters, Saint Vincent Center, Los Angeles, 1996"
+            ],
+            "type" : [
+              "image"
+            ]
+          },
+          "@type" : "ore:Aggregation",
+          "rightsCategory" : "Unspecified Rights Status"
+        }
+      },
+      {
+        "_index" : "dpla-staging-all-20220217-200255",
+        "_type" : "item",
+        "_id" : "c340ca5de0e46b0538213c65c650c8c6",
+        "_score" : 22.947096,
+        "_source" : {
+          "id" : "c340ca5de0e46b0538213c65c650c8c6",
+          "@context" : "http://dp.la/api/items/context",
+          "@id" : "http://dp.la/api/items/c340ca5de0e46b0538213c65c650c8c6",
+          "aggregatedCHO" : "#sourceResource",
+          "dataProvider" : {
+            "name" : "UNT Libraries Special Collections",
+            "@id" : "",
+            "exactMatch" : [
+              ""
+            ]
+          },
+          "iiifManifest" : "https://texashistory.unt.edu/ark:/67531/metadc946186/manifest/",
+          "ingestDate" : "2022-02-15T16:21:19.576Z",
+          "ingestType" : "item",
+          "isShownAt" : "https://texashistory.unt.edu/ark:/67531/metadc946186/",
+          "object" : "https://texashistory.unt.edu/ark:/67531/metadc946186/small/",
+          "originalRecord" : {
+            "stringValue" : "<record \nxmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\">\n  <header>\n    <identifier>info:ark/67531/metadc946186</identifier>\n    <datestamp>2020-05-11T14:24:40Z</datestamp>\n    <setSpec>partner:UNTA</setSpec>\n    <setSpec>collection:BYRDW</setSpec>\n    <setSpec>access_rights:public</setSpec>\n  </header>\n  <metadata>\n    <untl:metadata xmlns:untl=\"http://digital2.library.unt.edu/untl/\">\n      <untl:title qualifier=\"officialtitle\">[Photograph of Mildred]</untl:title>\n      <untl:title qualifier=\"seriestitle\">Box 128: Portraits, n.d.</untl:title>\n      <untl:creator qualifier=\"pht\">\n        <untl:name>Williams, Byrd M. (Byrd Moore), IV, 1951-</untl:name>\n        <untl:type>per</untl:type>\n      </untl:creator>\n      <untl:date qualifier=\"creation\">[1970,1990]</untl:date>\n      <untl:language>zxx</untl:language>\n      <untl:description qualifier=\"content\">\n        Photograph of Mildred, the hamster, running on her wheel in her hamster cage.\n      </untl:description>\n      <untl:description qualifier=\"physical\">\n        1 photograph : b&amp;w ; 8 x 10 in.\n      </untl:description>\n      <untl:subject qualifier=\"LCSH\">\n        Williams, Byrd M. (Byrd Moore), IV, 1951- -- Photograph collections.\n      </untl:subject>\n      <untl:subject qualifier=\"UNTL-BS\">Social Life and Customs - Pets</untl:subject>\n      <untl:subject qualifier=\"KWD\">hamsters</untl:subject>\n      <untl:subject qualifier=\"KWD\">cages</untl:subject>\n      <untl:primarySource>1</untl:primarySource>\n      <untl:coverage qualifier=\"date\">[1970,1990]</untl:coverage>\n      <untl:coverage qualifier=\"timePeriod\">mod-tim</untl:coverage>\n      <untl:citation qualifier=\"preferredCitation\">\n        Byrd Williams Family Photography Collection (AR0769), University of North Texas Special Collections\n      </untl:citation>\n      <untl:collection>BYRDW</untl:collection>\n      <untl:institution>UNTA</untl:institution>\n      <untl:rights qualifier=\"note\">\n        Reproduction and publication of materials in this collection are subject to the policies of the UNT Special Collections department. Copyright restrictions may apply.\n      </untl:rights>\n      <untl:resourceType>image_photo</untl:resourceType>\n      <untl:format>image</untl:format>\n      <untl:identifier qualifier=\"itemURL\">\n        https://texashistory.unt.edu/ark:/67531/metadc946186/\n      </untl:identifier>\n      <untl:identifier qualifier=\"LOCAL-CONT-NO\">\n        UNTA_AR0769-128-037\n      </untl:identifier>\n      <untl:identifier qualifier=\"thumbnailURL\">\n        https://texashistory.unt.edu/ark:/67531/metadc946186/small/\n      </untl:identifier>\n      <untl:identifier qualifier=\"ARK\">ark:/67531/metadc946186</untl:identifier>\n      <untl:identifier qualifier=\"iiif-manifest\">\n        https://texashistory.unt.edu/ark:/67531/metadc946186/manifest/\n      </untl:identifier>\n      <untl:meta qualifier=\"metadataCreator\">htarver</untl:meta>\n      <untl:meta qualifier=\"system\">DC</untl:meta>\n      <untl:meta qualifier=\"ark\">ark:/67531/metadc946186</untl:meta>\n      <untl:meta qualifier=\"metadataCreationDate\">2017-01-16, 12:29:31</untl:meta>\n      <untl:meta qualifier=\"hidden\">False</untl:meta>\n      <untl:meta qualifier=\"metadataModifier\">aesparza</untl:meta>\n      <untl:meta qualifier=\"metadataModificationDate\">\n        2020-05-11, 14:24:40\n      </untl:meta>\n    </untl:metadata>\n  </metadata>\n</record>\n"
+          },
+          "provider" : {
+            "@id" : "http://dp.la/api/contributor/the_portal_to_texas_history",
+            "name" : "The Portal to Texas History"
+          },
+          "sourceResource" : {
+            "@id" : "http://dp.la/api/items/c340ca5de0e46b0538213c65c650c8c6#SourceResource",
+            "creator" : [
+              "Williams, Byrd M. (Byrd Moore), IV, 1951"
+            ],
+            "date" : [
+              {
+                "displayDate" : "[1970,1990]"
+              }
+            ],
+            "description" : [
+              "Photograph of Mildred, the hamster, running on her wheel in her hamster cage.",
+              "1 photograph : b&w ; 8 x 10 in."
+            ],
+            "identifier" : [
+              "https://texashistory.unt.edu/ark:/67531/metadc946186/",
+              "UNTA_AR0769-128-037",
+              "https://texashistory.unt.edu/ark:/67531/metadc946186/small/",
+              "ark:/67531/metadc946186",
+              "https://texashistory.unt.edu/ark:/67531/metadc946186/manifest/"
+            ],
+            "language" : [
+              {
+                "name" : "No linguistic content",
+                "iso639_3" : "No linguistic content"
+              }
+            ],
+            "rights" : [
+              "Reproduction and publication of materials in this collection are subject to the policies of the UNT Special Collections department. Copyright restrictions may apply."
+            ],
+            "subject" : [
+              {
+                "name" : "Williams, Byrd M. (Byrd Moore), IV, 1951- -- Photograph collections",
+                "scheme" : "http://id.loc.gov/authorities#conceptscheme"
+              },
+              {
+                "name" : "Social Life and Customs - Pets"
+              },
+              {
+                "name" : "Hamsters"
+              },
+              {
+                "name" : "Cages"
+              }
+            ],
+            "title" : [
+              "Photograph of Mildred"
+            ],
+            "type" : [
+              "image"
+            ]
+          },
+          "@type" : "ore:Aggregation",
+          "rightsCategory" : "Unspecified Rights Status"
+        }
+      }
+    ]
+  },
+  "aggregations" : {
+    "provider.name" : {
+      "doc_count_error_upper_bound" : 0,
+      "sum_other_doc_count" : 40,
+      "buckets" : [
+        {
+          "key" : "Illinois Digital Heritage Hub",
+          "doc_count" : 21
+        },
+        {
+          "key" : "Digital Library of Georgia",
+          "doc_count" : 20
+        },
+        {
+          "key" : "California Digital Library",
+          "doc_count" : 16
+        },
+        {
+          "key" : "HathiTrust",
+          "doc_count" : 15
+        },
+        {
+          "key" : "Mountain West Digital Library",
+          "doc_count" : 11
+        },
+        {
+          "key" : "The New York Public Library",
+          "doc_count" : 11
+        },
+        {
+          "key" : "The Portal to Texas History",
+          "doc_count" : 11
+        },
+        {
+          "key" : "Plains to Peaks Collective",
+          "doc_count" : 10
+        },
+        {
+          "key" : "National Archives and Records Administration",
+          "doc_count" : 6
+        },
+        {
+          "key" : "PA Digital",
+          "doc_count" : 6
+        }
+      ]
+    }
+  }
+}
