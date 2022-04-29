@@ -264,10 +264,12 @@ trait ParamValidator extends FieldDefinitions {
     }
 
     fieldString.split(",").flatMap(candidate => {
-      if (acceptedFields.contains(candidate))
-        Some(candidate)
-      else if (ignoredFields.contains(candidate))
+      // Need to check ignoredFields first b/c acceptedFields may contain
+      // fields that are also in ignoredFields
+      if (ignoredFields.contains(candidate))
         None
+      else if (acceptedFields.contains(candidate))
+        Some(candidate)
       else
         throw ValidationException(
           s"'$candidate' is not an allowable value for '$param'"
