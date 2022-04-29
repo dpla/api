@@ -26,7 +26,7 @@ case class DPLADocList(
                         facets: Option[FacetList]
                       )
 
-object DPLADocMapper {
+object DPLAMAPMapper {
 
   def apply(): Behavior[IntermediateSearchResult] = {
 

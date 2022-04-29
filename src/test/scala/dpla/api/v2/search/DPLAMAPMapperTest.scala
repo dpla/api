@@ -8,7 +8,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class DPLADocMapperTest
+class DPLAMAPMapperTest
   extends AnyWordSpec with Matchers with FileReader
   with BeforeAndAfterAll {
 
@@ -16,7 +16,7 @@ class DPLADocMapperTest
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   val itemMapper: ActorRef[IntermediateSearchResult] =
-    testKit.spawn(DPLADocMapper())
+    testKit.spawn(DPLAMAPMapper())
 
   val probe: TestProbe[SearchResponse] =
     testKit.createTestProbe[SearchResponse]
