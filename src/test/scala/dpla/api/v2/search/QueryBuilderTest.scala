@@ -2,7 +2,6 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search
 import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, SearchQuery, SearchResponse, ValidFetchIds, ValidSearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -240,7 +239,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify field to search" in {
-      val expected = Seq("genre")
+      val expected = Seq("sourceResource.subject.name")
       val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
       val params = minSearchParams.copy(filters=filters)
       val query = getJsSearchQuery(params)
@@ -268,7 +267,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
           boolMust.flatMap(obj => readObject(obj, "term")).head
-        val traversed = readString(queryTerm, "genre.not_analyzed")
+        val traversed = readString(queryTerm, "sourceResource.subject.name.not_analyzed")
         assert(traversed == expected)
       }
 
@@ -281,7 +280,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
           boolMust.flatMap(obj => readObject(obj, "term")).head
-        val traversed = readString(queryTerm, "genre.not_analyzed")
+        val traversed = readString(queryTerm, "sourceResource.subject.name.not_analyzed")
         assert(traversed == expected)
       }
     }
@@ -321,7 +320,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify facet field" in {
-      val expected = Some("genre.not_analyzed")
+      val expected = Some("sourceResource.subject.name.not_analyzed")
       val traversed =
         readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
       assert(traversed == expected)
@@ -356,7 +355,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = Some("desc")
       val sortArray = readObjectArray(detailQuery, "sort")
       val score = sortArray
-        .flatMap(obj => readObject(obj, "title.not_analyzed")).head
+        .flatMap(obj => readObject(obj, "sourceResource.title.not_analyzed")).head
       val traversed = readString(score, "order")
       assert(traversed == expected)
     }
@@ -370,7 +369,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify fields to retrieve" in {
-      val expected = "title"
+      val expected = "sourceResource.title"
       val traversed = readStringArray(detailQuery, "_source")
       traversed should contain only expected
     }

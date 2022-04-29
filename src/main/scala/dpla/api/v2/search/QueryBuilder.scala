@@ -10,7 +10,7 @@ import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, MultiFetchQu
 /**
  * Composes ElasticSearch queries from user-submitted parameters.
  */
-object QueryBuilder extends EbookFields {
+object QueryBuilder extends DPLAMAPFields {
 
   def apply(nextPhase: ActorRef[IntermediateSearchResult]): Behavior[IntermediateSearchResult] = {
 
