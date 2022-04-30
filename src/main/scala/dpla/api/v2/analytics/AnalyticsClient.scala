@@ -4,7 +4,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.api.v2.search.Ebook
+import dpla.api.v2.search.JsonFieldReader
+import spray.json.JsValue
 
 /**
  * Tracks use via Google Analytics Measurement Protocol
@@ -14,7 +15,7 @@ import dpla.api.v2.search.Ebook
  * Google Analytics Measurement Protocol does not return HTTP codes, so the
  * success or failure of a request cannot be ascertained.
  */
-object AnalyticsClient {
+object AnalyticsClient extends JsonFieldReader {
 
   sealed trait AnalyticsClientCommand
 
@@ -22,13 +23,15 @@ object AnalyticsClient {
                           rawParams: Map[String, String],
                           host: String,
                           path: String,
-                          ebooks: Seq[Ebook]
+                          dplaDocList: Seq[JsValue],
+                          searchType: String
                         ) extends AnalyticsClientCommand
 
   case class TrackFetch(
                          host: String,
                          path: String,
-                         ebook: Option[Ebook]
+                         dplaDoc: Option[JsValue],
+                         searchType: String
                        ) extends AnalyticsClientCommand
 
   val collectUrl = "https://www.google-analytics.com/collect"
@@ -47,7 +50,7 @@ object AnalyticsClient {
 
       Behaviors.receiveMessage[AnalyticsClientCommand] {
 
-        case TrackSearch(rawParams, host, path, ebooks) =>
+        case TrackSearch(rawParams, host, path, dplaDocList, searchType) =>
 
           // Track pageview
           // Strip the API key out of the page path
@@ -60,21 +63,21 @@ object AnalyticsClient {
             clientId,
             host,
             pathWithQuery,
-            "Ebook search results"
+            s"$searchType search results"
           )
           postHit(system, pageViewParams)
 
           // Track events
-          if (ebooks.nonEmpty) {
-            val eventParams: Seq[String] = ebooks.map(ebook =>
+          if (dplaDocList.nonEmpty) {
+            val eventParams: Seq[String] = dplaDocList.map(doc =>
               trackEventParams(
                 trackingId,
                 clientId,
                 host,
                 path,
-                ebookEventCategory(ebook),
-                ebookEventAction(ebook),
-                ebookEventLabel(ebook)
+                eventCategory(doc, searchType),
+                eventAction(doc),
+                eventLabel(doc)
               )
             )
             postBatch(system, eventParams)
@@ -82,7 +85,7 @@ object AnalyticsClient {
 
           Behaviors.same
 
-        case TrackFetch(host, path, ebook) =>
+        case TrackFetch(host, path, dplaDoc, searchType) =>
 
           // Track pageview
           val pageViewParams: String = trackPageViewParams(
@@ -90,21 +93,21 @@ object AnalyticsClient {
             clientId,
             host,
             path,
-            "Fetch ebooks"
+            s"$searchType fetch"
           )
           postHit(system, pageViewParams)
 
           // Track event
-          ebook match {
-            case Some(ebook) =>
+          dplaDoc match {
+            case Some(doc) =>
               val eventParams: String = trackEventParams(
                 trackingId,
                 clientId,
                 host,
                 path,
-                ebookEventCategory(ebook),
-                ebookEventAction(ebook),
-                ebookEventLabel(ebook)
+                eventCategory(doc, searchType),
+                eventAction(doc),
+                eventLabel(doc)
               )
               postHit(system, eventParams)
             case None => // no-op
@@ -157,17 +160,24 @@ object AnalyticsClient {
     paramString(params)
   }
 
-  private def ebookEventCategory(ebook: Ebook): String = {
-    val provider = ebook.providerName.getOrElse("")
-    s"View API Ebook : $provider"
+  private def eventCategory(doc: JsValue, searchType: String): String = {
+    val root = doc.asJsObject
+    val provider = readString(root, "provider", "name").getOrElse("")
+    s"View API $searchType : $provider"
   }
 
-  private def ebookEventAction(ebook: Ebook): String =
-    ebook.providerName.getOrElse("")
+  private def eventAction(doc: JsValue): String = {
+    val root = doc.asJsObject
+    readString(root, "dataProvider", "name") match {
+      case Some(dp) => dp
+      case None => readString(root, "dataProvider").getOrElse("")
+    }
+  }
 
-  private def ebookEventLabel(ebook: Ebook): String = {
-    val docId = ebook.id.getOrElse("")
-    val title = ebook.title.mkString(", ")
+  private def eventLabel(doc: JsValue): String = {
+    val root = doc.asJsObject
+    val docId = readString(root, "id").getOrElse("")
+    val title = readStringArray(root, "sourceResource", "title").mkString(", ")
     s"$docId : $title"
   }
 

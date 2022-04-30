@@ -7,13 +7,13 @@ import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch
 import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{EbookFetchResult, EbookMultiFetchResult, EbookSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
+import dpla.api.v2.search.SearchProtocol.{DPLADocFetchResult, DPLADocMultiFetchResult, DPLADocSearchResult, EbookFetchResult, EbookMultiFetchResult, EbookSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
 import dpla.api.v2.search._
 
 
-final case class SearchResult(result: EbookList) extends RegistryResponse
-final case class FetchResult(result: SingleEbook) extends RegistryResponse
-final case class MultiFetchResult(result: EbookList) extends RegistryResponse
+final case class SearchResult(result: DPLADocList) extends RegistryResponse
+final case class FetchResult(result: SingleDPLADoc) extends RegistryResponse
+final case class MultiFetchResult(result: DPLADocList) extends RegistryResponse
 
 sealed trait EbookRegistryCommand
 
@@ -90,7 +90,7 @@ trait EbookRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var searchResult: Option[EbookList] = None
+      var searchResult: Option[DPLADocList] = None
       var searchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -109,7 +109,7 @@ trait EbookRegistryBehavior {
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit
                   analyticsClient ! TrackSearch(rawParams, host, path,
-                    ebookList.docs)
+                    ebookList.docs, "Ebook")
                 }
               case None => // no-op
             }
@@ -159,9 +159,9 @@ trait EbookRegistryBehavior {
          * Routes.
          */
 
-        case EbookSearchResult(ebookList) =>
-          searchResult = Some(ebookList)
-          searchResponse = Some(SearchResult(ebookList))
+        case DPLADocSearchResult(dplaDocList) =>
+          searchResult = Some(dplaDocList)
+          searchResponse = Some(SearchResult(dplaDocList))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
@@ -198,7 +198,7 @@ trait EbookRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var fetchResult: Option[Either[SingleEbook, EbookList]] = None
+      var fetchResult: Option[Either[SingleDPLADoc, DPLADocList]] = None
       var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -219,10 +219,10 @@ trait EbookRegistryBehavior {
                   either match {
                     case Left(singleEbook) =>
                       analyticsClient ! TrackFetch(host, path,
-                        singleEbook.docs.headOption)
+                        singleEbook.docs.headOption, "Ebook")
                     case Right(ebookList) =>
                       analyticsClient ! TrackSearch(rawParams, host, path,
-                        ebookList.docs)
+                        ebookList.docs, "Ebook")
                   }
                 }
               case None => // no-op
@@ -273,14 +273,14 @@ trait EbookRegistryBehavior {
          * Routes.
          */
 
-        case EbookFetchResult(singleEbook) =>
-          fetchResult = Some(Left(singleEbook))
-          fetchResponse = Some(FetchResult(singleEbook))
+        case DPLADocFetchResult(singleDPLADoc) =>
+          fetchResult = Some(Left(singleDPLADoc))
+          fetchResponse = Some(FetchResult(singleDPLADoc))
           possibleSessionResolution
 
-        case EbookMultiFetchResult(ebookList) =>
-          fetchResult = Some(Right(ebookList))
-          fetchResponse = Some(MultiFetchResult(ebookList))
+        case DPLADocMultiFetchResult(dplaDocList) =>
+          fetchResult = Some(Right(dplaDocList))
+          fetchResponse = Some(MultiFetchResult(dplaDocList))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
