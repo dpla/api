@@ -14,7 +14,7 @@ import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{EbookMapper, MockEbookSearch, MockEsClientSuccess}
+import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEsClientSuccess}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -31,7 +31,7 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
   val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-  val mapper = testKit.spawn(EbookMapper())
+  val mapper = testKit.spawn(DPLAMAPMapper())
   val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
 
   val ebookSearch: ActorRef[SearchCommand] =

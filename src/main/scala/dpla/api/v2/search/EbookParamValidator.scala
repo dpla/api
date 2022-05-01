@@ -1,6 +1,6 @@
 package dpla.api.v2.search
 
-object EbookParamValidator extends ParamValidator with EbookFields {
+object EbookParamValidator extends ParamValidator with DPLAMAPFields {
 
   // A user can give any of the following parameters in a search request.
   override protected val acceptedSearchParams: Seq[String] =

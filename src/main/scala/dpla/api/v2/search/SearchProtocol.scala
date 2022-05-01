@@ -22,18 +22,6 @@ object SearchProtocol {
   /** Public response protocol */
   sealed trait SearchResponse
 
-  final case class EbookSearchResult(
-                                      ebookList: EbookList
-                                    ) extends SearchResponse
-
-  final case class EbookFetchResult(
-                                     singleEbook: SingleEbook
-                                   ) extends SearchResponse
-
-  final case class EbookMultiFetchResult(
-                                          ebookList: EbookList
-                                        ) extends SearchResponse
-
   final case class DPLADocSearchResult(
                                         dplaDocList: DPLADocList
                                       ) extends SearchResponse

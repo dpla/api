@@ -19,7 +19,7 @@ object MockEbookSearch {
                                 context: ActorContext[SearchCommand]
                               ): ActorRef[IntermediateSearchResult] = {
         mapper.getOrElse(
-          context.spawnAnonymous(EbookMapper())
+          context.spawnAnonymous(DPLAMAPMapper())
         )
       }
 

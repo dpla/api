@@ -8,76 +8,6 @@ import spray.json.{DefaultJsonProtocol, _}
  */
 object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
 
-  implicit object EbookFormat extends RootJsonFormat[Ebook] {
-
-    def read(json: JsValue): Ebook = {
-      val root: JsObject = json.asJsObject
-
-      Ebook(
-        author = readStringArray(root, "_source", "author"),
-        genre = readStringArray(root, "_source", "genre"),
-        id = readString(root, "_source", "id"),
-        itemUri = readString(root, "_source", "itemUri"),
-        medium = readStringArray(root, "_source", "medium"),
-        language = readStringArray(root, "_source", "language"),
-        payloadUri = readStringArray(root, "_source", "payloadUri"),
-        providerName = readString(root, "_source", "providerName"),
-        publisher = readStringArray(root, "_source", "publisher"),
-        publicationDate = readStringArray(root, "_source", "publicationDate"),
-        sourceUri = readString(root, "_source", "sourceUri"),
-        subtitle = readStringArray(root, "_source", "subtitle"),
-        summary = readStringArray(root, "_source", "summary"),
-        title = readStringArray(root, "_source", "title")
-      )
-    }
-
-    def write(ebook: Ebook): JsValue = {
-
-      filterIfEmpty(JsObject(
-        "id" -> ebook.id.toJson,
-        "isShownAt" -> ebook.itemUri.toJson,
-        "object" -> ebook.payloadUri.toJson,
-        "provider" -> filterIfEmpty(JsObject(
-          "@id" -> ebook.sourceUri.toJson,
-          "name" -> ebook.providerName.toJson
-        )),
-        "sourceResource" -> filterIfEmpty(JsObject(
-          "creator" -> ebook.author.toJson,
-          "date" -> ebook.publicationDate.map(displayDate =>
-            JsObject("displayDate" -> displayDate.toJson)
-          ).toJson,
-          "description" -> ebook.summary.toJson,
-          "format" -> ebook.medium.toJson,
-          "language" -> ebook.language.map(name =>
-            JsObject("name" -> name.toJson)
-          ).toJson,
-          "publisher" -> ebook.publisher.toJson,
-          "subject" -> ebook.genre.map(name =>
-            JsObject("name" -> name.toJson)
-          ).toJson,
-          "subtitle" -> ebook.subtitle.toJson,
-          "title" -> ebook.title.toJson
-        ))
-      )).toJson
-    }
-  }
-
-  implicit object SingleEbookFormat extends RootJsonFormat[SingleEbook] {
-
-    def read(json: JsValue): SingleEbook = {
-      SingleEbook(
-        docs = Seq(json.convertTo[Ebook])
-      )
-    }
-
-    def write(singleEbook: SingleEbook): JsValue = {
-      JsObject(
-        "count" -> JsNumber(1),
-        "docs" -> singleEbook.docs.toJson
-      ).toJson
-    }
-  }
-
   implicit object BucketFormat extends RootJsonFormat[Bucket] {
 
     def read(json: JsValue): Bucket = {
@@ -138,41 +68,6 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       })
 
       aggObject.toJson
-    }
-  }
-
-  implicit object EbookListFormat extends RootJsonFormat[EbookList] {
-
-    def read(json: JsValue): EbookList = {
-      val root = json.asJsObject
-
-      EbookList(
-        count = readInt(root, "hits", "total", "value"),
-        limit = None,
-        start = None,
-        docs = readObjectArray(root, "hits", "hits")
-          .map(_.toJson.convertTo[Ebook]),
-        facets = readObject(root, "aggregations")
-          .map(_.toJson.convertTo[FacetList])
-      )
-    }
-
-    def write(ebookList: EbookList): JsValue = {
-      val base: JsObject = JsObject(
-        "count" -> ebookList.count.toJson,
-        "start" -> ebookList.start.toJson,
-        "limit" -> ebookList.limit.toJson,
-        "docs" -> ebookList.docs.toJson
-      )
-
-      // Add facets if there are any
-      val complete: JsObject =
-        if (ebookList.facets.nonEmpty)
-          JsObject(base.fields + ("facets" -> ebookList.facets.toJson))
-        else
-          base
-
-      complete.toJson
     }
   }
 

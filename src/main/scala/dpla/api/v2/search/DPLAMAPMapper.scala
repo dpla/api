@@ -26,6 +26,20 @@ case class DPLADocList(
                         facets: Option[FacetList]
                       )
 
+case class FacetList(
+                      facets: Seq[Facet]
+                    )
+
+case class Facet(
+                  field: String,
+                  buckets: Seq[Bucket]
+                )
+
+case class Bucket(
+                   key: Option[String],
+                   docCount: Option[Int]
+                 )
+
 object DPLAMAPMapper {
 
   def apply(): Behavior[IntermediateSearchResult] = {

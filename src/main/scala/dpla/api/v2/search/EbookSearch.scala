@@ -12,7 +12,7 @@ object EbookSearch extends SearchBehavior {
   override def spawnMapper(
                             context: ActorContext[SearchCommand]
                           ): ActorRef[IntermediateSearchResult] =
-    context.spawn(EbookMapper(), "EbookMapper")
+    context.spawn(DPLAMAPMapper(), "EbookMapper")
 
   override def spawnElasticSearchClient(
                                          context: ActorContext[SearchCommand],
