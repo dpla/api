@@ -11,7 +11,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientDisabled, MockPostgresClientKeyNotFound}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEsClientSuccess}
 import org.scalatest.matchers.should.Matchers
@@ -42,7 +42,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
@@ -64,7 +64,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
@@ -88,7 +88,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
@@ -110,7 +110,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =

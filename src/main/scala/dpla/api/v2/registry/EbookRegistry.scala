@@ -8,10 +8,12 @@ import dpla.api.v2.search.SearchProtocol.SearchCommand
 /**
  * Handles the control flow for processing an ebooks request from Routes.
  */
-object EbookRegistry extends EbookRegistryBehavior {
+object EbookRegistry extends SearchRegistryBehavior {
 
-  override def spawnEbookSearch(
-                                 context: ActorContext[EbookRegistryCommand]
+  override def spawnSearchActor(
+                                 context: ActorContext[SearchRegistryCommand]
                                ): ActorRef[SearchCommand] =
     context.spawn(EbookSearch(), "EbookSearch")
+
+  override val searchType: String = "Ebook"
 }

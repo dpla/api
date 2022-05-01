@@ -15,12 +15,14 @@ object MockEbookRegistry {
              authenticator: ActorRef[AuthenticationCommand],
              analyticsClient: ActorRef[AnalyticsClientCommand],
              ebookSearch: Option[ActorRef[SearchCommand]] = None
-           ): ActorRef[EbookRegistryCommand] = {
+           ): ActorRef[SearchRegistryCommand] = {
 
-    object Mock extends EbookRegistryBehavior {
+    object Mock extends SearchRegistryBehavior {
 
-      override def spawnEbookSearch(
-                                     context: ActorContext[EbookRegistryCommand]
+      override val searchType: String = "Ebook"
+
+      override def spawnSearchActor(
+                                     context: ActorContext[SearchRegistryCommand]
                                    ): ActorRef[SearchCommand] =
         ebookSearch.getOrElse(context.spawnAnonymous(EbookSearch()))
     }

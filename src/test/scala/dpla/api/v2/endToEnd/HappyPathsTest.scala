@@ -12,7 +12,7 @@ import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.email.{EmailClient, MockEmailClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.{DPLAMAPMapper, JsonFieldReader, MockEbookSearch, MockEsClientSuccess}
 import org.scalatest.matchers.should.Matchers
@@ -43,7 +43,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
 
-  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+  val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =

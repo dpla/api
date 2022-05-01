@@ -11,7 +11,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.MockAuthenticator
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
@@ -29,7 +29,7 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   val authenticator: ActorRef[AuthenticationCommand] =
     MockAuthenticator(testKit)
 
-  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+  val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient)
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =

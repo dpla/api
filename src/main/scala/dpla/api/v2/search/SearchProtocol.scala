@@ -9,15 +9,15 @@ object SearchProtocol {
   sealed trait SearchCommand
 
   final case class Search(
-                             rawParams: Map[String, String],
-                             replyTo: ActorRef[SearchResponse]
-                           ) extends SearchCommand
-
-  final case class Fetch(
-                           id: String,
                            rawParams: Map[String, String],
                            replyTo: ActorRef[SearchResponse]
                          ) extends SearchCommand
+
+  final case class Fetch(
+                          id: String,
+                          rawParams: Map[String, String],
+                          replyTo: ActorRef[SearchResponse]
+                        ) extends SearchCommand
 
   /** Public response protocol */
   sealed trait SearchResponse

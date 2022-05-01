@@ -12,7 +12,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.{MockEbookSearch, MockEsClientFailure, MockEsClientNotFound}
 import org.scalatest.matchers.should.Matchers
@@ -46,7 +46,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       val ebookSearch: ActorRef[SearchCommand] =
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
@@ -65,7 +65,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       val ebookSearch: ActorRef[SearchCommand] =
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
@@ -87,7 +87,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       val ebookSearch: ActorRef[SearchCommand] =
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
@@ -106,7 +106,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       val ebookSearch: ActorRef[SearchCommand] =
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =

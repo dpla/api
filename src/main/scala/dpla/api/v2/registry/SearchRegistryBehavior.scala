@@ -15,56 +15,59 @@ final case class SearchResult(result: DPLADocList) extends RegistryResponse
 final case class FetchResult(result: SingleDPLADoc) extends RegistryResponse
 final case class MultiFetchResult(result: DPLADocList) extends RegistryResponse
 
-sealed trait EbookRegistryCommand
+sealed trait SearchRegistryCommand
 
-final case class SearchEbooks(
-                               apiKey: Option[String],
-                               rawParams: Map[String, String],
-                               host: String,
-                               path: String,
-                               replyTo: ActorRef[RegistryResponse]
-                             ) extends EbookRegistryCommand
+final case class RegisterSearch(
+                                 apiKey: Option[String],
+                                 rawParams: Map[String, String],
+                                 host: String,
+                                 path: String,
+                                 replyTo: ActorRef[RegistryResponse]
+                               ) extends SearchRegistryCommand
 
-final case class FetchEbook(
-                             apiKey: Option[String],
-                             id: String,
-                             rawParams: Map[String, String],
-                             host: String,
-                             path: String,
-                             replyTo: ActorRef[RegistryResponse]
-                           ) extends EbookRegistryCommand
+final case class RegisterFetch(
+                                apiKey: Option[String],
+                                id: String,
+                                rawParams: Map[String, String],
+                                host: String,
+                                path: String,
+                                replyTo: ActorRef[RegistryResponse]
+                              ) extends SearchRegistryCommand
 
-trait EbookRegistryBehavior {
+trait SearchRegistryBehavior {
 
-  def spawnEbookSearch(context: ActorContext[EbookRegistryCommand]):
+  def spawnSearchActor(context: ActorContext[SearchRegistryCommand]):
     ActorRef[SearchCommand]
+
+  // Used in analytics tracking
+  def searchType: String
 
   def apply(
              authenticator: ActorRef[AuthenticationCommand],
              analyticsClient: ActorRef[AnalyticsClientCommand]
-           ): Behavior[EbookRegistryCommand] = {
+           ): Behavior[SearchRegistryCommand] = {
 
-    Behaviors.setup[EbookRegistryCommand] { context =>
+    Behaviors.setup[SearchRegistryCommand] { context =>
 
       // Spawn children.
-      val ebookSearch: ActorRef[SearchCommand] =
-        spawnEbookSearch(context)
+      val searchActor: ActorRef[SearchCommand] =
+        spawnSearchActor(context)
 
-      Behaviors.receiveMessage[EbookRegistryCommand] {
+      Behaviors.receiveMessage[SearchRegistryCommand] {
 
-        case SearchEbooks(apiKey, rawParams, host, path, replyTo) =>
+        case RegisterSearch(apiKey, rawParams, host, path, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
             processSearch(apiKey, rawParams, host, path, replyTo, authenticator,
-              ebookSearch, analyticsClient)
+              searchActor, analyticsClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
-        case FetchEbook(apiKey, id, rawParams, host, path, replyTo) =>
+        case RegisterFetch(apiKey, id, rawParams, host, path, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
             processFetch(apiKey, id, rawParams, host, path, replyTo,
-              authenticator, ebookSearch, analyticsClient)
+              authenticator, searchActor, analyticsClient)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -83,7 +86,7 @@ trait EbookRegistryBehavior {
                              path: String,
                              replyTo: ActorRef[RegistryResponse],
                              authenticator: ActorRef[AuthenticationCommand],
-                             ebookSearch: ActorRef[SearchCommand],
+                             searchActor: ActorRef[SearchCommand],
                              analyticsClient: ActorRef[AnalyticsClientCommand]
                            ): Behavior[NotUsed] = {
 
@@ -94,7 +97,7 @@ trait EbookRegistryBehavior {
       var searchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
-      // or the ebook search has been complete.
+      // or the search has been complete.
       def possibleSessionResolution: Behavior[AnyRef] =
         (searchResponse, authorizedAccount) match {
           case (Some(response), Some(account)) =>
@@ -104,12 +107,12 @@ trait EbookRegistryBehavior {
 
             // If the search was successful...
             searchResult match {
-              case Some(ebookList) =>
+              case Some(dplaDocList) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit
                   analyticsClient ! TrackSearch(rawParams, host, path,
-                    ebookList.docs, "Ebook")
+                    dplaDocList.docs, searchType)
                 }
               case None => // no-op
             }
@@ -121,13 +124,13 @@ trait EbookRegistryBehavior {
 
       // Send initial messages
       authenticator ! FindAccountByKey(apiKey, context.self)
-      ebookSearch ! Search(rawParams, context.self)
+      searchActor ! Search(rawParams, context.self)
 
       Behaviors.receiveMessage {
 
         /**
          * Possible responses from Authenticator.
-         * If authentication fails, no need to wait for EbookSearch to reply to
+         * If authentication fails, no need to wait for search actor to reply to
          * Routes.
          */
 
@@ -154,7 +157,7 @@ trait EbookRegistryBehavior {
           Behaviors.stopped
 
         /**
-         * Possible responses from EbookSearch.
+         * Possible responses from search actor.
          * Always check to see if user is authenticated before replying to
          * Routes.
          */
@@ -191,7 +194,7 @@ trait EbookRegistryBehavior {
                             path: String,
                             replyTo: ActorRef[RegistryResponse],
                             authenticator: ActorRef[AuthenticationCommand],
-                            ebookSearch: ActorRef[SearchCommand],
+                            searchActor: ActorRef[SearchCommand],
                             analyticsClient: ActorRef[AnalyticsClientCommand]
                           ): Behavior[NotUsed] = {
 
@@ -202,7 +205,7 @@ trait EbookRegistryBehavior {
       var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
-      // or the ebook fetch has been complete.
+      // or the fetch has been complete.
       def possibleSessionResolution: Behavior[AnyRef] =
         (fetchResponse, authorizedAccount) match {
           case (Some(response), Some(account)) =>
@@ -217,12 +220,12 @@ trait EbookRegistryBehavior {
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit.
                   either match {
-                    case Left(singleEbook) =>
+                    case Left(singleDPLADoc) =>
                       analyticsClient ! TrackFetch(host, path,
-                        singleEbook.docs.headOption, "Ebook")
-                    case Right(ebookList) =>
+                        singleDPLADoc.docs.headOption, searchType)
+                    case Right(dplaDocList) =>
                       analyticsClient ! TrackSearch(rawParams, host, path,
-                        ebookList.docs, "Ebook")
+                        dplaDocList.docs, searchType)
                   }
                 }
               case None => // no-op
@@ -235,13 +238,13 @@ trait EbookRegistryBehavior {
 
       // Send initial messages.
       authenticator ! FindAccountByKey(apiKey, context.self)
-      ebookSearch ! Fetch(id, rawParams, context.self)
+      searchActor ! Fetch(id, rawParams, context.self)
 
       Behaviors.receiveMessage {
 
         /**
          * Possible responses from Authenticator.
-         * If authentication fails, no need to wait for EbookSearch to reply to
+         * If authentication fails, no need to wait for search actor to reply to
          * Routes.
          */
 
@@ -268,7 +271,7 @@ trait EbookRegistryBehavior {
           Behaviors.stopped
 
         /**
-         * Possible responses from EbookSearch.
+         * Possible responses from search actor.
          * Always check to see if user is authenticated before replying to
          * Routes.
          */

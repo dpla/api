@@ -12,7 +12,7 @@ import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.email.MockEmailClientFailure
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, EbookRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -37,7 +37,7 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val authenticator: ActorRef[AuthenticationCommand] =
     MockAuthenticator(testKit, Some(postgresClient))
 
-  val ebookRegistry: ActorRef[EbookRegistryCommand] =
+  val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient)
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =

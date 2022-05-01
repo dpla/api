@@ -41,10 +41,10 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! SearchEbooks(Some(fakeApiKey),
+      ebookRegistry ! RegisterSearch(Some(fakeApiKey),
         Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectMessageType[TrackSearch]
@@ -56,10 +56,10 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! SearchEbooks(Some(fakeApiKey),
+      ebookRegistry ! RegisterSearch(Some(fakeApiKey),
         Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectNoMessage
@@ -74,10 +74,10 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some(fakeApiKey),
+      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectMessageType[TrackFetch]
@@ -89,10 +89,10 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some(fakeApiKey),
+      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectNoMessage
@@ -107,10 +107,10 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some(fakeApiKey),
+      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
         "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
         Map(), "", "", replyProbe.ref)
 
@@ -123,10 +123,10 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
 
-      ebookRegistry ! FetchEbook(Some(fakeApiKey),
+      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
         "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
         Map(), "", "", replyProbe.ref)
 
