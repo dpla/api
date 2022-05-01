@@ -7,7 +7,7 @@ import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch
 import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{DPLADocFetchResult, DPLADocMultiFetchResult, DPLADocSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
+import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
 import dpla.api.v2.search._
 
 
@@ -159,7 +159,7 @@ trait EbookRegistryBehavior {
          * Routes.
          */
 
-        case DPLADocSearchResult(dplaDocList) =>
+        case DPLAMAPSearchResult(dplaDocList) =>
           searchResult = Some(dplaDocList)
           searchResponse = Some(SearchResult(dplaDocList))
           possibleSessionResolution
@@ -273,12 +273,12 @@ trait EbookRegistryBehavior {
          * Routes.
          */
 
-        case DPLADocFetchResult(singleDPLADoc) =>
+        case DPLAMAPFetchResult(singleDPLADoc) =>
           fetchResult = Some(Left(singleDPLADoc))
           fetchResponse = Some(FetchResult(singleDPLADoc))
           possibleSessionResolution
 
-        case DPLADocMultiFetchResult(dplaDocList) =>
+        case DPLAMAPMultiFetchResult(dplaDocList) =>
           fetchResult = Some(Right(dplaDocList))
           fetchResponse = Some(MultiFetchResult(dplaDocList))
           possibleSessionResolution

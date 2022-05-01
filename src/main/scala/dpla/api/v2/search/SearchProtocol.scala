@@ -22,15 +22,15 @@ object SearchProtocol {
   /** Public response protocol */
   sealed trait SearchResponse
 
-  final case class DPLADocSearchResult(
+  final case class DPLAMAPSearchResult(
                                         dplaDocList: DPLADocList
                                       ) extends SearchResponse
 
-  final case class DPLADocFetchResult(
+  final case class DPLAMAPFetchResult(
                                        singleDPLADoc: SingleDPLADoc
                                      ) extends SearchResponse
 
-  final case class DPLADocMultiFetchResult(
+  final case class DPLAMAPMultiFetchResult(
                                             dplaDocList: DPLADocList
                                           ) extends SearchResponse
 

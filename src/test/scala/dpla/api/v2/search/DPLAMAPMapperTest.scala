@@ -3,7 +3,7 @@ package dpla.api.v2.search
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.helpers.FileReader
-import dpla.api.v2.search.SearchProtocol.{DPLADocFetchResult, DPLADocMultiFetchResult, DPLADocSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
+import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -43,7 +43,7 @@ class DPLAMAPMapperTest
   "search response mapper" should {
     "return success for mappable response" in {
       itemMapper ! SearchQueryResponse(params, minEsEbookList, probe.ref)
-      probe.expectMessageType[DPLADocSearchResult]
+      probe.expectMessageType[DPLAMAPSearchResult]
     }
 
     "return failure for unmappable response" in {
@@ -56,7 +56,7 @@ class DPLAMAPMapperTest
   "fetch response mapper" should {
     "return success for mappable response" in {
       itemMapper ! FetchQueryResponse(esItem, probe.ref)
-      probe.expectMessageType[DPLADocFetchResult]
+      probe.expectMessageType[DPLAMAPFetchResult]
     }
 
     "fetch failure for unmappable response" in {
@@ -69,7 +69,7 @@ class DPLAMAPMapperTest
   "multi-fetch response mapper" should {
     "return success for mappable response" in {
       itemMapper ! MultiFetchQueryResponse(minEsEbookList, probe.ref)
-      probe.expectMessageType[DPLADocMultiFetchResult]
+      probe.expectMessageType[DPLAMAPMultiFetchResult]
     }
 
     "fetch failure for unmappable response" in {

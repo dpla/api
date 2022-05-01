@@ -3,7 +3,7 @@ package dpla.api.v2.search
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.api.v2.search.JsonFormats._
-import dpla.api.v2.search.SearchProtocol.{DPLADocFetchResult, DPLADocMultiFetchResult, DPLADocSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse}
+import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse}
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -51,7 +51,7 @@ object DPLAMAPMapper {
         case SearchQueryResponse(params, body, replyTo) =>
           mapDPLADocList(params, body) match {
             case Success(dplaDocList) =>
-              replyTo ! DPLADocSearchResult(dplaDocList)
+              replyTo ! DPLAMAPSearchResult(dplaDocList)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse DPLADocList from ElasticSearch response:", e
@@ -63,7 +63,7 @@ object DPLAMAPMapper {
         case FetchQueryResponse(body, replyTo) =>
           mapSingleDPLADoc(body) match {
             case Success(singleDPLADoc) =>
-              replyTo ! DPLADocFetchResult(singleDPLADoc)
+              replyTo ! DPLAMAPFetchResult(singleDPLADoc)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse SingleDPLADoc from ElasticSearch response:", e
@@ -75,7 +75,7 @@ object DPLAMAPMapper {
         case MultiFetchQueryResponse(body, replyTo) =>
           mapMultiFetch(body) match {
             case Success(multiDPLADoc) =>
-              replyTo ! DPLADocMultiFetchResult(multiDPLADoc)
+              replyTo ! DPLAMAPMultiFetchResult(multiDPLADoc)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse DPLADocList from ElasticSearch response:", e
