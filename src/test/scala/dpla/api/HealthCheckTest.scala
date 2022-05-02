@@ -11,7 +11,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.MockAuthenticator
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
@@ -35,8 +35,11 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
 
+  val itemRegistry: ActorRef[SearchRegistryCommand] =
+    MockItemRegistry(testKit, authenticator, analyticsClient)
+
   lazy val routes: Route =
-    new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
   "Health check" should {
     "return OK" in {

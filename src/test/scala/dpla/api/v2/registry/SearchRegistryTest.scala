@@ -14,7 +14,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
+class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
   with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
@@ -33,7 +33,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
   val replyProbe: TestProbe[RegistryResponse] =
     testKit.createTestProbe[RegistryResponse]
 
-  "EbookRegistry Search" should {
+  "SearchRegistry Search" should {
 
     "send analytics message if account is non-staff" in {
       val postgresClient = testKit.spawn(MockPostgresClientSuccess())
@@ -66,7 +66,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
     }
   }
 
-  "EbookRegistry Fetch" should {
+  "SearchRegistry Fetch" should {
 
     "send analytics message if account is non-staff" in {
       val postgresClient = testKit.spawn(MockPostgresClientSuccess())
@@ -99,7 +99,7 @@ class EbookRegistryTest extends AnyWordSpec with Matchers with FileReader
     }
   }
 
-  "EbookRegistry Multi-Fetch" should {
+  "SearchRegistry Multi-Fetch" should {
 
     "send analytics message if account is non-staff" in {
       val postgresClient = testKit.spawn(MockPostgresClientSuccess())

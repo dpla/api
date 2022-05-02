@@ -8,7 +8,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.Authenticator
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, EbookRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
 
 import scala.util.{Failure, Success}
 
@@ -48,9 +48,14 @@ object RunApp {
       val analyticsClient: ActorRef[AnalyticsClientCommand] =
         context.spawn(AnalyticsClient(), "AnalyticsClient")
 
-      val ebookRegistry: ActorRef[EbookRegistryCommand] =
+      val ebookRegistry: ActorRef[SearchRegistryCommand] =
         context.spawn(
           EbookRegistry(authenticator, analyticsClient), "EbookRegistry"
+        )
+
+      val itemRegistry: ActorRef[SearchRegistryCommand] =
+        context.spawn(
+          ItemRegistry(authenticator, analyticsClient), "ItemRegistry"
         )
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
@@ -60,7 +65,8 @@ object RunApp {
       context.watch(apiKeyRegistry)
 
       // Start the HTTP server.
-      val routes = new Routes(ebookRegistry, apiKeyRegistry)(context.system)
+      val routes =
+        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry)(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
 

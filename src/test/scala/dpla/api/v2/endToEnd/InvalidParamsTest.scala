@@ -11,8 +11,8 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
-import dpla.api.v2.search.MockEbookSearch
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.{MockEbookSearch, MockItemSearch}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -44,8 +44,11 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
 
+  val itemRegistry: ActorRef[SearchRegistryCommand] =
+    MockItemRegistry(testKit, authenticator, analyticsClient)
+
   lazy val routes: Route =
-    new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
   "/v2/ebooks route" should {
     "return BadRequest if params are invalid" in {

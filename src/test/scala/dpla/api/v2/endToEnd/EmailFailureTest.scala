@@ -12,7 +12,9 @@ import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.email.MockEmailClientFailure
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, SearchRegistryCommand, MockApiKeyRegistry, MockEbookRegistry}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.MockItemSearch
+import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -43,8 +45,11 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
+  val itemRegistry: ActorRef[SearchRegistryCommand] =
+    MockItemRegistry(testKit, authenticator, analyticsClient)
+
   lazy val routes: Route =
-    new Routes(ebookRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
   "/api_key/[email]" should {
     "return Teapot if email fails" in {
