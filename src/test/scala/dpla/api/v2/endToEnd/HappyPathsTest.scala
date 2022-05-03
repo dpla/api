@@ -14,7 +14,7 @@ import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.email.{EmailClient, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, JsonFieldReader, MockEbookSearch, MockEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.{DPLAMAPMapper, JsonFieldReader, MockEbookSearch, MockEboookEsClientSuccess, MockItemEsClientSuccess, MockItemSearch}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
@@ -35,13 +35,17 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val emailClient: ActorRef[EmailClient.EmailClientCommand] =
     testKit.spawn(MockEmailClientSuccess())
   val mapper = testKit.spawn(DPLAMAPMapper())
-  val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
+  val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+  val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(mapper))
 
   val authenticator: ActorRef[AuthenticationCommand] =
     MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(mapper))
+
+  val itemSearch: ActorRef[SearchCommand] =
+    MockItemSearch(testKit, Some(itemElasticSearchClient), Some(mapper))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
@@ -50,7 +54,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
   val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, analyticsClient)
+    MockItemRegistry(testKit, authenticator, analyticsClient, Some(itemSearch))
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
@@ -102,6 +106,66 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
       )
       val ids = idSeq.mkString(",")
       val request = Get(s"/v2/ebooks/$ids?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
+        contentType should === (ContentTypes.`application/json`)
+
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val ids = readObjectArray(entity, "docs")
+          .flatMap(readString(_, "id"))
+        ids should contain allElementsOf idSeq
+      }
+    }
+  }
+
+  "/v2/items route" should {
+    "be happy with valid user inputs and successful es response" in {
+      val request = Get(s"/v2/items?page_size=100&api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
+        contentType should === (ContentTypes.`application/json`)
+
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val limit: Option[Int] = readInt(entity, "limit")
+        limit should === (Some(100))
+
+        val expected = Seq(
+          "4d85a6bd965dde8352c8235c43fe1c44",
+          "c340ca5de0e46b0538213c65c650c8c6"
+        )
+        val ids = readObjectArray(entity, "docs")
+          .flatMap(readString(_, "id"))
+        ids should contain allElementsOf expected
+      }
+    }
+  }
+
+  "/v2/items/[id] route" should {
+    "be happy with valid single ID and successful es response" in {
+      val request =
+        Get(s"/v2/items/4d85a6bd965dde8352c8235c43fe1c44?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
+        contentType should === (ContentTypes.`application/json`)
+
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val id = readObjectArray(entity, "docs")
+          .flatMap(readString(_, "id")).headOption
+        id should === (Some("4d85a6bd965dde8352c8235c43fe1c44"))
+      }
+    }
+
+    "be happy with valid multiple IDs and successful es response" in {
+      val idSeq = Seq(
+        "4d85a6bd965dde8352c8235c43fe1c44",
+        "c340ca5de0e46b0538213c65c650c8c6"
+      )
+      val ids = idSeq.mkString(",")
+      val request = Get(s"/v2/items/$ids?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK

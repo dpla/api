@@ -9,7 +9,7 @@ import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientStaff, MockPostgresClientSuccess}
 import dpla.api.v2.registry.RegistryProtocol.RegistryResponse
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEsClientSuccess}
+import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -22,7 +22,7 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   val mapper = testKit.spawn(DPLAMAPMapper())
-  val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
 
   val analyticsProbe: TestProbe[AnalyticsClientCommand] =
     testKit.createTestProbe[AnalyticsClientCommand]

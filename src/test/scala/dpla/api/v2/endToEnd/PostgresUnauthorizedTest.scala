@@ -13,7 +13,7 @@ import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientDisabled, MockPostgresClientKeyNotFound}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEsClientSuccess}
+import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -30,7 +30,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
   val mapper = testKit.spawn(DPLAMAPMapper())
-  val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
 
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))

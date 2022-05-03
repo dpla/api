@@ -15,7 +15,7 @@ import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientError, M
 import dpla.api.v2.email.MockEmailClientSuccess
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess, MockItemSearch}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -32,7 +32,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
   val mapper = testKit.spawn(DPLAMAPMapper())
-  val elasticSearchClient = testKit.spawn(MockEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
 
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))

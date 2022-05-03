@@ -6,7 +6,7 @@ import dpla.api.helpers.FileReader
 import dpla.api.v2.search.SearchProtocol.{FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, SearchQuery, SearchQueryResponse}
 
 
-object MockEsClientSuccess extends FileReader {
+object MockEboookEsClientSuccess extends FileReader {
 
   private val searchBody: String =
     readFile("/elasticSearchEbookList.json")
