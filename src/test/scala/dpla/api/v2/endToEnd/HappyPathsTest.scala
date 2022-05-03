@@ -89,7 +89,8 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "/v2/ebooks/[id] route" should {
     "be happy with valid single ID and successful es response" in {
-      val request = Get(s"/v2/ebooks/wfwPJ34Bj-MaVWqX9Kac?api_key=$fakeApiKey")
+      val request =
+        Get(s"/v2/ebooks/3dbbf125aba2642e21f17c955bef4e96?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK
@@ -98,7 +99,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val id = readObjectArray(entity, "docs")
           .flatMap(readString(_, "id")).headOption
-        id should === (Some("wfwPJ34Bj-MaVWqX9Kac"))
+        id should === (Some("3dbbf125aba2642e21f17c955bef4e96"))
       }
     }
 
