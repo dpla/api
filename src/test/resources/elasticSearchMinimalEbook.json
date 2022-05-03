@@ -1,25 +1,26 @@
 {
-  "_index":"eleanor-20220104-154349",
-  "_type":"_doc",
-  "_id":"wfwPJ34Bj-MaVWqX9Kac",
-  "_version":1,
-  "_seq_no":42,
-  "_primary_term":1,
-  "found":true,
-  "_source": {
-    "id": "wfwPJ34Bj-MaVWqX9Kac",
-    "sourceUri": null,
-    "itemUri": null,
-    "providerName": null,
-    "payloadUri": [],
-    "title": ["Dracula"],
-    "author": [],
-    "subtitle": [],
-    "language": [],
-    "medium": [],
-    "publisher": [],
-    "publicationDate": [],
-    "summary": [],
-    "genre": []
+  "_index" : "eleanor-gpo-20220422-100232",
+  "_type" : "_doc",
+  "_id" : "3dbbf125aba2642e21f17c955bef4e96",
+  "_version" : 1,
+  "_seq_no" : 7533,
+  "_primary_term" : 1,
+  "found" : true,
+  "_source" : {
+    "id" : "3dbbf125aba2642e21f17c955bef4e96",
+    "@context" : "http://dp.la/api/items/context",
+    "@id" : "http://dp.la/api/items/3dbbf125aba2642e21f17c955bef4e96",
+    "aggregatedCHO" : "#sourceResource",
+    "ingestDate" : "2022-04-22T16:18:21.455Z",
+    "ingestType" : "item",
+    "provider" : {
+      "@id" : "http://dp.la/api/contributor/gpo",
+      "name" : "United States Government Publishing Office (GPO)"
+    },
+    "sourceResource" : {
+      "@id": "http://dp.la/api/items/3dbbf125aba2642e21f17c955bef4e96#SourceResource",
+      "@type": "ore:Aggregation"
+    }
   }
 }
+

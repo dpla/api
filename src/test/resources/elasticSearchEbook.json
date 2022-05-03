@@ -1,48 +1,72 @@
 {
-  "_index":"eleanor-20220104-154349",
-  "_type":"_doc",
-  "_id":"wfwPJ34Bj-MaVWqX9Kac",
-  "_version":1,
-  "_seq_no":42,
-  "_primary_term":1,
-  "found":true,
-  "_source": {
-    "id": "wfwPJ34Bj-MaVWqX9Kac",
-    "sourceUri": "http://standardebooks.org",
-    "itemUri": "https://standardebooks.org/ebooks/j-s-fletcher/the-charing-cross-mystery",
-    "providerName":"Standard Ebooks",
-    "payloadUri": [
-      "http://payload-permanent-address.dp.la"
-    ],
-    "title": [
-      "The Charing Cross Mystery"
-    ],
-    "author": [
-      "J. S. Fletcher"
-    ],
-    "subtitle": [
-      "This is a subtitle"
-    ],
-    "language": [
-      "en-GB"
-    ],
-    "medium": [
-      "Medium"
-    ],
-    "publisher": [
-      "Publisher"
-    ],
-    "publicationDate": [
-      "1922"
-    ],
-    "summary": [
-      "A young lawyer witnesses a suspicious death on a late-night train and investigates what turns out to be a murder."
-    ],
-    "genre": [
-      "Detective and mystery stories",
-      "Murder -- Investigation -- Fiction",
-      "Lawyers -- Fiction",
-      "London (England) -- Social life and customs -- 20th century -- Fiction"
-    ]
+  "_index" : "eleanor-gpo-20220422-100232",
+  "_type" : "_doc",
+  "_id" : "3dbbf125aba2642e21f17c955bef4e96",
+  "_version" : 1,
+  "_seq_no" : 7533,
+  "_primary_term" : 1,
+  "found" : true,
+  "_source" : {
+    "id" : "3dbbf125aba2642e21f17c955bef4e96",
+    "@context" : "http://dp.la/api/items/context",
+    "@id" : "http://dp.la/api/items/3dbbf125aba2642e21f17c955bef4e96",
+    "aggregatedCHO" : "#sourceResource",
+    "dataProvider" : {
+      "name" : "United States Government Publishing Office (GPO)"
+    },
+    "ingestDate" : "2022-04-22T16:18:21.455Z",
+    "ingestType" : "item",
+    "isShownAt" : "http://catalog.gpo.gov/F/?func=direct&doc_number=000637392&format=999",
+    "originalRecord" : {
+      "stringValue" : "<record>\n  <header>\n    <identifier>oai:catalog.gpo.gov:GPO01-000637392</identifier>\n    <datestamp>2020-06-24T00:26:50Z</datestamp>\n    <setSpec>PURL_ALL</setSpec>\n  </header>\n  <metadata>\n    <marc:record \n    xsi:schemaLocation=\"http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:marc=\"http://www.loc.gov/MARC21/slim\">\n      <marc:leader> nkm 2200313Ia 4500</marc:leader>\n      <marc:controlfield tag=\"001\">000637392</marc:controlfield>\n      <marc:controlfield tag=\"005\">20090416100242.0</marc:controlfield>\n      <marc:controlfield tag=\"006\">m d f</marc:controlfield>\n      <marc:controlfield tag=\"007\">kf czz</marc:controlfield>\n      <marc:controlfield tag=\"007\">cr cn||||a||||</marc:controlfield>\n      <marc:controlfield tag=\"008\">090416s2009 dcu--- fs ineng d</marc:controlfield>\n      <marc:datafield tag=\"035\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">(OCoLC)318586727</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"040\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">GPO</marc:subfield>\n        <marc:subfield code=\"c\">GPO</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"074\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">0074-E-03 (online)</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"086\" ind1=\"0\" ind2=\" \">\n        <marc:subfield code=\"a\">PE 1.12:C 93</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"245\" ind1=\"0\" ind2=\"0\">\n        <marc:subfield code=\"a\">Inspire curiosity</marc:subfield>\n        <marc:subfield code=\"h\">[electronic resource] :</marc:subfield>\n        <marc:subfield code=\"b\">\n          Free! Peace Corps resources for yuur classroom /\n        </marc:subfield>\n        <marc:subfield code=\"c\">Peace Corps.</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"260\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">[Washington, D.C.] :</marc:subfield>\n        <marc:subfield code=\"b\">Paul D. Coverdell Worldwise Schools,</marc:subfield>\n        <marc:subfield code=\"c\">[2009?]</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"300\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">1 poster :</marc:subfield>\n        <marc:subfield code=\"b\">digital, PDF file</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"538\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">\n          Mode of access: Internet from the Peace Corps web site. Address as of 04/15/09: http://www.peacecorps.gov/wws/multimedia/posters/posters/IC.pdf ; current access is available via PURL.\n        </marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"500\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">\n          Title from PDF screen (viewed Apr. 15, 2009)\n        </marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"610\" ind1=\"2\" ind2=\"0\">\n        <marc:subfield code=\"a\">Peace Corps (U.S.)</marc:subfield>\n        <marc:subfield code=\"v\">Posters.</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"650\" ind1=\" \" ind2=\"0\">\n        <marc:subfield code=\"a\">Teaching</marc:subfield>\n        <marc:subfield code=\"x\">Aids and devices</marc:subfield>\n        <marc:subfield code=\"v\">Posters.</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"710\" ind1=\"2\" ind2=\" \">\n        <marc:subfield code=\"a\">Peace Corps (U.S.)</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"710\" ind1=\"2\" ind2=\" \">\n        <marc:subfield code=\"a\">\n          Paul D. Coverdell World Wise Schools (Peace Corps)\n        </marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"856\" ind1=\"4\" ind2=\"0\">\n        <marc:subfield code=\"u\">https://purl.fdlp.gov/GPO/LPS111284</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"856\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"3\">(online)</marc:subfield>\n        <marc:subfield code=\"u\">\n          https://catalog.gpo.gov/fdlpdir/locate.jsp?ItemNumber=0074-E-03&amp;SYS=000637392\n        </marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"994\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">C0</marc:subfield>\n        <marc:subfield code=\"b\">GPO</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"049\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">XZL4</marc:subfield>\n      </marc:datafield>\n      <marc:datafield tag=\"955\" ind1=\" \" ind2=\" \">\n        <marc:subfield code=\"a\">bca15 20090416</marc:subfield>\n        <marc:subfield code=\"b\">20090416</marc:subfield>\n      </marc:datafield>\n</marc:record>\n  </metadata>\n</record>"
+    },
+    "provider" : {
+      "@id" : "http://dp.la/api/contributor/gpo",
+      "name" : "United States Government Publishing Office (GPO)"
+    },
+    "sourceResource" : {
+      "@id" : "http://dp.la/api/items/3dbbf125aba2642e21f17c955bef4e96#SourceResource",
+      "date" : [
+        {
+          "displayDate" : "[2009?]"
+        }
+      ],
+      "description" : [
+        "Title from PDF screen (viewed Apr. 15, 2009)"
+      ],
+      "extent" : [
+        "1 poster "
+      ],
+      "format" : [
+        "Nonprojected graphic",
+        "Electronic resource"
+      ],
+      "identifier" : [
+        "(OCoLC)318586727",
+        "0074-E-03 (online)",
+        "PE 1.12:C 93"
+      ],
+      "publisher" : [
+        "[Washington, D.C.] : Paul D. Coverdell Worldwise Schools,"
+      ],
+      "rights" : [
+        "Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain. For more information please see http://www.gpo.gov/help/index.html#public_domain_copyright_notice.htm"
+      ],
+      "subject" : [
+        {
+          "name" : "Peace Corps (U.S.)--Posters"
+        },
+        {
+          "name" : "Teaching--Aids and devices--Posters"
+        }
+      ],
+      "title" : [
+        "Inspire curiosity Free! Peace Corps resources for yuur classroom /"
+      ],
+      "type" : [
+        "Image"
+      ]
+    },
+    "@type" : "ore:Aggregation"
   }
 }

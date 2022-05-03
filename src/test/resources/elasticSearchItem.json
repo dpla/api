@@ -1,0 +1,112 @@
+{
+  "_index":"dpla-staging-all-20220217-200255",
+  "_type":"_doc",
+  "_id":"4d85a6bd965dde8352c8235c43fe1c44",
+  "_version":1,"_seq_no":1380453,
+  "_primary_term":1,
+  "found":true,
+  "_source": {
+    "id":"4d85a6bd965dde8352c8235c43fe1c44",
+    "@context":"http://dp.la/api/items/context",
+    "@id":"http://dp.la/api/items/4d85a6bd965dde8352c8235c43fe1c44",
+    "aggregatedCHO":"#sourceResource",
+    "dataProvider":{
+      "name":"University of Southern California Digital Library",
+      "@id":"",
+      "exactMatch":[""]
+    },
+    "ingestDate":"2022-01-18T20:18:54.259Z",
+    "ingestType":"item",
+    "isShownAt":"http://doi.org/10.25549/berndt-m584",
+    "object":"https://thumbnails.calisphere.org/clip/150x150/a13932ec86f46b89140e6bb915ff1913",
+    "originalRecord":{
+      "stringValue":"{\n  \"url_item\" : \"http://doi.org/10.25549/berndt-m584\",\n  \"description\" : [ \"Photograph of Children playing with hamsters, Saint Vincent Center, Los Angeles, 1996. Three children gather on one side of a table, watching two dwarf hamsters. One hamster is on the table, walking across a piece of paper. The other hamster is on an adult's hands. The three children are focused on the hamster on the table, with one girl reaching for the hamster with her left hand.\" ],\n  \"publisher\" : [ \"University of Southern California. Libraries\" ],\n  \"publisher_ss\" : [ \"University of Southern California. Libraries\" ],\n  \"facet_decade\" : [ \"1990s\" ],\n  \"title\" : [ \"Children play with hamsters, Saint Vincent Center, Los Angeles, 1996\" ],\n  \"title_ss\" : [ \"Children play with hamsters, Saint Vincent Center, Los Angeles, 1996\" ],\n  \"spatial\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"spatial_ss\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"subject\" : [ \"Children\", \"Dwarf hamsters\", \"Saint Vincent Center (Los Angeles)\" ],\n  \"subject_ss\" : [ \"Children\", \"Dwarf hamsters\", \"Saint Vincent Center (Los Angeles)\" ],\n  \"sort_title\" : \"children play with hamsters saint vincent center los angeles 1996\",\n  \"date\" : [ \"circa 1996\" ],\n  \"date_ss\" : [ \"circa 1996\" ],\n  \"creator\" : [ \"Berndt, Jerry\" ],\n  \"creator_ss\" : [ \"Berndt, Jerry\" ],\n  \"relation\" : [ \"Jerry Berndt Collection\", \"Soul of Los Angeles Collection\", \"berndt-m452\" ],\n  \"relation_ss\" : [ \"Jerry Berndt Collection\", \"Soul of Los Angeles Collection\", \"berndt-m452\" ],\n  \"sort_date_start\" : \"1996-01-01T00:00:00Z\",\n  \"coverage\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"coverage_ss\" : [ \"California\", \"Los Angeles\", \"USA\", \"religious facilities: Saint Vincent Center\" ],\n  \"repository_url\" : [ \"https://registry.cdlib.org/api/v1/repository/247/\" ],\n  \"id\" : \"1e3ee37468faa3b9dd3ff17b6288ff90\",\n  \"harvest_id_s\" : \"27343--oai:digitallibrary.usc.edu:berndt/berndt-m584\",\n  \"collection_url\" : [ \"https://registry.cdlib.org/api/v1/collection/27343/\" ],\n  \"repository_name\" : [ \"University of Southern California Digital Library\" ],\n  \"reference_image_md5\" : \"a13932ec86f46b89140e6bb915ff1913\",\n  \"repository_data\" : [ \"https://registry.cdlib.org/api/v1/repository/247/::University of Southern California Digital Library\" ],\n  \"rights\" : [ \"Berndt, Jerry\", \"Private collections\", \"The Jerry Berndt Estate, Nils Grossien, managing director; email: ngrossien@mac.com ; phone: +49.176.96974098 (Germany); web: www.jerryberndt-estate.com/koken\", \"ngrossien@mac.com\" ],\n  \"rights_ss\" : [ \"Berndt, Jerry\", \"Private collections\", \"The Jerry Berndt Estate, Nils Grossien, managing director; email: ngrossien@mac.com ; phone: +49.176.96974098 (Germany); web: www.jerryberndt-estate.com/koken\", \"ngrossien@mac.com\" ],\n  \"reference_image_dimensions\" : \"300:216\",\n  \"temporal\" : [ \"circa 1996\" ],\n  \"temporal_ss\" : [ \"circa 1996\" ],\n  \"format\" : [ \"1 photograph : photoprint, b&w\", \"photographic prints\", \"photographs\" ],\n  \"format_ss\" : [ \"1 photograph : photoprint, b&w\", \"photographic prints\", \"photographs\" ],\n  \"collection_data\" : [ \"https://registry.cdlib.org/api/v1/collection/27343/::Jerry Berndt Collection\" ],\n  \"source\" : [ \"Private collection [Contributing entity]\", \"photo no: soul-la15-9 [Identifying Number]\" ],\n  \"source_ss\" : [ \"Private collection [Contributing entity]\", \"photo no: soul-la15-9 [Identifying Number]\" ],\n  \"sort_collection_data\" : [ \"jerry berndt collection:Jerry Berndt Collection:https://registry.cdlib.org/api/v1/collection/27343/\" ],\n  \"collection_name\" : [ \"Jerry Berndt Collection\" ],\n  \"sort_date_end\" : \"1996-01-01T00:00:00Z\",\n  \"identifier\" : [ \"berndt-m584\", \"berndt-soul-la15-9-1996\", \"http://doi.org/10.25549/berndt-m584\", \"http://thumbnails.digitallibrary.usc.edu/berndt-soul-la15-9-1996.jpg\" ],\n  \"identifier_ss\" : [ \"berndt-m584\", \"berndt-soul-la15-9-1996\", \"http://doi.org/10.25549/berndt-m584\", \"http://thumbnails.digitallibrary.usc.edu/berndt-soul-la15-9-1996.jpg\" ],\n  \"type\" : [ \"image\" ],\n  \"type_ss\" : [ \"image\" ],\n  \"_version_\" : 1674856905959276544,\n  \"timestamp\" : \"2020-08-12T21:33:34.869Z\"\n}"
+    },
+    "provider": {
+      "@id":"http://dp.la/api/contributor/cdl",
+      "name":"California Digital Library"
+    },
+    "sourceResource":{
+      "@id":"http://dp.la/api/items/4d85a6bd965dde8352c8235c43fe1c44#SourceResource",
+      "collection":[
+        {
+          "title":"Jerry Berndt Collection"
+        }
+      ],
+      "creator":[
+        "Berndt, Jerry"
+      ],
+      "date":[
+        {
+          "displayDate":"circa 1996"
+        }
+      ],
+      "description":[
+        "Photograph of Children playing with hamsters, Saint Vincent Center, Los Angeles, 1996. Three children gather on one side of a table, watching two dwarf hamsters. One hamster is on the table, walking across a piece of paper. The other hamster is on an adult's hands. The three children are focused on the hamster on the table, with one girl reaching for the hamster with her left hand."
+      ],
+      "extent":[
+        "1 photograph : photoprint, b&w"
+      ],
+      "format":[
+        "Photographic prints"
+      ],
+      "identifier":[
+        "berndt-m584","berndt-soul-la15-9-1996",
+        "http://doi.org/10.25549/berndt-m584",
+        "http://thumbnails.digitallibrary.usc.edu/berndt-soul-la15-9-1996.jpg"
+      ],
+      "publisher":[
+        "University of Southern California. Libraries"
+      ],
+      "relation":[
+        "Jerry Berndt Collection",
+        "Soul of Los Angeles Collection",
+        "berndt-m452"
+      ],
+      "rights":[
+        "Berndt, Jerry",
+        "Private collections",
+        "The Jerry Berndt Estate, Nils Grossien, managing director; email: ngrossien@mac.com ; phone: +49.176.96974098 (Germany); web: www.jerryberndt-estate.com/koken",
+        "ngrossien@mac.com"
+      ],
+      "spatial":[
+        {
+          "name":"California"
+        },
+        {
+          "name":"Los Angeles"
+        },
+        {
+          "name":"USA"
+        },
+        {
+          "name":"religious facilities: Saint Vincent Center"
+        }
+      ],
+      "subject":[
+        {
+          "name":"Children"
+        },
+        {
+          "name":"Dwarf hamsters"
+        },
+        {
+          "name":"Saint Vincent Center (Los Angeles)"
+        }
+      ],
+      "temporal":[
+        {
+          "displayDate":"circa 1996"
+        }
+      ],
+      "title":[
+        "Children play with hamsters, Saint Vincent Center, Los Angeles, 1996"
+      ],
+      "type":[
+        "image"
+      ]
+    },
+    "@type":"ore:Aggregation",
+    "rightsCategory":"Unspecified Rights Status"
+  }
+}

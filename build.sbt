@@ -9,8 +9,8 @@ lazy val root = (project in file(".")).
     )),
 
     name := "ebook-api",
-    assembly / mainClass := Some("dpla.ebookapi.RunApp"),
-    assembly / assemblyJarName := "dpla-ebooks-api.jar",
+    assembly / mainClass := Some("dpla.api.RunApp"),
+    assembly / assemblyJarName := "dpla-api.jar",
     libraryDependencies ++= Seq(
       "com.typesafe.akka"  %% "akka-http"               % akkaHttpVersion,
       "com.typesafe.akka"  %% "akka-http-spray-json"    % akkaHttpVersion,

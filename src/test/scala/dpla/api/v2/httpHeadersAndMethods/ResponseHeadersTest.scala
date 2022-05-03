@@ -1,0 +1,128 @@
+package dpla.api.v2.httpHeadersAndMethods
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import dpla.api.Routes
+import dpla.api.helpers.FileReader
+import dpla.api.helpers.Utils.fakeApiKey
+import dpla.api.v2.analytics.AnalyticsClient
+import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
+import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess}
+import dpla.api.v2.search.SearchProtocol.SearchCommand
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+class ResponseHeadersTest extends AnyWordSpec with Matchers
+  with ScalatestRouteTest with FileReader {
+
+  lazy val testKit: ActorTestKit = ActorTestKit()
+  override def afterAll(): Unit = testKit.shutdownTestKit()
+
+  implicit def typedSystem: ActorSystem[Nothing] =
+    testKit.system
+  override def createActorSystem(): akka.actor.ActorSystem =
+    testKit.system.classicSystem
+
+  val analyticsClient: ActorRef[AnalyticsClientCommand] =
+    testKit.spawn(AnalyticsClient())
+  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
+  val mapper = testKit.spawn(DPLAMAPMapper())
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+
+  val ebookSearch: ActorRef[SearchCommand] =
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+
+  val authenticator: ActorRef[AuthenticationCommand] =
+    MockAuthenticator(testKit, Some(postgresClient))
+
+  val ebookRegistry: ActorRef[SearchRegistryCommand] =
+    MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+
+  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+    MockApiKeyRegistry(testKit, authenticator)
+
+  val itemRegistry: ActorRef[SearchRegistryCommand] =
+    MockItemRegistry(testKit, authenticator, analyticsClient)
+
+  lazy val routes: Route =
+    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+
+  "/v2/ebooks response header" should {
+    "include correct Content-Type" in {
+      val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        contentType.mediaType shouldEqual MediaTypes.`application/json`
+      }
+    }
+
+    "include correct Content-Security-Policy" in {
+      val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
+      val expected =
+        "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
+
+      request ~> Route.seal(routes) ~> check {
+        header("Content-Security-Policy").get.value shouldEqual expected
+      }
+    }
+
+    "include correct X-Content-Type-Options" in {
+      val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        header("X-Content-Type-Options").get.value shouldEqual "nosniff"
+      }
+    }
+
+    "include correct X-Frame-Options" in {
+      val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        header("X-Frame-Options").get.value shouldEqual "DENY"
+      }
+    }
+  }
+
+  "/v2/ebooks[id] response header" should {
+    "include correct Content-Type" in {
+      val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        contentType.mediaType shouldEqual MediaTypes.`application/json`
+      }
+    }
+
+    "include correct Content-Security-Policy" in {
+      val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
+      val expected =
+        "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'self'"
+
+      request ~> Route.seal(routes) ~> check {
+        header("Content-Security-Policy").get.value shouldEqual expected
+      }
+    }
+
+    "include correct X-Content-Type-Options" in {
+      val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        header("X-Content-Type-Options").get.value shouldEqual "nosniff"
+      }
+    }
+
+    "include correct X-Frame-Options" in {
+      val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        header("X-Frame-Options").get.value shouldEqual "DENY"
+      }
+    }
+  }
+}
+
