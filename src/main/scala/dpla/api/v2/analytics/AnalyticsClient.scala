@@ -93,7 +93,7 @@ object AnalyticsClient extends JsonFieldReader {
             clientId,
             host,
             path,
-            s"$searchType fetch"
+            s"Fetch $searchType"
           )
           postHit(system, pageViewParams)
 
@@ -168,10 +168,7 @@ object AnalyticsClient extends JsonFieldReader {
 
   private def eventAction(doc: JsValue): String = {
     val root = doc.asJsObject
-    readString(root, "dataProvider", "name") match {
-      case Some(dp) => dp
-      case None => readString(root, "dataProvider").getOrElse("")
-    }
+    readString(root, "dataProvider", "name").getOrElse("")
   }
 
   private def eventLabel(doc: JsValue): String = {
