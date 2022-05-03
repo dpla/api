@@ -17,6 +17,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("id")
     ),
     DplaField(
+      name = "admin.contributingInstitution",
+      fieldType = TextField,
+      searchable = ???,
+      facetable = ???,
+      sortable = ???,
+      elasticSearchDefault = "admin.contributingInstitution",
+      elasticSearchNotAnalyzed = Some("admin.contributingInstitution")
+    ),
+    DplaField(
       name = "isShownAt",
       fieldType = URLField,
       searchable = true,
