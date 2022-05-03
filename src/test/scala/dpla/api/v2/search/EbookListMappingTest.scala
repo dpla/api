@@ -9,8 +9,6 @@ import spray.json._
 class EbookListMappingTest extends AnyWordSpec with Matchers
   with JsonFieldReader with FileReader {
 
-  // TODO rewrite with new elastic search format
-
   val esEbookList: String =
     readFile("/elasticSearchEbookList.json")
   val ebookList: JsObject =
