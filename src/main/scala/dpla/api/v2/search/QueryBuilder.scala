@@ -66,14 +66,30 @@ object QueryBuilder extends DPLAMAPFields {
 
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields = Seq(
-    "author^1",
-    "genre^1",
-    "medium^1",
-    "language^1",
-    "publisher^1",
-    "subtitle^2",
-    "summary^0.75",
-    "title^2"
+    "dataProvider.name^1",
+    "intermediateProvider^1",
+    "provider.name^1",
+    "sourceResource.collection.description^1",
+    "sourceResource.collection.title^1",
+    "sourceResource.contributor^1",
+    "sourceResource.creator^1",
+    "sourceResource.description^0.75",
+    "sourceResource.extent^1",
+    "sourceResource.format^1",
+    "sourceResource.language.name^1",
+    "sourceResource.publisher^1",
+    "sourceResource.relation^1",
+    "sourceResource.rights^1",
+    "sourceResource.spatial.country^0.75",
+    "sourceResource.spatial.county^1",
+    "sourceResource.spatial.name^1",
+    "sourceResource.spatial.region^1",
+    "sourceResource.spatial.state^0.75",
+    "sourceResource.specType^1",
+    "sourceResource.subject.name^1",
+    "sourceResource.subtitle^2",
+    "sourceResource.title^2",
+    "sourceResource.type^1"
   )
 
   // ElasticSearch param that defines the number of hits to skip
