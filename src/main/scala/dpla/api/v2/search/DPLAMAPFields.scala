@@ -239,19 +239,10 @@ trait DPLAMAPFields extends FieldDefinitions {
       name = "sourceResource.creator",
       fieldType = TextField,
       searchable = true,
-      facetable = true,
+      facetable = false,
       sortable = false,
       elasticSearchDefault = "sourceResource.creator",
-      elasticSearchNotAnalyzed = Some("sourceResource.creator.not_analyzed")
-    ),
-    DplaField(
-      name = "sourceResource.date.displayDate",
-      fieldType = TextField,
-      searchable = true,
-      facetable = true,
-      sortable = false,
-      elasticSearchDefault = "sourceResource.date.displayDate",
-      elasticSearchNotAnalyzed = Some("sourceResource.date.displayDate.not_analyzed")
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "sourceResource.description",
