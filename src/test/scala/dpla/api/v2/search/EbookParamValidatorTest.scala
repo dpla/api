@@ -25,17 +25,6 @@ class EbookParamValidatorTest extends AnyWordSpec with Matchers
   val ebookParamValidator: ActorRef[IntermediateSearchResult] =
     testKit.spawn(EbookParamValidator(interProbe.ref))
 
-  "facet validator" should {
-    "ignore valid DPLA Map fields not applicable to ebooks" in {
-      val given = "rightsCategory"
-      val expected = Some(Seq())
-      val params = Map("facets" -> given)
-      ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidSearchParams]
-      msg.params.facets shouldEqual expected
-    }
-  }
-
   "subtitle validator" should {
     "handle empty param" in {
       val expected = None
