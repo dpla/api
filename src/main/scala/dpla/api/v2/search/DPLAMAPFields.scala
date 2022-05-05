@@ -3,13 +3,23 @@ package dpla.api.v2.search
 /**
  * Holds information about Item DPLA MAP fields and their equivalents in
  * ElasticSearch.
- * This list does not need to include all fields, only those that are
- * searchable, facetable, filterable, or sortable.
- * Fields will be mapped whether or not they are included in this list.
+ * Fields must be defined in order to make them searchable, facetable,
+ * sortable, or usable in a "fields=..." query.
+ * Fields will appear in the search/fetch results doc body whether or not they
+ * are defined here.
  */
 trait DPLAMAPFields extends FieldDefinitions {
 
   override val fields = Seq(
+    DplaField(
+      name = "@context",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "@context",
+      elasticSearchNotAnalyzed = None
+    ),
     DplaField(
       name = "@id",
       fieldType = URLField,
@@ -20,15 +30,6 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("@id")
     ),
     DplaField(
-      name = "id",
-      fieldType = TextField,
-      searchable = true,
-      facetable = false,
-      sortable = true,
-      elasticSearchDefault = "id",
-      elasticSearchNotAnalyzed = Some("id")
-    ),
-    DplaField(
       name = "admin.contributingInstitution",
       fieldType = TextField,
       searchable = true,
@@ -36,6 +37,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = false,
       elasticSearchDefault = "admin.contributingInstitution",
       elasticSearchNotAnalyzed = Some("admin.contributingInstitution")
+    ),
+    DplaField(
+      name = "aggregatedCHO",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "aggregatedCHO",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "dataProvider.@id",
@@ -74,6 +84,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("hasView.@id")
     ),
     DplaField(
+      name = "hasView.edmRights",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "hasView.edmRights",
+      elasticSearchNotAnalyzed = Some("hasView.edmRights.not_analyzed")
+    ),
+    DplaField(
       name = "hasView.format",
       fieldType = TextField,
       searchable = true,
@@ -90,6 +109,51 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = false,
       elasticSearchDefault = "hasView.rights",
       elasticSearchNotAnalyzed = Some("hasView.rights")
+    ),
+    DplaField(
+      name = "id",
+      fieldType = TextField,
+      searchable = true,
+      facetable = false,
+      sortable = true,
+      elasticSearchDefault = "id",
+      elasticSearchNotAnalyzed = Some("id")
+    ),
+    DplaField(
+      name = "iiifManifest",
+      fieldType = URLField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "iiifManifest",
+      elasticSearchNotAnalyzed = Some("iiifManifest")
+    ),
+    DplaField(
+      name = "ingestDate",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "ingestDate",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "ingestType",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "ingestType",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "ingestSequence",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "ingestSequence",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "intermediateProvider",
@@ -128,6 +192,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("isShownAt")
     ),
     DplaField(
+      name = "mediaMaster",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "mediaMaster",
+      elasticSearchNotAnalyzed = Some("mediaMaster")
+    ),
+    DplaField(
       name = "object",
       fieldType = URLField,
       searchable = true,
@@ -135,6 +208,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = true,
       elasticSearchDefault = "object",
       elasticSearchNotAnalyzed = Some("object")
+    ),
+    DplaField(
+      name = "originalRecord",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "originalRecord",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "provider.@id",
@@ -189,6 +271,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = false,
       elasticSearchDefault = "tags",
       elasticSearchNotAnalyzed = Some("tags")
+    ),
+    DplaField(
+      name = "sourceResource.@id",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.@id",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "sourceResource.collection.@id",
@@ -272,12 +363,30 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("sourceResource.format.not_analyzed")
     ),
     DplaField(
+      name = "sourceResource.genre",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.genre",
+      elasticSearchNotAnalyzed = Some("sourceResource.genre")
+    ),
+    DplaField(
       name = "sourceResource.identifier",
       fieldType = TextField,
       searchable = true,
       facetable = false,
       sortable = false,
       elasticSearchDefault = "sourceResource.identifier",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "isPartOf",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "isPartOf",
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
@@ -335,6 +444,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("sourceResource.specType")
     ),
     DplaField(
+      name = "stateLocatedIn",
+      fieldType = DisabledField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "stateLocatedIn",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
       name = "sourceResource.subject.@id",
       fieldType = URLField,
       searchable = false,
@@ -344,6 +462,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("sourceResource.subject.@id")
     ),
     DplaField(
+      name = "sourceResource.subject.@type",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.subject.@type",
+      elasticSearchNotAnalyzed = Some("sourceResource.subject.@type")
+    ),
+    DplaField(
       name = "sourceResource.subject.name",
       fieldType = TextField,
       searchable = true,
@@ -351,6 +478,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = true,
       elasticSearchDefault = "sourceResource.subject.name",
       elasticSearchNotAnalyzed = Some("sourceResource.subject.name.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.subject.scheme",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.subject.scheme",
+      elasticSearchNotAnalyzed = Some("sourceResource.subject.scheme.not_analyzed")
     ),
     DplaField(
       name = "sourceResource.subtitle",
