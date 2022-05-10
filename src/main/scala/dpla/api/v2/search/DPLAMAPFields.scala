@@ -435,6 +435,78 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "sourceResource.spatial.city",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.spatial.city",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.city.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.coordinates",
+      fieldType = TextField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.spatial.coordinates",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.coordinates")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.country",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.spatial.country",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.country.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.county",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.spatial.county",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.county.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.iso3166-2",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.spatial.iso3166-2",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.iso3166-2")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.name",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.spatial.name",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.name.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.region",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.spatial.region",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.region.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.spatial.state",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.spatial.state",
+      elasticSearchNotAnalyzed = Some("sourceResource.spatial.state.not_analyzed")
+    ),
+    DplaField(
       name = "sourceResource.specType",
       fieldType = TextField,
       searchable = true,
