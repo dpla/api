@@ -145,42 +145,6 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
     }
   }
 
-  "date validator" should {
-    "handle empty param" in {
-      val expected = None
-      paramValidator ! RawSearchParams(Map(), replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
-        .find(_.fieldName == "sourceResource.date.displayDate")
-      fieldValue shouldEqual expected
-    }
-
-    "accept valid param" in {
-      val given = "2002"
-      val expected = Some("2002")
-      val params = Map("sourceResource.date.displayDate" -> given)
-      paramValidator ! RawSearchParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
-        .find(_.fieldName == "sourceResource.date.displayDate").map(_.value)
-      fieldValue shouldEqual expected
-    }
-
-    "reject too-short param" in {
-      val given = "1"
-      val params = Map("sourceResource.date.displayDate" -> given)
-      paramValidator ! RawSearchParams(params, replyProbe.ref)
-      replyProbe.expectMessageType[InvalidSearchParams]
-    }
-
-    "reject too-long param" in {
-      val given: String = Random.alphanumeric.take(201).mkString
-      val params = Map("sourceResource.date.displayDate" -> given)
-      paramValidator ! RawSearchParams(params, replyProbe.ref)
-      replyProbe.expectMessageType[InvalidSearchParams]
-    }
-  }
-
   "description validator" should {
     "handle empty param" in {
       val expected = None
@@ -251,8 +215,8 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
     }
 
     "accept valid param" in {
-      val given = "provider.@id,sourceResource.creator"
-      val expected = Some(Seq("provider.@id", "sourceResource.creator"))
+      val given = "provider.@id,sourceResource.subject.name"
+      val expected = Some(Seq("provider.@id", "sourceResource.subject.name"))
       val params = Map("facets" -> given)
       paramValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]

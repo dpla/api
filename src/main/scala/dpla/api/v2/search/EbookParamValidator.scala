@@ -17,15 +17,8 @@ object EbookParamValidator extends ParamValidator with DPLAMAPFields {
       "sort_order"
     )
 
-  // These fields are valid for DPLA item search & facets, but not for ebooks.
+  // These fields are valid for DPLA item search, sort, filter, & facets,
+  // but not for ebooks.
   // Rather than returning an error, they should be ignored.
-  override protected val ignoredFields: Seq[String] = Seq(
-    "admin.contributingInstitution",
-    "rightsCategory",
-    "sourceResource.collection.title",
-    "sourceResource.date.begin",
-    "sourceResource.date.end",
-    "sourceResource.spatial.name",
-    "sourceResource.type"
-  )
+  override protected val ignoredFields: Seq[String] = Seq()
 }

@@ -5,6 +5,7 @@ trait FieldDefinitions {
   protected sealed trait DplaFieldType
   case object TextField extends DplaFieldType
   case object URLField extends DplaFieldType
+  case object DisabledField extends DplaFieldType
 
   /**
    * @param name                      DPLA MAP field name

@@ -10,36 +10,8 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
 
   "DplaMapFieldsTest" should {
     "map DPLA MAP fields to ElasticSearch fields" in {
-      val dplaFields = Seq(
-        "isShownAt",
-        "object",
-        "provider.@id",
-        "provider.name",
-        "sourceResource.creator",
-        "sourceResource.date.displayDate",
-        "sourceResource.description",
-        "sourceResource.format",
-        "sourceResource.language.name",
-        "sourceResource.publisher",
-        "sourceResource.subject.name",
-        "sourceResource.subtitle",
-        "sourceResource.title"
-      )
-      val expected = Seq(
-        "isShownAt",
-        "object",
-        "provider.@id",
-        "provider.name",
-        "sourceResource.creator",
-        "sourceResource.date.displayDate",
-        "sourceResource.description",
-        "sourceResource.format",
-        "sourceResource.language.name",
-        "sourceResource.publisher",
-        "sourceResource.subject.name",
-        "sourceResource.subtitle",
-        "sourceResource.title"
-      )
+      val dplaFields = tester.allDplaFields
+      val expected = tester.fields.map(_.elasticSearchDefault)
       val mapped = dplaFields.flatMap(tester.getElasticSearchField)
       mapped should contain allElementsOf expected
     }
@@ -50,8 +22,6 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
         "object",
         "provider.@id",
         "provider.name",
-        "sourceResource.creator",
-        "sourceResource.date.displayDate",
         "sourceResource.description",
         "sourceResource.format",
         "sourceResource.language.name",
@@ -65,8 +35,6 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
         "object",
         "provider.@id",
         "provider.name.not_analyzed",
-        "sourceResource.creator.not_analyzed",
-        "sourceResource.date.displayDate.not_analyzed",
         "sourceResource.description",
         "sourceResource.format.not_analyzed",
         "sourceResource.language.name.not_analyzed",
@@ -77,6 +45,18 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
       )
       val mapped = dplaFields.flatMap(tester.getElasticSearchExactMatchField)
       mapped should contain allElementsOf expected
+    }
+
+    "have exact match for each facetable field" in {
+      val exactMatch = tester.fields.filter(_.elasticSearchNotAnalyzed.nonEmpty)
+      val facetable = tester.fields.filter(_.facetable)
+      exactMatch should contain allElementsOf facetable
+    }
+
+    "have exact match for each sortable field" in {
+      val exactMatch = tester.fields.filter(_.elasticSearchNotAnalyzed.nonEmpty)
+      val sortable = tester.fields.filter(_.sortable)
+      exactMatch should contain allElementsOf sortable
     }
   }
 }
