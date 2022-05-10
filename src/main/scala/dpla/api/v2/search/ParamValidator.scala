@@ -267,11 +267,17 @@ trait ParamValidator extends FieldDefinitions {
       val validCoordinates: String = validText(coordinates, "sort_by_pin")
       // Check if raw params also contains "sort_by" with coordinates field
       rawParams.get("sort_by") match {
-        case Some(_) => validCoordinates
+        case Some(sortBy) =>
+          if (coordinatesField.map(_.name).contains(sortBy))
+            validCoordinates
+          else
+            throw ValidationException(
+              s"The sort_by parameter is required."
+            )
         case None =>
           val sortField = coordinatesField.getOrElse("")
           throw ValidationException(
-              s"The query must contain 'sort_by=$sortField'."
+              s"The sort_by parameter is required."
           )
       }
     }
