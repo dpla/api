@@ -46,6 +46,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     pageSize = 20,
     q = None,
     sortBy = None,
+    sortByPin = None,
     sortOrder = "asc"
   )
 
@@ -68,6 +69,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     pageSize = 20,
     q = Some("dogs"),
     sortBy = Some("sourceResource.title"),
+    sortByPin = None,
     sortOrder = "desc"
   )
 

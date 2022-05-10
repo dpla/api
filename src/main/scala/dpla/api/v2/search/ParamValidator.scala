@@ -27,6 +27,7 @@ private[search] case class SearchParams(
                                          pageSize: Int,
                                          q: Option[String],
                                          sortBy: Option[String],
+                                         sortByPin: Option[String],
                                          sortOrder: String
                                        )
 
@@ -176,7 +177,9 @@ trait ParamValidator extends FieldDefinitions {
           q =
             getValid(rawParams, "q", validText),
           sortBy =
-            getValid(rawParams, "sort_by", validField),
+            getValidSortField(rawParams),
+          sortByPin =
+            getValidSortByPin(rawParams),
           sortOrder =
             getValid(rawParams, "sort_order", validSortOrder)
               .getOrElse(defaultSortOrder)
@@ -223,6 +226,58 @@ trait ParamValidator extends FieldDefinitions {
   }
 
   /**
+   * Get a valid value for sort_by parameter.
+   * Must be in the list of sortable fields.
+   * If coordinates, query must also contain the "sort_by_pin" parameter.
+   */
+  private def getValidSortField(rawParams: Map[String, String]): Option[String] =
+    rawParams.get("sort_by").map{ sortField =>
+      // Check if field is sortable according to the field definition
+      if (sortableDplaFields.contains(sortField)) {
+        // Check if field represents coordinates
+        if (coordinatesField.map(_.name).contains(sortField))
+          // Check if sort_by_pin is an accepted search param for this validator
+          if (acceptedSearchParams.contains("sort_by_pin"))
+            // Check if raw params also contains sort_by_pin
+            rawParams.get("sort_by_pin") match {
+              case Some(_) => sortField
+              case None =>
+                throw ValidationException(
+                  "The sort_by_pin parameter is required."
+                )
+            }
+          else
+            throw ValidationException(
+              s"'$sortField' is not an allowable value for sort_by"
+            )
+        else sortField
+      } else
+        throw ValidationException(
+          s"'$sortField' is not an allowable value for sort_by"
+        )
+    }
+
+  /**
+   * Get valid value for sort_by_pin.
+   * Query must also contain the "sort_by" parameter with the coordinates field.
+   */
+  private def getValidSortByPin(rawParams: Map[String, String]): Option[String] = {
+    rawParams.get("sort_by_pin").map { coordinates =>
+      // Check if field is valid text (will throw exception if not)
+      val validCoordinates: String = validText(coordinates, "sort_by_pin")
+      // Check if raw params also contains "sort_by" with coordinates field
+      rawParams.get("sort_by") match {
+        case Some(_) => validCoordinates
+        case None =>
+          val sortField = coordinatesField.getOrElse("")
+          throw ValidationException(
+              s"The query must contain 'sort_by=$sortField'."
+          )
+      }
+    }
+  }
+
+  /**
    * Find the raw parameter with the given name.
    * Then validate with the given method.
    */
@@ -237,22 +292,6 @@ trait ParamValidator extends FieldDefinitions {
       case Some(bool) => bool
       case None => throw ValidationException(s"$param must be a Boolean value")
     }
-
-  // One field.
-  // Must be in the list of accepted fields for the given param.
-  private def validField(fieldString: String, param: String): String = {
-    val acceptedFields = param match {
-      case "sort_by" => sortableDplaFields
-      case _ => Seq[String]()
-    }
-
-    if (acceptedFields.contains(fieldString))
-      fieldString
-    else
-      throw ValidationException(
-        s"'$fieldString' is not an allowable value for '$param'"
-      )
-  }
 
   // One or more fields.
   // Must be in the list of accepted fields for the given param.

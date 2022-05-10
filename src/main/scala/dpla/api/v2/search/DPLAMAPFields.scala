@@ -448,7 +448,7 @@ trait DPLAMAPFields extends FieldDefinitions {
       fieldType = TextField,
       searchable = true,
       facetable = false,
-      sortable = false,
+      sortable = true,
       elasticSearchDefault = "sourceResource.spatial.coordinates",
       elasticSearchNotAnalyzed = Some("sourceResource.spatial.coordinates")
     ),
@@ -588,4 +588,7 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("sourceResource.type")
     )
   )
+
+  override val coordinatesField: Option[DplaField] =
+    fields.find(_.name == "sourceResource.spatial.coordinates")
 }

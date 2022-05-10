@@ -32,6 +32,7 @@ class DPLAMAPMapperTest
     pageSize = 10,
     q = None,
     sortBy = None,
+    sortByPin = None,
     sortOrder = ""
   )
 

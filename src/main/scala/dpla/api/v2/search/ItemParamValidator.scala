@@ -14,6 +14,7 @@ object ItemParamValidator extends ParamValidator with DPLAMAPFields {
       "page_size",
       "q",
       "sort_by",
+      "sort_by_pin",
       "sort_order"
     )
 
