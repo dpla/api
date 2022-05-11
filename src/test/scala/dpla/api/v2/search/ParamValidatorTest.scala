@@ -232,6 +232,15 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
     }
+
+    "accept valid coordinates param" in {
+      val given = "sourceResource.spatial.coordinates:42:-70"
+      val expected = Some(Seq("sourceResource.spatial.coordinates:42:-70"))
+      val params = Map("facets" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      msg.params.facets shouldEqual expected
+    }
   }
 
   "facet size validator" should {

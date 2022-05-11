@@ -447,7 +447,7 @@ trait DPLAMAPFields extends FieldDefinitions {
       name = "sourceResource.spatial.coordinates",
       fieldType = TextField,
       searchable = true,
-      facetable = false,
+      facetable = true,
       sortable = true,
       elasticSearchDefault = "sourceResource.spatial.coordinates",
       elasticSearchNotAnalyzed = Some("sourceResource.spatial.coordinates")

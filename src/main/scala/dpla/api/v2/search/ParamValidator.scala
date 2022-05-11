@@ -315,6 +315,10 @@ trait ParamValidator extends FieldDefinitions {
         None
       else if (acceptedFields.contains(candidate))
         Some(candidate)
+      else if (param == "facets" && coordinatesField.map(_.name)
+        .contains(candidate.split(":").head))
+
+        Some(candidate)
       else
         throw ValidationException(
           s"'$candidate' is not an allowable value for '$param'"
