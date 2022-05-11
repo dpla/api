@@ -58,7 +58,7 @@ object QueryBuilder extends DPLAMAPFields {
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filters, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
-      "sort" -> sort(params.sortBy, params.sortOrder),
+      "sort" -> sort(params.sortBy, params.sortOrder, params.sortByPin),
       "_source" -> fieldRetrieval(params.fields),
       "track_total_hits" -> true.toJson
     ).toJson
@@ -194,7 +194,10 @@ object QueryBuilder extends DPLAMAPFields {
       case None => JsObject()
     }
 
-  private def sort(sortBy: Option[String], sortOrder: String): JsValue = {
+  private def sort(sortBy: Option[String],
+                   sortOrder: String,
+                   sortByPin: Option[String]): JsValue = {
+
     val defaultSort: JsValue =
       JsObject(
         "_score" -> JsObject(
@@ -204,17 +207,40 @@ object QueryBuilder extends DPLAMAPFields {
 
     sortBy match {
       case Some(field) =>
-        getElasticSearchNotAnalyzed(field) match {
-          case Some(esField) =>
-            JsArray(
-              JsObject(
-                esField -> JsObject(
-                  "order" -> sortOrder.toJson
-                )
-              ),
-              defaultSort
-            )
-          case None => JsArray(defaultSort)
+        if (coordinatesField.map(_.name).contains(field)) {
+          // Geo sort
+          coordinatesField.map(_.elasticSearchDefault) match {
+            case Some(coordinates) =>
+              sortByPin match {
+                case Some(pin) =>
+                  JsArray(
+                    JsObject(
+                      "_geo_distance" -> JsObject(
+                        coordinates -> pin.toJson,
+                        "order" -> "asc".toJson,
+                        "unit" -> "mi".toJson
+                      )
+                    ),
+                    defaultSort
+                  )
+                case None => JsArray(defaultSort)
+              }
+            case None => JsArray(defaultSort)
+          }
+        } else {
+          // Regular sort
+          getElasticSearchNotAnalyzed(field) match {
+            case Some(esField) =>
+              JsArray(
+                JsObject(
+                  esField -> JsObject(
+                    "order" -> sortOrder.toJson
+                  )
+                ),
+                defaultSort
+              )
+            case None => JsArray(defaultSort)
+          }
         }
       case None => JsArray(defaultSort)
     }
