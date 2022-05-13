@@ -92,6 +92,23 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val geoSortQuery: JsObject = getJsSearchQuery(geoSortSearchParams)
 
+  val geoFacetSearchParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
+    facets = Some(Seq("sourceResource.spatial.coordinates:42:-70")),
+    facetSize = 100,
+    fields = None,
+    filters = Seq[FieldFilter](),
+    op = "AND",
+    page = 3,
+    pageSize = 20,
+    q = None,
+    sortBy = None,
+    sortByPin = None,
+    sortOrder = "asc"
+  )
+
+  val geoFacetQuery: JsObject = getJsSearchQuery(geoFacetSearchParams)
+
   val multiFetchIds = Seq(
     "b70107e4fe29fe4a247ae46e118ce192",
     "17b0da7b05805d78daf8753a6641b3f5"
@@ -350,6 +367,33 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val traversed =
         readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
       assert(traversed == expected)
+    }
+  }
+
+  "geo agg query builder" should {
+    "specify facet field" in {
+      val expected = Some("sourceResource.spatial.coordinates")
+      val traversed = readString(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "field")
+      assert(traversed == expected)
+    }
+
+    "specify origin coordinates" in {
+      val expected = Some("42,-70")
+      val traversed = readString(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "origin")
+      assert(traversed == expected)
+    }
+
+    "specify unit" in {
+      val expected = Some("mi")
+      val traversed = readString(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "unit")
+      assert(traversed == expected)
+    }
+
+    "list ranges" in {
+
     }
   }
 

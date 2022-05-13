@@ -4,7 +4,9 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, MultiFetchQuery, SearchQuery, FetchQuery, ValidFetchIds, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, SearchQuery, ValidFetchIds, ValidSearchParams}
+
+import scala.collection.mutable.ArrayBuffer
 
 
 /**
@@ -182,13 +184,40 @@ object QueryBuilder extends DPLAMAPFields {
         var base = JsObject()
         // Iterate through each facet and add a field to the base JsObject
         facetArray.foreach(facet => {
-          val terms = JsObject(
-            "terms" -> JsObject(
-              "field" -> getElasticSearchExactMatchField(facet).toJson,
-              "size" -> facetSize.toJson
+          if (coordinatesField.map(_.name).contains(facet.split(":").head)) {
+            // Spatial facet
+            coordinatesField.map(_.elasticSearchDefault) match {
+              case Some(field) =>
+                val cleanFacetName = facet.split(":").head
+                val coordinates = facet.split(":").drop(1).mkString(",")
+                val ranges = ArrayBuffer.empty[JsValue]
+
+                for (i <- 0 to 2000 by 100)
+                  ranges += JsObject("from" -> i.toJson, "to" -> (i + 99).toJson)
+                ranges += JsObject("from" -> 2100.toJson)
+
+                val geoDistance = JsObject(
+                  "geo_distance" -> JsObject(
+                    "field" -> field.toJson,
+                    "origin" -> coordinates.toJson,
+                    "unit" -> "mi".toJson,
+                    "ranges" -> ranges.toArray.toJson
+                  )
+                )
+                base = JsObject(base.fields + (cleanFacetName -> geoDistance))
+
+              case None => base
+            }
+          } else {
+            // Regular facet
+            val terms = JsObject(
+              "terms" -> JsObject(
+                "field" -> getElasticSearchExactMatchField(facet).toJson,
+                "size" -> facetSize.toJson
+              )
             )
-          )
-          base = JsObject(base.fields + (facet -> terms))
+            base = JsObject(base.fields + (facet -> terms))
+          }
         })
         base
       case None => JsObject()
