@@ -392,8 +392,20 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       assert(traversed == expected)
     }
 
-    "list ranges" in {
+    "specify range start" in {
+      val expected = Some(0)
+      val range = readObjectArray(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
+      val traversed = readInt(range, "from")
+      assert(traversed == expected)
+    }
 
+    "specify range end" in {
+      val expected = Some(99)
+      val range = readObjectArray(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
+      val traversed = readInt(range, "to")
+      assert(traversed == expected)
     }
   }
 
