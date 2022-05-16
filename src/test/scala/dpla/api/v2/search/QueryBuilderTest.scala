@@ -46,6 +46,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     pageSize = 20,
     q = None,
     sortBy = None,
+    sortByPin = None,
     sortOrder = "asc"
   )
 
@@ -68,10 +69,45 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     pageSize = 20,
     q = Some("dogs"),
     sortBy = Some("sourceResource.title"),
+    sortByPin = None,
     sortOrder = "desc"
   )
 
   val detailQuery: JsObject = getJsSearchQuery(detailSearchParams)
+
+  val geoSortSearchParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
+    facets = None,
+    facetSize = 100,
+    fields = None,
+    filters = Seq[FieldFilter](),
+    op = "AND",
+    page = 3,
+    pageSize = 20,
+    q = None,
+    sortBy = Some("sourceResource.spatial.coordinates"),
+    sortByPin = Some("26.15952,-97.99084"),
+    sortOrder = "asc"
+  )
+
+  val geoSortQuery: JsObject = getJsSearchQuery(geoSortSearchParams)
+
+  val geoFacetSearchParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
+    facets = Some(Seq("sourceResource.spatial.coordinates:42:-70")),
+    facetSize = 100,
+    fields = None,
+    filters = Seq[FieldFilter](),
+    op = "AND",
+    page = 3,
+    pageSize = 20,
+    q = None,
+    sortBy = None,
+    sortByPin = None,
+    sortOrder = "asc"
+  )
+
+  val geoFacetQuery: JsObject = getJsSearchQuery(geoFacetSearchParams)
 
   val multiFetchIds = Seq(
     "b70107e4fe29fe4a247ae46e118ce192",
@@ -334,6 +370,45 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
   }
 
+  "geo agg query builder" should {
+    "specify facet field" in {
+      val expected = Some("sourceResource.spatial.coordinates")
+      val traversed = readString(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "field")
+      assert(traversed == expected)
+    }
+
+    "specify origin coordinates" in {
+      val expected = Some("42,-70")
+      val traversed = readString(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "origin")
+      assert(traversed == expected)
+    }
+
+    "specify unit" in {
+      val expected = Some("mi")
+      val traversed = readString(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "unit")
+      assert(traversed == expected)
+    }
+
+    "specify range start" in {
+      val expected = Some(0)
+      val range = readObjectArray(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
+      val traversed = readInt(range, "from")
+      assert(traversed == expected)
+    }
+
+    "specify range end" in {
+      val expected = Some(99)
+      val range = readObjectArray(geoFacetQuery, "aggs",
+        "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
+      val traversed = readInt(range, "to")
+      assert(traversed == expected)
+    }
+  }
+
   "sort query builder" should {
     "default to sorting by score" in {
       val expected = Some("desc")
@@ -355,8 +430,41 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = Some("desc")
       val sortArray = readObjectArray(detailQuery, "sort")
       val score = sortArray
-        .flatMap(obj => readObject(obj, "sourceResource.title.not_analyzed")).head
+        .flatMap(obj => readObject(obj, "sourceResource.title.not_analyzed"))
+        .head
       val traversed = readString(score, "order")
+      assert(traversed == expected)
+    }
+  }
+
+  "spatial sort" should {
+    "specify coordinates" in {
+      val expected = Some("26.15952,-97.99084")
+      val sortArray = readObjectArray(geoSortQuery, "sort")
+      val geo = sortArray
+        .flatMap(obj => readObject(obj, "_geo_distance"))
+        .head
+      val traversed = readString(geo, "sourceResource.spatial.coordinates")
+      assert(traversed == expected)
+    }
+
+    "include sort order" in {
+      val expected = Some("asc")
+      val sortArray = readObjectArray(geoSortQuery, "sort")
+      val geo = sortArray
+        .flatMap(obj => readObject(obj, "_geo_distance"))
+        .head
+      val traversed = readString(geo, "order")
+      assert(traversed == expected)
+    }
+
+    "include unit" in {
+      val expected = Some("mi")
+      val sortArray = readObjectArray(geoSortQuery, "sort")
+      val geo = sortArray
+        .flatMap(obj => readObject(obj, "_geo_distance"))
+        .head
+      val traversed = readString(geo, "unit")
       assert(traversed == expected)
     }
   }

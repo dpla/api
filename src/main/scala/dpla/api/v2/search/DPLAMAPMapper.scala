@@ -32,12 +32,16 @@ case class FacetList(
 
 case class Facet(
                   field: String,
-                  buckets: Seq[Bucket]
+                  `type`: String,
+                  buckets: Seq[Bucket],
+                  bucketsLabel: String
                 )
 
 case class Bucket(
                    key: Option[String],
-                   docCount: Option[Int]
+                   docCount: Option[Int],
+                   from: Option[Int] = None,
+                   to: Option[Int] = None
                  )
 
 object DPLAMAPMapper {

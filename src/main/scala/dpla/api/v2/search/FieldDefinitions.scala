@@ -31,6 +31,7 @@ trait FieldDefinitions {
 
   // Abstract
   val fields: Seq[DplaField]
+  val coordinatesField: Option[DplaField]
 
   def allDplaFields: Seq[String] =
     fields.map(_.name)

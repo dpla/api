@@ -6,24 +6,32 @@ import spray.json.{DefaultJsonProtocol, _}
  * These formats are used for parsing ElasticSearch responses and mapping them
  * to DPLA MAP.
  */
-object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
+object JsonFormats extends DefaultJsonProtocol with JsonFieldReader
+  with DPLAMAPFields {
 
   implicit object BucketFormat extends RootJsonFormat[Bucket] {
 
     def read(json: JsValue): Bucket = {
       val root = json.asJsObject
 
-      Bucket(
+      val bucket = Bucket(
         key = readString(root, "key"),
-        docCount = readInt(root, "doc_count")
+        docCount = readInt(root, "doc_count"),
+        to = readInt(root, "to"),
+        from = readInt(root, "from")
       )
+
+      // Do not include key for geo_distance buckets
+      if (bucket.from.nonEmpty) bucket.copy(key = None) else bucket
     }
 
     def write(bucket: Bucket): JsValue =
-      JsObject(
+      filterIfEmpty(JsObject(
         "term" -> bucket.key.toJson,
-        "count" -> bucket.docCount.toJson
-      ).toJson
+        "count" -> bucket.docCount.toJson,
+        "to" -> bucket.to.toJson,
+        "from" -> bucket.from.toJson
+      )).toJson
   }
 
   /**
@@ -41,13 +49,27 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
         case Some(obj) =>
           val fieldNames: Seq[String] = obj.fields.keys.toSeq
 
-          val facets: Seq[Facet] = fieldNames.map(fieldName =>
+          val facets: Seq[Facet] = fieldNames.map(fieldName => {
+            val `type` =
+              if (coordinatesField.map(_.name).contains(fieldName))
+                "geo_distance"
+              else
+                "terms"
+
+            val bucketsLabel =
+              if (coordinatesField.map(_.name).contains(fieldName))
+                "ranges"
+              else
+                "terms"
+
             Facet(
               field = fieldName,
+              `type` = `type`,
               buckets = readObjectArray(root, fieldName, "buckets")
-                .map(_.toJson.convertTo[Bucket])
+                .map(_.toJson.convertTo[Bucket]),
+              bucketsLabel = bucketsLabel
             )
-          )
+          })
 
           FacetList(facets)
 
@@ -63,7 +85,12 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader {
       // Add a field to aggObject for each facet field
       facetList.facets.foreach(agg => {
         aggObject = JsObject(
-          aggObject.fields + (agg.field -> JsObject("terms" -> agg.buckets.toJson))
+          aggObject.fields + (agg.field ->
+              JsObject(
+                "_type" -> agg.`type`.toJson,
+                agg.bucketsLabel -> agg.buckets.toJson
+              )
+            )
         )
       })
 

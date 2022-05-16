@@ -60,6 +60,12 @@ class ItemListMappingTest extends AnyWordSpec with Matchers
       children should contain allElementsOf expected
     }
 
+    "map facet type" in {
+      val expected = Some("terms")
+      val traversed = readString(itemList, "facets", "provider.name", "_type")
+      assert(traversed == expected)
+    }
+
     "map facet terms" in {
       val expected = Some("Illinois Digital Heritage Hub")
       val firstTerm =
@@ -72,6 +78,40 @@ class ItemListMappingTest extends AnyWordSpec with Matchers
       val expected = Some(21)
       val firstTerm =
         readObjectArray(itemList, "facets", "provider.name", "terms").head
+      val traversed = readInt(firstTerm, "count")
+      assert(traversed == expected)
+    }
+
+    "map geo facet type" in {
+      val expected = Some("geo_distance")
+      val traversed = readString(itemList, "facets",
+        "sourceResource.spatial.coordinates", "_type")
+      assert(traversed == expected)
+    }
+
+    "map geo facet to" in {
+      val expected = Some(99)
+      val firstTerm =
+        readObjectArray(itemList, "facets",
+          "sourceResource.spatial.coordinates", "ranges").head
+      val traversed = readInt(firstTerm, "to")
+      assert(traversed == expected)
+    }
+
+    "map geo facet from" in {
+      val expected = Some(0)
+      val firstTerm =
+        readObjectArray(itemList, "facets",
+          "sourceResource.spatial.coordinates", "ranges").head
+      val traversed = readInt(firstTerm, "from")
+      assert(traversed == expected)
+    }
+
+    "map geo facet count" in {
+      val expected = Some(300156)
+      val firstTerm =
+        readObjectArray(itemList, "facets",
+          "sourceResource.spatial.coordinates", "ranges").head
       val traversed = readInt(firstTerm, "count")
       assert(traversed == expected)
     }
