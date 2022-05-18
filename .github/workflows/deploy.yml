@@ -41,10 +41,18 @@ jobs:
     - name: Build JAR
       run: sbt assembly
 
-    - name: Extract branch name
+    - name: Get branch name (merge)
+      if: github.event_name != 'pull_request'
       shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-      id: extract_branch
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+    - name: Get branch name (pull request)
+      if: github.event_name == 'pull_request'
+      shell: bash
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+    - name: Debug
+      run: echo ${{ env.BRANCH_NAME }}
 
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
@@ -52,7 +60,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ebook-api
         IMAGE_TAG: ${{ github.sha }}
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        BRANCH_NAME: ${{ env.BRANCH_NAME }}
       run: |
         docker buildx build \
         -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
