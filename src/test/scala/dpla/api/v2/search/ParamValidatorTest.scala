@@ -83,6 +83,57 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
     }
   }
 
+  "date validator" should {
+    "handle empty param" in {
+      val expected = None
+      itemParamValidator ! RawSearchParams(Map(), replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.filters
+        .find(_.fieldName == "sourceResource.date.begin")
+      fieldValue shouldEqual expected
+    }
+
+    "accept date as YYYY" in {
+      val given = "1900"
+      val expected = Some("1900")
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.filters
+        .find(_.fieldName == "sourceResource.date.begin").map(_.value)
+      fieldValue shouldEqual expected
+    }
+
+    "accept date as YYYY-MM" in {
+      val given = "1900-01"
+      val expected = Some("1900-01")
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.filters
+        .find(_.fieldName == "sourceResource.date.begin").map(_.value)
+      fieldValue shouldEqual expected
+    }
+
+    "accept date as YYYY-MM-DD" in {
+      val given = "1900-01-01"
+      val expected = Some("1900-01-01")
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.filters
+        .find(_.fieldName == "sourceResource.date.begin").map(_.value)
+      fieldValue shouldEqual expected
+    }
+
+    "reject invalid param" in {
+      val given = "190"
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      replyProbe.expectMessageType[InvalidSearchParams]
+    }
+  }
+
   "creator validator" should {
     "handle empty param" in {
       val expected = None

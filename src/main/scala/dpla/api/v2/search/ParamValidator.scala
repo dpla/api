@@ -6,6 +6,7 @@ import dpla.api.v2.search.SearchProtocol.{ValidFetchIds, ValidSearchParams, Inte
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
+import scala.util.matching.Regex
 
 /**
  * Validates user-submitted search and fetch parameters.
@@ -215,6 +216,7 @@ trait ParamValidator extends FieldDefinitions {
           fieldType match {
             case TextField => validText
             case URLField => validUrl
+            case DateField => validDate
             case _ => validText // This should not happen
           }
         case None =>
@@ -355,6 +357,20 @@ trait ParamValidator extends FieldDefinitions {
     // For internal consistency, and exception is thrown here in both cases.
       throw ValidationException(s"$param must be between 2 and 200 characters")
     else text
+
+  // Must be in the format YYYY, YYYY-MM, or YYYY-MM-DD
+  private def validDate(text: String, param: String): String = {
+    val rule = s"$param must be in the form YYYY or YYYY-MM or YYYY-MM-DD"
+
+    val year: Regex = """\d{4}""".r
+    val yearMonth: Regex = raw"""\d{4}-\d{2}""".r
+    val yearMonthDay: Regex = raw"""\d{4}-\d{2}-\d{2}""".r
+
+    if (year.matches(text) || yearMonth.matches(text) || yearMonthDay.matches(text))
+      text
+    else
+      throw ValidationException(rule)
+  }
 
   // Must be a valid URL.
   private def validUrl(url: String, param: String): String = {
