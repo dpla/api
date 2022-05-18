@@ -41,13 +41,18 @@ jobs:
     - name: Build JAR
       run: sbt assembly
 
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ebook-api
         IMAGE_TAG: ${{ github.sha }}
-        BRANCH_NAME: ${GITHUB_REF##*/}
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         docker buildx build \
         -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
