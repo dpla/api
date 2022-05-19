@@ -22,7 +22,7 @@ private[search] case class SearchParams(
                                          facets: Option[Seq[String]],
                                          facetSize: Int,
                                          fields: Option[Seq[String]],
-                                         filters: Seq[FieldFilter],
+                                         fieldQueries: Seq[FieldQuery],
                                          op: String,
                                          page: Int,
                                          pageSize: Int,
@@ -32,7 +32,7 @@ private[search] case class SearchParams(
                                          sortOrder: String
                                        )
 
-private[search] case class FieldFilter(
+private[search] case class FieldQuery(
                                         fieldName: String,
                                         value: String
                                       )
@@ -148,9 +148,9 @@ trait ParamValidator extends FieldDefinitions {
         )
       else {
         // Check for valid search params
-        // Collect all the user-submitted field filters.
-        val filters: Seq[FieldFilter] =
-        searchableDplaFields.flatMap(getValidFieldFilter(rawParams, _))
+        // Collect all the user-submitted field queries.
+        val fieldQueries: Seq[FieldQuery] =
+        searchableDplaFields.flatMap(getValidFieldQuery(rawParams, _))
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -164,8 +164,8 @@ trait ParamValidator extends FieldDefinitions {
               .getOrElse(defaultFacetSize),
           fields =
             getValid(rawParams, "fields", validFields),
-          filters =
-            filters,
+          fieldQueries =
+            fieldQueries,
           op =
             getValid(rawParams, "op", validAndOr)
               .getOrElse(defaultOp),
@@ -203,10 +203,10 @@ trait ParamValidator extends FieldDefinitions {
   }
 
   /**
-   * Get a valid value for a field filter.
+   * Get a valid value for a field query.
    */
-  private def getValidFieldFilter(rawParams: Map[String, String],
-                                  paramName: String): Option[FieldFilter] = {
+  private def getValidFieldQuery(rawParams: Map[String, String],
+                                 paramName: String): Option[FieldQuery] = {
 
     // Look up the parameter's field type.
     // Use this to determine the appropriate validation method.
@@ -224,7 +224,7 @@ trait ParamValidator extends FieldDefinitions {
       }
 
     getValid(rawParams, paramName, validationMethod)
-      .map(FieldFilter(paramName, _))
+      .map(FieldQuery(paramName, _))
   }
 
   /**

@@ -58,7 +58,7 @@ object QueryBuilder extends DPLAMAPFields {
     JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> query(params.q, params.filters, params.exactFieldMatch, params.op),
+      "query" -> query(params.q, params.fieldQueries, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
       "sort" -> sort(params.sortBy, params.sortOrder, params.sortByPin),
       "_source" -> fieldRetrieval(params.fields),
@@ -98,16 +98,16 @@ object QueryBuilder extends DPLAMAPFields {
   private def from(page: Int, pageSize: Int): Int = (page-1)*pageSize
 
   private def query(q: Option[String],
-                    fieldFilters: Seq[FieldFilter],
+                    fieldQueries: Seq[FieldQuery],
                     exactFieldMatch: Boolean,
                     op: String
                    ) = {
 
     val keyword: Seq[JsObject] =
       q.map(keywordQuery(_, keywordQueryFields)).toSeq
-    val filters: Seq[JsObject] =
-      fieldFilters.map(singleFieldFilter(_, exactFieldMatch))
-    val queryTerms: Seq[JsObject] = keyword ++ filters
+    val fieldQuery: Seq[JsObject] =
+      fieldQueries.map(singleFieldQuery(_, exactFieldMatch))
+    val queryTerms: Seq[JsObject] = keyword ++ fieldQuery
     val boolTerm: String = if (op == "OR") "should" else "must"
 
     if (queryTerms.isEmpty)
@@ -139,7 +139,7 @@ object QueryBuilder extends DPLAMAPFields {
     )
 
   /**
-   * For general field filter, use a keyword (i.e. "query_string") query.
+   * For general field query, use a keyword (i.e. "query_string") query.
    * For exact field match, use "term" query.
    * - term" searches for an exact term (with no additional text before or after).
    * - It is case-sensitive and does not analyze the search term.
@@ -147,20 +147,20 @@ object QueryBuilder extends DPLAMAPFields {
    * - but this is NOT applied in the cultural heritage API.
    * - It is only for fields that non-analyzed (i.e. indexed as "keyword")
    */
-  private def singleFieldFilter(filter: FieldFilter,
-                                exactFieldMatch: Boolean): JsObject = {
+  private def singleFieldQuery(fieldQuery: FieldQuery,
+                               exactFieldMatch: Boolean): JsObject = {
 
     if (exactFieldMatch) {
-      val field: String = getElasticSearchExactMatchField(filter.fieldName)
+      val field: String = getElasticSearchExactMatchField(fieldQuery.fieldName)
         .getOrElse(
-          throw new RuntimeException("Unrecognized field name: " + filter.fieldName)
+          throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
         ) // This should not happen
 
       // Strip leading and trailing quotation marks
       val value: String =
-        if (filter.value.startsWith("\"") && filter.value.endsWith("\""))
-          filter.value.stripPrefix("\"").stripSuffix("\"")
-        else filter.value
+        if (fieldQuery.value.startsWith("\"") && fieldQuery.value.endsWith("\""))
+          fieldQuery.value.stripPrefix("\"").stripSuffix("\"")
+        else fieldQuery.value
 
       JsObject(
         "term" -> JsObject(
@@ -169,8 +169,8 @@ object QueryBuilder extends DPLAMAPFields {
       )
     } else {
       val fields: Seq[String] =
-        Seq(getElasticSearchField(filter.fieldName)).flatten
-      keywordQuery(filter.value, fields)
+        Seq(getElasticSearchField(fieldQuery.fieldName)).flatten
+      keywordQuery(fieldQuery.value, fields)
     }
   }
 
@@ -208,6 +208,21 @@ object QueryBuilder extends DPLAMAPFields {
 
               case None => base
             }
+          } else if (datesFields.map(_.name).contains(facet)) {
+            // Dates facet
+            val dateHistogram = JsObject(
+              "date_histogram" -> JsObject(
+                "field" -> facet.toJson,
+                "interval" -> "year".toJson,
+                "format" -> "yyyy".toJson,
+                "min_doc_count" -> 1.toJson,
+                "order" -> JsObject(
+                  "_key" -> "desc".toJson
+                )
+              )
+            )
+            base = JsObject(base.fields + (facet -> dateHistogram))
+
           } else {
             // Regular facet
             val terms = JsObject(

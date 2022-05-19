@@ -40,7 +40,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facets = None,
     facetSize = 100,
     fields = None,
-    filters = Seq[FieldFilter](),
+    fieldQueries = Seq[FieldQuery](),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -63,7 +63,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     ),
     facetSize = 100,
     fields = Some(Seq("sourceResource.title")),
-    filters = Seq(FieldFilter("sourceResource.subject.name", "adventure")),
+    fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "adventure")),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -80,7 +80,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facets = None,
     facetSize = 100,
     fields = None,
-    filters = Seq[FieldFilter](),
+    fieldQueries = Seq[FieldQuery](),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -97,7 +97,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facets = Some(Seq("sourceResource.spatial.coordinates:42:-70")),
     facetSize = 100,
     fields = None,
-    filters = Seq[FieldFilter](),
+    fieldQueries = Seq[FieldQuery](),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -228,7 +228,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
   }
 
-  "field filter query builder" should {
+  "field query builder" should {
     "handle no field search with q" in {
       val params = minSearchParams.copy(q=Some("dogs"))
       val query = getJsSearchQuery(params)
@@ -239,8 +239,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "handle field search with no q" in {
-      val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
-      val params = minSearchParams.copy(filters=filters)
+      val fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "london"))
+      val params = minSearchParams.copy(fieldQueries=fieldQueries)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
@@ -250,11 +250,11 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "handle multiple field searches" in {
-      val filters = Seq(
-        FieldFilter("sourceResource.subject.name", "london"),
-        FieldFilter("provider.@id", "http://standardebooks.org")
+      val fieldQueries = Seq(
+        FieldQuery("sourceResource.subject.name", "london"),
+        FieldQuery("provider.@id", "http://standardebooks.org")
       )
-      val params = minSearchParams.copy(filters=filters)
+      val params = minSearchParams.copy(fieldQueries=fieldQueries)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryMatch =
@@ -262,10 +262,10 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       assert(queryMatch.size == 2)
     }
 
-    "specify filter term" in {
+    "specify field query term" in {
       val expected = Some("london")
-      val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
-      val params = minSearchParams.copy(filters=filters)
+      val fieldQuery = Seq(FieldQuery("sourceResource.subject.name", "london"))
+      val params = minSearchParams.copy(fieldQueries=fieldQuery)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
@@ -276,8 +276,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
     "specify field to search" in {
       val expected = Seq("sourceResource.subject.name")
-      val filters = Seq(FieldFilter("sourceResource.subject.name", "london"))
-      val params = minSearchParams.copy(filters=filters)
+      val fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "london"))
+      val params = minSearchParams.copy(fieldQueries=fieldQueries)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
@@ -309,9 +309,9 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
       "strip leading and trailing quotation marks from term" in {
         val expected = Some("Mystery fiction")
-        val filters =
-          Seq(FieldFilter("sourceResource.subject.name", "\"Mystery fiction\""))
-        val params = minSearchParams.copy(filters=filters, exactFieldMatch=true)
+        val fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", "\"Mystery fiction\""))
+        val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
         val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
