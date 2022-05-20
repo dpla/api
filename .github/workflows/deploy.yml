@@ -41,15 +41,34 @@ jobs:
     - name: Build JAR
       run: sbt assembly
 
+    - name: Get branch name (merge)
+      if: github.event_name != 'pull_request'
+      shell: bash
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+    - name: Get branch name (pull request)
+      if: github.event_name == 'pull_request'
+      shell: bash
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+    - name: Debug
+      run: echo ${{ env.BRANCH_NAME }}
+
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ebook-api
         IMAGE_TAG: ${{ github.sha }}
+        BRANCH_NAME: ${{ env.BRANCH_NAME }}
       run: |
-        docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --platform linux/amd64,linux/arm64 . --push
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        docker buildx build \
+        -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+        -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_NAME \
+        -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+        --platform linux/amd64,linux/arm64 . \
+        --push
 
+# echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG,latest,$BRANCH_NAME"
 # --iidfile /tmp/docker-build-push-CKIkrH/iidfile --metadata-file /tmp/docker-build-push-CKIkrH/metadata-file
 # docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
