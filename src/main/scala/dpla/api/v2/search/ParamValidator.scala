@@ -23,6 +23,7 @@ private[search] case class SearchParams(
                                          facetSize: Int,
                                          fields: Option[Seq[String]],
                                          fieldQueries: Seq[FieldQuery],
+                                         filters: Seq[Filter],
                                          op: String,
                                          page: Int,
                                          pageSize: Int,
@@ -33,9 +34,14 @@ private[search] case class SearchParams(
                                        )
 
 private[search] case class FieldQuery(
-                                        fieldName: String,
-                                        value: String
+                                       fieldName: String,
+                                       value: String
                                       )
+
+private[search] case class Filter(
+                                   fieldName: String,
+                                   value: Option[String] = None
+                                 )
 
 trait ParamValidator extends FieldDefinitions {
 
@@ -166,6 +172,8 @@ trait ParamValidator extends FieldDefinitions {
             getValid(rawParams, "fields", validFields),
           fieldQueries =
             fieldQueries,
+          filters =
+            Seq(), // TODO implement user-submitted filters
           op =
             getValid(rawParams, "op", validAndOr)
               .getOrElse(defaultOp),

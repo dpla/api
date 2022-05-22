@@ -54,8 +54,8 @@ object QueryBuilder extends DPLAMAPFields {
     ).toJson
   }
 
-  def composeSearchQuery(params: SearchParams): JsValue = {
-    JsObject(
+  def composeSearchQuery(params: SearchParams): JsValue =
+   JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.fieldQueries, params.exactFieldMatch, params.op),
@@ -64,7 +64,6 @@ object QueryBuilder extends DPLAMAPFields {
       "_source" -> fieldRetrieval(params.fields),
       "track_total_hits" -> true.toJson
     ).toJson
-  }
 
   // Fields to search in a keyword query and their boost values
   private val keywordQueryFields = Seq(
@@ -211,16 +210,29 @@ object QueryBuilder extends DPLAMAPFields {
           } else if (datesFields.map(_.name).contains(facet)) {
             // Dates facet
             val dateHistogram = JsObject(
-              "date_histogram" -> JsObject(
-                "field" -> facet.toJson,
-                "interval" -> "year".toJson,
-                "format" -> "yyyy".toJson,
-                "min_doc_count" -> 1.toJson,
-                "order" -> JsObject(
-                  "_key" -> "desc".toJson
+              "filter" -> JsObject(
+                "range" -> JsObject(
+                  facet -> JsObject(
+                    "gte" -> "now-2000y".toJson,
+                    "lte" -> "now".toJson
+                  )
+                )
+              ),
+              "aggs" -> JsObject(
+                facet -> JsObject(
+                  "date_histogram" -> JsObject(
+                    "field" -> facet.toJson,
+                    "interval" -> "year".toJson,
+                    "format" -> "yyyy".toJson,
+                    "min_doc_count" -> 1.toJson,
+                    "order" -> JsObject(
+                      "_key" -> "desc".toJson
+                    )
+                  )
                 )
               )
             )
+
             base = JsObject(base.fields + (facet -> dateHistogram))
 
           } else {

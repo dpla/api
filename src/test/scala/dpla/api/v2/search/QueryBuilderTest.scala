@@ -41,6 +41,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facetSize = 100,
     fields = None,
     fieldQueries = Seq[FieldQuery](),
+    filters = Seq(),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -64,6 +65,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facetSize = 100,
     fields = Some(Seq("sourceResource.title")),
     fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "adventure")),
+    filters = Seq(),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -81,6 +83,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facetSize = 100,
     fields = None,
     fieldQueries = Seq[FieldQuery](),
+    filters = Seq(),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -98,6 +101,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facetSize = 100,
     fields = None,
     fieldQueries = Seq[FieldQuery](),
+    filters = Seq(),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -108,6 +112,24 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   )
 
   val geoFacetQuery: JsObject = getJsSearchQuery(geoFacetSearchParams)
+
+  val dateFacetSearchParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
+    facets = Some(Seq("sourceResource.date.begin")),
+    facetSize = 100,
+    fields = None,
+    fieldQueries = Seq[FieldQuery](),
+    filters = Seq(),
+    op = "AND",
+    page = 3,
+    pageSize = 20,
+    q = None,
+    sortBy = None,
+    sortByPin = None,
+    sortOrder = "asc"
+  )
+
+  val dateFacetQuery: JsObject = getJsSearchQuery(dateFacetSearchParams)
 
   val multiFetchIds = Seq(
     "b70107e4fe29fe4a247ae46e118ce192",
@@ -405,6 +427,64 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val range = readObjectArray(geoFacetQuery, "aggs",
         "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
       val traversed = readInt(range, "to")
+      assert(traversed == expected)
+    }
+  }
+
+  "date agg query builder" should {
+    "specify facet field" in {
+      val expected = Some("sourceResource.date.begin")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
+        "date_histogram", "field")
+      assert(traversed == expected)
+    }
+
+    "specify interval" in {
+      val expected = Some("year")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
+        "date_histogram", "interval")
+      assert(traversed == expected)
+    }
+
+    "specify format" in {
+      val expected = Some("yyyy")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
+        "date_histogram", "format")
+      assert(traversed == expected)
+    }
+
+    "specify min doc count" in {
+      val expected = Some("1")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
+        "date_histogram", "min_doc_count")
+      assert(traversed == expected)
+    }
+
+    "specify order" in {
+      val expected = Some("desc")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
+        "date_histogram", "order", "_key")
+      assert(traversed == expected)
+    }
+
+    "specify filter gte" in {
+      val expected = Some("now-2000y")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "filter", "range",
+        "sourceResource.date.begin", "gte")
+      assert(traversed == expected)
+    }
+
+    "specify filter lte" in {
+      val expected = Some("now")
+      val traversed = readString(dateFacetQuery, "aggs",
+        "sourceResource.date.begin", "filter", "range",
+        "sourceResource.date.begin", "lte")
       assert(traversed == expected)
     }
   }
