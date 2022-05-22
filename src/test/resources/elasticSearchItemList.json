@@ -396,6 +396,44 @@
           "doc_count" : 282242
         }
       ]
+    },
+    "sourceResource.temporal.begin": {
+      "meta": {},
+      "doc_count": 2036,
+      "sourceResource.temporal.begin": {
+        "buckets": [
+          {
+            "key_as_string": "2014",
+            "key": 1388534400000,
+            "doc_count": 1
+          },
+          {
+            "key_as_string": "2011",
+            "key": 1293840000000,
+            "doc_count": 2
+          },
+          {
+            "key_as_string": "2003",
+            "key": 1041379200000,
+            "doc_count": 1
+          },
+          {
+            "key_as_string": "2001",
+            "key": 978307200000,
+            "doc_count": 1
+          },
+          {
+            "key_as_string": "1981",
+            "key": 347155200000,
+            "doc_count": 1
+          },
+          {
+            "key_as_string": "1980",
+            "key": 315532800000,
+            "doc_count": 1
+          }
+        ]
+      }
     }
   }
 }
