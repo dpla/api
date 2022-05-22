@@ -39,6 +39,7 @@ case class Facet(
 
 case class Bucket(
                    key: Option[String],
+                   keyAsString: Option[String] = None,
                    docCount: Option[Int],
                    from: Option[Int] = None,
                    to: Option[Int] = None

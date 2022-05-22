@@ -16,22 +16,28 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader
 
       val bucket = Bucket(
         key = readString(root, "key"),
+        keyAsString = readString(root, "key_as_string"),
         docCount = readInt(root, "doc_count"),
         to = readInt(root, "to"),
         from = readInt(root, "from")
       )
 
-      // Do not include key for geo_distance buckets
-      if (bucket.from.nonEmpty) bucket.copy(key = None) else bucket
+      // Do not include key for geo_distance or date_histogram buckets
+      if (bucket.from.nonEmpty) bucket.copy(key = None)
+      else if (bucket.keyAsString.nonEmpty) bucket.copy(key = None)
+      else bucket
     }
 
-    def write(bucket: Bucket): JsValue =
+    def write(bucket: Bucket): JsValue = {
+
       filterIfEmpty(JsObject(
         "term" -> bucket.key.toJson,
+        "time" -> bucket.keyAsString.toJson,
         "count" -> bucket.docCount.toJson,
         "to" -> bucket.to.toJson,
         "from" -> bucket.from.toJson
       )).toJson
+    }
   }
 
   /**
@@ -53,20 +59,30 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader
             val `type` =
               if (coordinatesField.map(_.name).contains(fieldName))
                 "geo_distance"
+              else if (datesFields.map(_.name).contains(fieldName))
+                "date_histogram"
               else
                 "terms"
 
             val bucketsLabel =
               if (coordinatesField.map(_.name).contains(fieldName))
                 "ranges"
+              else if (datesFields.map(_.name).contains(fieldName))
+                "entries"
               else
                 "terms"
+
+            val pathToBuckets: Seq[JsObject] =
+              if (datesFields.map(_.name).contains(fieldName)) {
+                readObjectArray(root, fieldName, fieldName, "buckets")
+              } else {
+                readObjectArray(root, fieldName, "buckets")
+              }
 
             Facet(
               field = fieldName,
               `type` = `type`,
-              buckets = readObjectArray(root, fieldName, "buckets")
-                .map(_.toJson.convertTo[Bucket]),
+              buckets = pathToBuckets.map(_.toJson.convertTo[Bucket]),
               bucketsLabel = bucketsLabel
             )
           })
