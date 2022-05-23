@@ -115,5 +115,28 @@ class ItemListMappingTest extends AnyWordSpec with Matchers
       val traversed = readInt(firstTerm, "count")
       assert(traversed == expected)
     }
+
+    "map date facet type" in {
+      val expected = Some("date_histogram")
+      val traversed = readString(itemList, "facets",
+        "sourceResource.temporal.begin", "_type")
+      assert(traversed == expected)
+    }
+
+    "map date facet count" in {
+      val expected = Some(1)
+      val firstEntry = readObjectArray(itemList, "facets",
+        "sourceResource.temporal.begin", "entries").head
+      val traversed = readInt(firstEntry, "count")
+      assert(traversed == expected)
+    }
+
+    "map date facet time" in {
+      val expected = Some("2014")
+      val firstEntry = readObjectArray(itemList, "facets",
+        "sourceResource.temporal.begin", "entries").head
+      val traversed = readString(firstEntry, "time")
+      assert(traversed == expected)
+    }
   }
 }

@@ -5,6 +5,7 @@ trait FieldDefinitions {
   protected sealed trait DplaFieldType
   case object TextField extends DplaFieldType
   case object URLField extends DplaFieldType
+  case object DateField extends DplaFieldType
   case object DisabledField extends DplaFieldType
 
   /**
@@ -32,6 +33,7 @@ trait FieldDefinitions {
   // Abstract
   val fields: Seq[DplaField]
   val coordinatesField: Option[DplaField]
+  val dateFields: Seq[DplaField]
 
   def allDplaFields: Seq[String] =
     fields.map(_.name)

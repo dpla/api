@@ -336,6 +336,33 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "sourceResource.date.begin",
+      fieldType = DateField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.date.begin",
+      elasticSearchNotAnalyzed = Some("sourceResource.date.begin.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.date.displayDate",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.date.displayDate",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "sourceResource.date.end",
+      fieldType = DateField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.date.end",
+      elasticSearchNotAnalyzed = Some("sourceResource.date.end.not_analyzed")
+    ),
+    DplaField(
       name = "sourceResource.description",
       fieldType = TextField,
       searchable = true,
@@ -516,12 +543,12 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("sourceResource.specType")
     ),
     DplaField(
-      name = "stateLocatedIn",
+      name = "sourceResource.stateLocatedIn",
       fieldType = DisabledField,
       searchable = false,
       facetable = false,
       sortable = false,
-      elasticSearchDefault = "stateLocatedIn",
+      elasticSearchDefault = "sourceResource.stateLocatedIn",
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
@@ -570,6 +597,42 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("sourceResource.subtitle.not_analyzed")
     ),
     DplaField(
+      name = "sourceResource.temporal.after",
+      fieldType = DateField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.temporal.begin",
+      elasticSearchNotAnalyzed = Some("sourceResource.temporal.begin.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.temporal.before",
+      fieldType = DateField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.temporal.end",
+      elasticSearchNotAnalyzed = Some("sourceResource.temporal.end.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.temporal.begin",
+      fieldType = DateField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.temporal.begin",
+      elasticSearchNotAnalyzed = Some("sourceResource.temporal.begin.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.temporal.end",
+      fieldType = DateField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "sourceResource.temporal.end",
+      elasticSearchNotAnalyzed = Some("sourceResource.temporal.end.not_analyzed")
+    ),
+    DplaField(
       name = "sourceResource.title",
       fieldType = TextField,
       searchable = true,
@@ -591,4 +654,7 @@ trait DPLAMAPFields extends FieldDefinitions {
 
   override val coordinatesField: Option[DplaField] =
     fields.find(_.name == "sourceResource.spatial.coordinates")
+
+  override val dateFields: Seq[DplaField] =
+    fields.filter(_.fieldType == DateField)
 }

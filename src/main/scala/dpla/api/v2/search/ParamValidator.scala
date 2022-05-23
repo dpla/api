@@ -6,6 +6,7 @@ import dpla.api.v2.search.SearchProtocol.{ValidFetchIds, ValidSearchParams, Inte
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
+import scala.util.matching.Regex
 
 /**
  * Validates user-submitted search and fetch parameters.
@@ -21,7 +22,8 @@ private[search] case class SearchParams(
                                          facets: Option[Seq[String]],
                                          facetSize: Int,
                                          fields: Option[Seq[String]],
-                                         filters: Seq[FieldFilter],
+                                         fieldQueries: Seq[FieldQuery],
+                                         filters: Seq[Filter],
                                          op: String,
                                          page: Int,
                                          pageSize: Int,
@@ -31,10 +33,15 @@ private[search] case class SearchParams(
                                          sortOrder: String
                                        )
 
-private[search] case class FieldFilter(
-                                        fieldName: String,
-                                        value: String
+private[search] case class FieldQuery(
+                                       fieldName: String,
+                                       value: String
                                       )
+
+private[search] case class Filter(
+                                   fieldName: String,
+                                   value: Option[String] = None
+                                 )
 
 trait ParamValidator extends FieldDefinitions {
 
@@ -147,9 +154,9 @@ trait ParamValidator extends FieldDefinitions {
         )
       else {
         // Check for valid search params
-        // Collect all the user-submitted field filters.
-        val filters: Seq[FieldFilter] =
-        searchableDplaFields.flatMap(getValidFieldFilter(rawParams, _))
+        // Collect all the user-submitted field queries.
+        val fieldQueries: Seq[FieldQuery] =
+        searchableDplaFields.flatMap(getValidFieldQuery(rawParams, _))
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -163,8 +170,10 @@ trait ParamValidator extends FieldDefinitions {
               .getOrElse(defaultFacetSize),
           fields =
             getValid(rawParams, "fields", validFields),
+          fieldQueries =
+            fieldQueries,
           filters =
-            filters,
+            Seq(), // TODO implement user-submitted filters
           op =
             getValid(rawParams, "op", validAndOr)
               .getOrElse(defaultOp),
@@ -202,10 +211,10 @@ trait ParamValidator extends FieldDefinitions {
   }
 
   /**
-   * Get a valid value for a field filter.
+   * Get a valid value for a field query.
    */
-  private def getValidFieldFilter(rawParams: Map[String, String],
-                                  paramName: String): Option[FieldFilter] = {
+  private def getValidFieldQuery(rawParams: Map[String, String],
+                                 paramName: String): Option[FieldQuery] = {
 
     // Look up the parameter's field type.
     // Use this to determine the appropriate validation method.
@@ -215,6 +224,7 @@ trait ParamValidator extends FieldDefinitions {
           fieldType match {
             case TextField => validText
             case URLField => validUrl
+            case DateField => validDate
             case _ => validText // This should not happen
           }
         case None =>
@@ -222,7 +232,7 @@ trait ParamValidator extends FieldDefinitions {
       }
 
     getValid(rawParams, paramName, validationMethod)
-      .map(FieldFilter(paramName, _))
+      .map(FieldQuery(paramName, _))
   }
 
   /**
@@ -355,6 +365,20 @@ trait ParamValidator extends FieldDefinitions {
     // For internal consistency, and exception is thrown here in both cases.
       throw ValidationException(s"$param must be between 2 and 200 characters")
     else text
+
+  // Must be in the format YYYY, YYYY-MM, or YYYY-MM-DD
+  private def validDate(text: String, param: String): String = {
+    val rule = s"$param must be in the form YYYY or YYYY-MM or YYYY-MM-DD"
+
+    val year: Regex = """\d{4}""".r
+    val yearMonth: Regex = raw"""\d{4}-\d{2}""".r
+    val yearMonthDay: Regex = raw"""\d{4}-\d{2}-\d{2}""".r
+
+    if (year.matches(text) || yearMonth.matches(text) || yearMonthDay.matches(text))
+      text
+    else
+      throw ValidationException(rule)
+  }
 
   // Must be a valid URL.
   private def validUrl(url: String, param: String): String = {

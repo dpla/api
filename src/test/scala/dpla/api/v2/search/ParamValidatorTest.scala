@@ -83,12 +83,63 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
     }
   }
 
+  "date validator" should {
+    "handle empty param" in {
+      val expected = None
+      itemParamValidator ! RawSearchParams(Map(), replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.fieldQueries
+        .find(_.fieldName == "sourceResource.date.begin")
+      fieldValue shouldEqual expected
+    }
+
+    "accept date as YYYY" in {
+      val given = "1900"
+      val expected = Some("1900")
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.fieldQueries
+        .find(_.fieldName == "sourceResource.date.begin").map(_.value)
+      fieldValue shouldEqual expected
+    }
+
+    "accept date as YYYY-MM" in {
+      val given = "1900-01"
+      val expected = Some("1900-01")
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.fieldQueries
+        .find(_.fieldName == "sourceResource.date.begin").map(_.value)
+      fieldValue shouldEqual expected
+    }
+
+    "accept date as YYYY-MM-DD" in {
+      val given = "1900-01-01"
+      val expected = Some("1900-01-01")
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val fieldValue = msg.params.fieldQueries
+        .find(_.fieldName == "sourceResource.date.begin").map(_.value)
+      fieldValue shouldEqual expected
+    }
+
+    "reject invalid param" in {
+      val given = "190"
+      val params = Map("sourceResource.date.begin" -> given)
+      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
+      replyProbe.expectMessageType[InvalidSearchParams]
+    }
+  }
+
   "creator validator" should {
     "handle empty param" in {
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.creator")
       fieldValue shouldEqual expected
     }
@@ -99,7 +150,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.creator" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.creator").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -124,7 +175,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "provider.@id")
       fieldValue shouldEqual expected
     }
@@ -135,7 +186,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("provider.@id" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "provider.@id").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -153,7 +204,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.description")
       fieldValue shouldEqual expected
     }
@@ -164,7 +215,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.description" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.description").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -305,7 +356,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.format")
       fieldValue shouldEqual expected
     }
@@ -316,7 +367,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.format" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.format").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -341,7 +392,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "isShownAt")
       fieldValue shouldEqual expected
     }
@@ -352,7 +403,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("isShownAt" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "isShownAt").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -370,7 +421,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.language.name")
       fieldValue shouldEqual expected
     }
@@ -381,7 +432,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.language.name" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.language.name").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -406,7 +457,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "object")
       fieldValue shouldEqual expected
     }
@@ -417,7 +468,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("object" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "object").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -524,7 +575,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.publisher")
       fieldValue shouldEqual expected
     }
@@ -535,7 +586,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.publisher" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.publisher").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -642,7 +693,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.subject.name")
       fieldValue shouldEqual expected
     }
@@ -653,7 +704,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.subject.name" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.subject.name").map(_.value)
       fieldValue shouldEqual expected
     }
@@ -678,7 +729,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val expected = None
       ebookParamValidator ! RawSearchParams(Map(), replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.title")
       fieldValue shouldEqual expected
     }
@@ -689,7 +740,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val params = Map("sourceResource.title" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldValue = msg.params.filters
+      val fieldValue = msg.params.fieldQueries
         .find(_.fieldName == "sourceResource.title").map(_.value)
       fieldValue shouldEqual expected
     }
