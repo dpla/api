@@ -231,7 +231,7 @@ trait ParamValidator extends FieldDefinitions {
    */
   private def getValidFieldQuery(rawParams: Map[String, String],
                                  paramName: String): Option[FieldQuery] = {
-    
+
     val validationMethod = getValidationMethod(paramName)
 
     getValid(rawParams, paramName, validationMethod)
@@ -312,7 +312,6 @@ trait ParamValidator extends FieldDefinitions {
               s"The sort_by parameter is required."
             )
         case None =>
-          val sortField = coordinatesField.getOrElse("")
           throw ValidationException(
               s"The sort_by parameter is required."
           )
