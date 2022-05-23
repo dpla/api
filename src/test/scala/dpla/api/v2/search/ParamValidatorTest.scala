@@ -267,11 +267,13 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       replyProbe.expectMessageType[InvalidSearchParams]
     }
 
-    "reject out-of-range param" in {
+    "default to max for if param is too high" in {
       val given = "9999"
+      val expected = 2000
       val params = Map("facet_size" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
-      replyProbe.expectMessageType[InvalidSearchParams]
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      msg.params.facetSize shouldEqual expected
     }
   }
 
@@ -485,6 +487,15 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
     }
+
+    "apply default max if param is too large" in {
+      val given = "600"
+      val expected = 100
+      val params = Map("page" -> given)
+      ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      msg.params.page shouldEqual expected
+    }
   }
 
   "page size validator" should {
@@ -511,11 +522,13 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       replyProbe.expectMessageType[InvalidSearchParams]
     }
 
-    "reject out-of-range param" in {
+    "default to max if param is too large" in {
       val given = "999999"
+      val expected = 500
       val params = Map("page_size" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
-      replyProbe.expectMessageType[InvalidSearchParams]
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      msg.params.pageSize shouldEqual expected
     }
   }
 
