@@ -267,7 +267,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       replyProbe.expectMessageType[InvalidSearchParams]
     }
 
-    "default to max for if param is too large" in {
+    "default to max if param is too large" in {
       val given = "9999"
       val expected = 2000
       val params = Map("facet_size" -> given)
