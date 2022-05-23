@@ -48,9 +48,8 @@ class EbookListMappingTest extends AnyWordSpec with Matchers
     }
 
     "handle empty facets" in {
-      val parent = readObject(minEbookList)
-      val children = parent.get.fields.keys
-      children should not contain "facets"
+      val traversed = readObjectArray(minEbookList, "facets")
+      traversed shouldBe empty
     }
 
     "map all facets" in {
