@@ -27,7 +27,7 @@ class DPLAMAPMapperTest
     facetSize = 10,
     fields = None,
     fieldQueries = Seq(),
-    filters = Seq(),
+    filter = None,
     op = "",
     page = 1,
     pageSize = 10,

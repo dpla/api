@@ -9,6 +9,7 @@ object EbookParamValidator extends ParamValidator with DPLAMAPFields {
       "facets",
       "facet_size",
       "fields",
+      "filter",
       "op",
       "page",
       "page_size",

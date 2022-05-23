@@ -23,7 +23,7 @@ private[search] case class SearchParams(
                                          facetSize: Int,
                                          fields: Option[Seq[String]],
                                          fieldQueries: Seq[FieldQuery],
-                                         filters: Seq[Filter],
+                                         filter: Option[Filter],
                                          op: String,
                                          page: Int,
                                          pageSize: Int,
@@ -40,7 +40,7 @@ private[search] case class FieldQuery(
 
 private[search] case class Filter(
                                    fieldName: String,
-                                   value: Option[String] = None
+                                   value: String
                                  )
 
 trait ParamValidator extends FieldDefinitions {
@@ -172,8 +172,8 @@ trait ParamValidator extends FieldDefinitions {
             getValid(rawParams, "fields", validFields),
           fieldQueries =
             fieldQueries,
-          filters =
-            Seq(), // TODO implement user-submitted filters
+          filter =
+            getValidFilter(rawParams),
           op =
             getValid(rawParams, "op", validAndOr)
               .getOrElse(defaultOp),
@@ -196,6 +196,22 @@ trait ParamValidator extends FieldDefinitions {
       }
     }
 
+  // Look up the parameter's field type.
+  // Use this to determine the appropriate validation method.
+  def getValidationMethod(paramName: String): (String, String) => String =
+    getDplaFieldType(paramName) match {
+      case Some(fieldType) =>
+        fieldType match {
+          case TextField => validText
+          case URLField => validUrl
+          case DateField => validDate
+          case WildcardField => validText
+          case _ => validText
+        }
+      case None =>
+        throw ValidationException(s"Unrecognized parameter: $paramName")
+    }
+
   /**
    * Method returns Failure if ID is invalid.
    * Ebook ID must be a non-empty String comprised of letters, numbers, and
@@ -216,25 +232,35 @@ trait ParamValidator extends FieldDefinitions {
   private def getValidFieldQuery(rawParams: Map[String, String],
                                  paramName: String): Option[FieldQuery] = {
 
-    // Look up the parameter's field type.
-    // Use this to determine the appropriate validation method.
-    val validationMethod: (String, String) => String =
-      getDplaFieldType(paramName) match {
-        case Some(fieldType) =>
-          fieldType match {
-            case TextField => validText
-            case URLField => validUrl
-            case DateField => validDate
-            case WildcardField => validText
-            case _ => validText
-          }
-        case None =>
-          throw ValidationException(s"Unrecognized parameter: $paramName")
-      }
+    val validationMethod = getValidationMethod(paramName)
 
     getValid(rawParams, paramName, validationMethod)
       .map(FieldQuery(paramName, _))
   }
+
+  /**
+   * Get a valid field name and value for a filter query.
+   */
+  private def getValidFilter(rawParams: Map[String, String]): Option[Filter] =
+    rawParams.get("filter").flatMap{ filter =>
+
+      val fieldName = filter.split(":", 2).headOption
+        .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
+
+      val value = filter.split(":", 2).lastOption
+        .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
+
+      if (searchableDplaFields.contains(fieldName)) {
+        val validationMethod = getValidationMethod(fieldName)
+        val params = Map(fieldName -> value)
+
+        getValid(params, fieldName, validationMethod)
+          .map(Filter(fieldName, _))
+
+      } else {
+        throw ValidationException(s"$fieldName is not a valid filter field")
+      }
+    }
 
   /**
    * Get a valid value for sort_by parameter.
@@ -286,7 +312,6 @@ trait ParamValidator extends FieldDefinitions {
               s"The sort_by parameter is required."
             )
         case None =>
-          val sortField = coordinatesField.getOrElse("")
           throw ValidationException(
               s"The sort_by parameter is required."
           )

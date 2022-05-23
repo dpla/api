@@ -58,7 +58,7 @@ object QueryBuilder extends DPLAMAPFields {
    JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> query(params.q, params.fieldQueries, params.exactFieldMatch, params.op),
+      "query" -> query(params.q, params.filter, params.fieldQueries, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
       "sort" -> sort(params.sortBy, params.sortOrder, params.sortByPin),
       "_source" -> fieldRetrieval(params.fields),
@@ -97,6 +97,7 @@ object QueryBuilder extends DPLAMAPFields {
   private def from(page: Int, pageSize: Int): Int = (page-1)*pageSize
 
   private def query(q: Option[String],
+                    filter: Option[Filter],
                     fieldQueries: Seq[FieldQuery],
                     exactFieldMatch: Boolean,
                     op: String
@@ -104,21 +105,29 @@ object QueryBuilder extends DPLAMAPFields {
 
     val keyword: Seq[JsObject] =
       q.map(keywordQuery(_, keywordQueryFields)).toSeq
+    val filterClause: Option[JsObject] = filter.map(filterQuery)
     val fieldQuery: Seq[JsObject] =
       fieldQueries.map(singleFieldQuery(_, exactFieldMatch))
     val queryTerms: Seq[JsObject] = keyword ++ fieldQuery
     val boolTerm: String = if (op == "OR") "should" else "must"
 
-    if (queryTerms.isEmpty)
+    if (queryTerms.isEmpty && filterClause.isEmpty)
       JsObject(
         "match_all" -> JsObject()
       )
-    else
-      JsObject(
-        "bool" -> JsObject(
-          boolTerm -> queryTerms.toJson
-        )
-      )
+    else {
+      var boolBase = JsObject()
+
+      if (queryTerms.nonEmpty) {
+        boolBase = JsObject(boolBase.fields + (boolTerm -> queryTerms.toJson))
+      }
+
+      if (filterClause.nonEmpty) {
+        boolBase = JsObject(boolBase.fields + ("filter" -> filterClause.get))
+      }
+
+      JsObject("bool" -> boolBase)
+    }
   }
 
   /**
@@ -134,6 +143,22 @@ object QueryBuilder extends DPLAMAPFields {
         "analyze_wildcard" -> true.toJson,
         "default_operator" -> "AND".toJson,
         "lenient" -> true.toJson
+      )
+    )
+
+  /**
+   * A filter for a specific field.
+   * This will filter out fields that do not match the given value, but will
+   * not affect the score for matching documents.
+   */
+  private def filterQuery(filter: Filter): JsObject =
+    JsObject(
+      "bool" -> JsObject(
+        "must" -> JsObject(
+          "term" -> JsObject(
+            filter.fieldName -> filter.value.toJson
+          )
+        )
       )
     )
 
