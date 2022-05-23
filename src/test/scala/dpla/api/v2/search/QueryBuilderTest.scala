@@ -131,6 +131,24 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val dateFacetQuery: JsObject = getJsSearchQuery(dateFacetSearchParams)
 
+  val filterParams: SearchParams = SearchParams(
+    exactFieldMatch = false,
+    facets = None,
+    facetSize = 100,
+    fields = None,
+    fieldQueries = Seq[FieldQuery](),
+    filter = Some(Filter("provider.@id", "http://dp.la/api/contributor/lc")),
+    op = "AND",
+    page = 3,
+    pageSize = 20,
+    q = None,
+    sortBy = None,
+    sortByPin = None,
+    sortOrder = "asc"
+  )
+
+  val filterQuery: JsObject = getJsSearchQuery(filterParams)
+
   val multiFetchIds = Seq(
     "b70107e4fe29fe4a247ae46e118ce192",
     "17b0da7b05805d78daf8753a6641b3f5"
@@ -560,6 +578,15 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = "sourceResource.title"
       val traversed = readStringArray(detailQuery, "_source")
       traversed should contain only expected
+    }
+  }
+
+  "filter query builder" should {
+    "specify field and term" in {
+      val expected = Some("http://dp.la/api/contributor/lc")
+      val traversed = readString(filterQuery, "query", "bool", "filter",
+        "bool", "must", "term", "provider.@id")
+      assert(traversed == expected)
     }
   }
 }
