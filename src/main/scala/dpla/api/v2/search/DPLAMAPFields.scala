@@ -48,6 +48,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "dataProvider",
+      fieldType = WildcardField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "dataProvider.*",
+      elasticSearchNotAnalyzed = Some("dataProvider.name.not_analyzed")
+    ),
+    DplaField(
       name = "dataProvider.@id",
       fieldType = URLField,
       searchable = true,
@@ -216,6 +225,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       facetable = false,
       sortable = false,
       elasticSearchDefault = "originalRecord",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "provider",
+      fieldType = WildcardField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "provider.*",
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
@@ -459,6 +477,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       facetable = false,
       sortable = false,
       elasticSearchDefault = "sourceResource.rights",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "sourceResource.spatial",
+      fieldType = WildcardField,
+      searchable = true,
+      facetable= false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.spatial.*",
       elasticSearchNotAnalyzed = None
     ),
     DplaField(

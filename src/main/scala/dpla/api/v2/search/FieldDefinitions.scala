@@ -7,6 +7,7 @@ trait FieldDefinitions {
   case object URLField extends DplaFieldType
   case object DateField extends DplaFieldType
   case object DisabledField extends DplaFieldType
+  case object WildcardField extends DplaFieldType
 
   /**
    * @param name                      DPLA MAP field name
