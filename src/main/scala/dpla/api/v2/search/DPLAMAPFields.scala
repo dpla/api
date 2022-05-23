@@ -48,6 +48,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "dataProvider",
+      fieldType = WildcardField,
+      searchable = true,
+      facetable = true,
+      sortable = true,
+      elasticSearchDefault = "dataProvider.*",
+      elasticSearchNotAnalyzed = Some("dataProvider.name.not_analyzed")
+    ),
+    DplaField(
       name = "dataProvider.@id",
       fieldType = URLField,
       searchable = true,
