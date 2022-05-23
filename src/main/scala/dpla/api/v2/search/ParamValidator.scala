@@ -225,7 +225,8 @@ trait ParamValidator extends FieldDefinitions {
             case TextField => validText
             case URLField => validUrl
             case DateField => validDate
-            case _ => validText // This should not happen
+            case WildcardField => validText
+            case _ => validText
           }
         case None =>
           throw ValidationException(s"Unrecognized parameter: $paramName")

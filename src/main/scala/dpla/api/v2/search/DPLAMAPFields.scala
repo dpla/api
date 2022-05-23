@@ -228,6 +228,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "provider",
+      fieldType = WildcardField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "provider.*",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
       name = "provider.@id",
       fieldType = URLField,
       searchable = true,
@@ -468,6 +477,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       facetable = false,
       sortable = false,
       elasticSearchDefault = "sourceResource.rights",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "sourceResource.spatial",
+      fieldType = WildcardField,
+      searchable = true,
+      facetable= false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.spatial.*",
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
