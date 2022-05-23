@@ -405,7 +405,7 @@ trait DPLAMAPFields extends FieldDefinitions {
       facetable = true,
       sortable = true,
       elasticSearchDefault = "sourceResource.format",
-      elasticSearchNotAnalyzed = Some("sourceResource.format.not_analyzed")
+      elasticSearchNotAnalyzed = Some("sourceResource.format")
     ),
     DplaField(
       name = "sourceResource.genre",
