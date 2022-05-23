@@ -33,7 +33,7 @@ trait FieldDefinitions {
   // Abstract
   val fields: Seq[DplaField]
   val coordinatesField: Option[DplaField]
-  val datesFields: Seq[DplaField]
+  val dateFields: Seq[DplaField]
 
   def allDplaFields: Seq[String] =
     fields.map(_.name)

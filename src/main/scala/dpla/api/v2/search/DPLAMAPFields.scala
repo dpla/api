@@ -655,6 +655,6 @@ trait DPLAMAPFields extends FieldDefinitions {
   override val coordinatesField: Option[DplaField] =
     fields.find(_.name == "sourceResource.spatial.coordinates")
 
-  override val datesFields: Seq[DplaField] =
+  override val dateFields: Seq[DplaField] =
     fields.filter(_.fieldType == DateField)
 }

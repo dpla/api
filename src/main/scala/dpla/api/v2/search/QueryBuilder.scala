@@ -207,7 +207,7 @@ object QueryBuilder extends DPLAMAPFields {
 
               case None => base
             }
-          } else if (datesFields.map(_.name).contains(facet)) {
+          } else if (dateFields.map(_.name).contains(facet)) {
             // Dates facet
             val dateHistogram = JsObject(
               "filter" -> JsObject(

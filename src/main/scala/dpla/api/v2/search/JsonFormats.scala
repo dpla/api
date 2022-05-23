@@ -59,7 +59,7 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader
             val `type` =
               if (coordinatesField.map(_.name).contains(fieldName))
                 "geo_distance"
-              else if (datesFields.map(_.name).contains(fieldName))
+              else if (dateFields.map(_.name).contains(fieldName))
                 "date_histogram"
               else
                 "terms"
@@ -67,13 +67,13 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader
             val bucketsLabel =
               if (coordinatesField.map(_.name).contains(fieldName))
                 "ranges"
-              else if (datesFields.map(_.name).contains(fieldName))
+              else if (dateFields.map(_.name).contains(fieldName))
                 "entries"
               else
                 "terms"
 
             val pathToBuckets: Seq[JsObject] =
-              if (datesFields.map(_.name).contains(fieldName)) {
+              if (dateFields.map(_.name).contains(fieldName)) {
                 readObjectArray(root, fieldName, fieldName, "buckets")
               } else {
                 readObjectArray(root, fieldName, "buckets")
