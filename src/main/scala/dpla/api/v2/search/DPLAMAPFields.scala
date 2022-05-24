@@ -493,7 +493,7 @@ trait DPLAMAPFields extends FieldDefinitions {
       fieldType = TextField,
       searchable = true,
       facetable = true,
-      sortable = false,
+      sortable = true,
       elasticSearchDefault = "sourceResource.spatial.city",
       elasticSearchNotAnalyzed = Some("sourceResource.spatial.city.not_analyzed")
     ),
