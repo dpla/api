@@ -1,6 +1,6 @@
 package dpla.api.v2.search
 
-import spray.json.{JsObject, _}
+import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
@@ -225,33 +225,6 @@ object QueryBuilder extends DPLAMAPFields {
       val fields: Seq[String] =
         Seq(getElasticSearchField(fieldQuery.fieldName)).flatten
       keywordQuery(fieldQuery.value, fields)
-    }
-
-  /**
-   * Compose a range query for a given field.
-   * The fieldName should end with ".before" or ".after"
-   */
-  private def rangeQuery(fieldQuery: FieldQuery): JsObject =
-
-    fieldQuery.fieldName.split(".").lastOption match {
-      case Some(modifier) =>
-        val rangeType = if (modifier == "before") "lte" else "gte"
-
-        getElasticSearchField(fieldQuery.fieldName) match {
-          case Some(field) =>
-            JsObject(
-              field -> JsObject(
-                rangeType -> fieldQuery.value.toJson
-              )
-            )
-          case None =>
-//            JsObject()
-          throw new RuntimeException("no es field")
-        }
-
-      case None =>
-//        JsObject()
-      throw new RuntimeException("no modifier")
     }
 
   /**
