@@ -1,6 +1,6 @@
 package dpla.api.v2.search
 
-import spray.json._
+import spray.json.{JsObject, _}
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
@@ -172,9 +172,38 @@ object QueryBuilder extends DPLAMAPFields {
    * - It is only for fields that non-analyzed (i.e. indexed as "keyword")
    */
   private def singleFieldQuery(fieldQuery: FieldQuery,
-                               exactFieldMatch: Boolean): JsObject = {
+                               exactFieldMatch: Boolean): JsObject =
 
-    if (exactFieldMatch) {
+    if (fieldQuery.fieldName.endsWith(".before")) {
+      // Range query
+      val field: String = getElasticSearchField(fieldQuery.fieldName)
+        .getOrElse(
+          throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
+        )
+
+      JsObject(
+        "range" -> JsObject(
+          field -> JsObject(
+            "lte" -> fieldQuery.value.toJson
+          )
+        )
+      )
+    } else if (fieldQuery.fieldName.endsWith(".after")) {
+      // Range query
+      val field: String = getElasticSearchField(fieldQuery.fieldName)
+        .getOrElse(
+          throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
+        )
+
+      JsObject(
+        "range" -> JsObject(
+          field -> JsObject(
+            "gte" -> fieldQuery.value.toJson
+          )
+        )
+      )
+    } else if (exactFieldMatch) {
+      // Exact match query
       val field: String = getElasticSearchExactMatchField(fieldQuery.fieldName)
         .getOrElse(
           throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
@@ -192,11 +221,38 @@ object QueryBuilder extends DPLAMAPFields {
         )
       )
     } else {
+      // Basic field query
       val fields: Seq[String] =
         Seq(getElasticSearchField(fieldQuery.fieldName)).flatten
       keywordQuery(fieldQuery.value, fields)
     }
-  }
+
+  /**
+   * Compose a range query for a given field.
+   * The fieldName should end with ".before" or ".after"
+   */
+  private def rangeQuery(fieldQuery: FieldQuery): JsObject =
+
+    fieldQuery.fieldName.split(".").lastOption match {
+      case Some(modifier) =>
+        val rangeType = if (modifier == "before") "lte" else "gte"
+
+        getElasticSearchField(fieldQuery.fieldName) match {
+          case Some(field) =>
+            JsObject(
+              field -> JsObject(
+                rangeType -> fieldQuery.value.toJson
+              )
+            )
+          case None =>
+//            JsObject()
+          throw new RuntimeException("no es field")
+        }
+
+      case None =>
+//        JsObject()
+      throw new RuntimeException("no modifier")
+    }
 
   /**
    * Composes an aggregates (facets) query object.

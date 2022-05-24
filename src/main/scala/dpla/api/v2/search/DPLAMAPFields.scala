@@ -354,6 +354,24 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "sourceResource.date.after",
+      fieldType = DateField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.date.end",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
+      name = "sourceResource.date.before",
+      fieldType = DateField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.date.begin",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
       name = "sourceResource.date.begin",
       fieldType = DateField,
       searchable = true,
@@ -629,8 +647,8 @@ trait DPLAMAPFields extends FieldDefinitions {
       searchable = true,
       facetable = false,
       sortable = false,
-      elasticSearchDefault = "sourceResource.temporal.begin",
-      elasticSearchNotAnalyzed = Some("sourceResource.temporal.begin.not_analyzed")
+      elasticSearchDefault = "sourceResource.temporal.end",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "sourceResource.temporal.before",
@@ -638,8 +656,8 @@ trait DPLAMAPFields extends FieldDefinitions {
       searchable = true,
       facetable = false,
       sortable = false,
-      elasticSearchDefault = "sourceResource.temporal.end",
-      elasticSearchNotAnalyzed = Some("sourceResource.temporal.end.not_analyzed")
+      elasticSearchDefault = "sourceResource.temporal.begin",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "sourceResource.temporal.begin",
