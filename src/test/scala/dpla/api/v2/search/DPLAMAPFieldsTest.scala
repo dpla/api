@@ -36,7 +36,7 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
         "provider.@id",
         "provider.name.not_analyzed",
         "sourceResource.description",
-        "sourceResource.format.not_analyzed",
+        "sourceResource.format",
         "sourceResource.language.name.not_analyzed",
         "sourceResource.publisher.not_analyzed",
         "sourceResource.subject.name.not_analyzed",
