@@ -354,6 +354,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DplaField(
+      name = "sourceResource.date",
+      fieldType = WildcardField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.date.*",
+      elasticSearchNotAnalyzed = None
+    ),
+    DplaField(
       name = "sourceResource.date.after",
       fieldType = DateField,
       searchable = true,
@@ -640,6 +649,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = true,
       elasticSearchDefault = "sourceResource.subtitle",
       elasticSearchNotAnalyzed = Some("sourceResource.subtitle.not_analyzed")
+    ),
+    DplaField(
+      name = "sourceResource.temporal",
+      fieldType = WildcardField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "sourceResource.temporal.*",
+      elasticSearchNotAnalyzed = None
     ),
     DplaField(
       name = "sourceResource.temporal.after",
