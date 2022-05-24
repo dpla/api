@@ -360,6 +360,32 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         assert(traversed == expected)
       }
     }
+
+    "range query" should {
+      "specify after value" in {
+        val expected = Some("1980")
+        val fieldQueries = Seq(FieldQuery("sourceResource.date.after", "1980"))
+        val params = minSearchParams.copy(fieldQueries=fieldQueries)
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryRange =
+          boolMust.flatMap(obj => readObject(obj, "range")).head
+        val traversed = readString(queryRange, "sourceResource.date.end", "gte")
+        assert(traversed == expected)
+      }
+
+      "specify before value" in {
+        val expected = Some("1980")
+        val fieldQueries = Seq(FieldQuery("sourceResource.date.before", "1980"))
+        val params = minSearchParams.copy(fieldQueries=fieldQueries)
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryRange =
+          boolMust.flatMap(obj => readObject(obj, "range")).head
+        val traversed = readString(queryRange, "sourceResource.date.begin", "lte")
+        assert(traversed == expected)
+      }
+    }
   }
 
   "op query builder" should {
