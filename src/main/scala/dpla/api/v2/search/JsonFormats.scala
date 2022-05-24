@@ -156,12 +156,14 @@ object JsonFormats extends DefaultJsonProtocol with JsonFieldReader
         "docs" -> dplaDocList.docs.toJson
       )
 
-      // Add facets if there are any
+      // Add facets.
+      // If there are no facets, include an empty list (for compatability with
+      // the legacy DPLA API)
       val complete: JsObject =
         if (dplaDocList.facets.nonEmpty)
           JsObject(base.fields + ("facets" -> dplaDocList.facets.toJson))
         else
-          base
+          JsObject(base.fields + ("facets" -> JsArray()))
 
       complete.toJson
     }
