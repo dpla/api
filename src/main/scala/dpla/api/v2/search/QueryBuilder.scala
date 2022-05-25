@@ -262,11 +262,15 @@ object QueryBuilder extends DPLAMAPFields {
               case None => base
             }
           } else if (dateFields.map(_.name).contains(facet)) {
+            val esField = getElasticSearchField(facet).getOrElse(
+              throw new RuntimeException("Unrecognized facet name: " + facet)
+            )
+
             // Dates facet
             val dateHistogram = JsObject(
               "filter" -> JsObject(
                 "range" -> JsObject(
-                  facet -> JsObject(
+                  esField -> JsObject(
                     "gte" -> "now-2000y".toJson,
                     "lte" -> "now".toJson
                   )
@@ -275,7 +279,7 @@ object QueryBuilder extends DPLAMAPFields {
               "aggs" -> JsObject(
                 facet -> JsObject(
                   "date_histogram" -> JsObject(
-                    "field" -> facet.toJson,
+                    "field" -> esField.toJson,
                     "interval" -> "year".toJson,
                     "format" -> "yyyy".toJson,
                     "min_doc_count" -> 1.toJson,
