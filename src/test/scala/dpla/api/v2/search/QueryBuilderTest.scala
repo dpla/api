@@ -484,7 +484,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       assert(traversed == expected)
     }
 
-    "specify interval" in {
+    "specify default interval" in {
       val expected = Some("year")
       val traversed = readString(dateFacetQuery, "aggs",
         "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
@@ -492,11 +492,55 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       assert(traversed == expected)
     }
 
-    "specify format" in {
+    "specify year interval" in {
+      val expected = Some("year")
+      val params = minSearchParams
+        .copy(facets = Some(Seq("sourceResource.date.begin.year")))
+      val query = getJsSearchQuery(params)
+      val traversed = readString(query, "aggs",
+        "sourceResource.date.begin.year", "aggs",
+        "sourceResource.date.begin.year", "date_histogram", "interval")
+      assert(traversed == expected)
+    }
+
+    "specify month interval" in {
+      val expected = Some("month")
+      val params = minSearchParams
+        .copy(facets = Some(Seq("sourceResource.date.begin.month")))
+      val query = getJsSearchQuery(params)
+      val traversed = readString(query, "aggs",
+        "sourceResource.date.begin.month", "aggs",
+        "sourceResource.date.begin.month", "date_histogram", "interval")
+      assert(traversed == expected)
+    }
+
+    "specify default format" in {
       val expected = Some("yyyy")
       val traversed = readString(dateFacetQuery, "aggs",
         "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
         "date_histogram", "format")
+      assert(traversed == expected)
+    }
+
+    "specify year format" in {
+      val expected = Some("yyyy")
+      val params = minSearchParams
+        .copy(facets = Some(Seq("sourceResource.date.end.year")))
+      val query = getJsSearchQuery(params)
+      val traversed = readString(query, "aggs",
+        "sourceResource.date.end.year", "aggs",
+        "sourceResource.date.end.year", "date_histogram", "format")
+      assert(traversed == expected)
+    }
+
+    "specify month format" in {
+      val expected = Some("yyyy-MM")
+      val params = minSearchParams
+        .copy(facets = Some(Seq("sourceResource.date.end.month")))
+      val query = getJsSearchQuery(params)
+      val traversed = readString(query, "aggs",
+        "sourceResource.date.end.month", "aggs",
+        "sourceResource.date.end.month", "date_histogram", "format")
       assert(traversed == expected)
     }
 
@@ -516,11 +560,33 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       assert(traversed == expected)
     }
 
-    "specify filter gte" in {
+    "specify default filter gte" in {
       val expected = Some("now-2000y")
       val traversed = readString(dateFacetQuery, "aggs",
         "sourceResource.date.begin", "filter", "range",
         "sourceResource.date.begin", "gte")
+      assert(traversed == expected)
+    }
+
+    "specify year gte" in {
+      val expected = Some("now-2000y")
+      val params = minSearchParams
+        .copy(facets = Some(Seq("sourceResource.date.end.year")))
+      val query = getJsSearchQuery(params)
+      val traversed = readString(query, "aggs",
+        "sourceResource.date.end.year", "filter", "range",
+        "sourceResource.date.end", "gte")
+      assert(traversed == expected)
+    }
+
+    "specify month gte" in {
+      val expected = Some("now-416y")
+      val params = minSearchParams
+        .copy(facets = Some(Seq("sourceResource.date.end.month")))
+      val query = getJsSearchQuery(params)
+      val traversed = readString(query, "aggs",
+        "sourceResource.date.end.month", "filter", "range",
+        "sourceResource.date.end", "gte")
       assert(traversed == expected)
     }
 
