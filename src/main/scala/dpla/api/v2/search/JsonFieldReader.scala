@@ -1,8 +1,24 @@
 package dpla.api.v2.search
 
-import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString}
+import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, deserializationError}
 
 import scala.annotation.tailrec
+
+
+// Case class for reading JSON of an unknown type
+case class JsonValue(
+                      value: IterableOnce[Any],
+                      `type`: JsonValueType
+                    )
+
+sealed trait JsonValueType
+case object ObjectOpt extends JsonValueType
+case object ObjectSeq extends JsonValueType
+case object StringOpt extends JsonValueType
+case object StringSeq extends JsonValueType
+case object IntOpt extends JsonValueType
+case object BooleanOpt extends JsonValueType
+
 
 /**
  * Methods for reading JSON
@@ -43,6 +59,68 @@ trait JsonFieldReader {
 
   def readBoolean(root: JsObject, path: String*): Option[Boolean] =
     read(getBooleanOpt, root, path)
+
+  /**
+   * Read a path with an unknown data type at the end.
+   * @return Option[Any] or Seq[Any]
+   *
+   * TODO: getValue can read a path unless there are internal arrays
+   * Still trying to figure out how to deal with internal array(s).
+   */
+  def readUnknown(root: JsObject, path: String*): IterableOnce[Any] = {
+
+    val methods:  Seq[(JsObject, Seq[String]) => IterableOnce[Any]] =
+      Seq(
+        readObject,
+        readObjectArray,
+        readString,
+        readStringArray,
+        readInt,
+        readBoolean
+      )
+
+    @ tailrec
+    def getValue(pathToRead: Seq[String],
+                 currentMethod: (JsObject, Seq[String]) => IterableOnce[Any],
+                 nextMethod: Seq[(JsObject, Seq[String]) => IterableOnce[Any]]
+                ): IterableOnce[Any] = {
+
+      // Try to read the path using the current method
+      val result: IterableOnce[Any] = currentMethod(root, pathToRead)
+
+      if (nextMethod.isEmpty) result
+      else result match {
+        case Some(_) =>
+          result
+        case x: Seq[Any] =>
+          if (x.nonEmpty) result
+          else getValue(pathToRead, nextMethod.head, nextMethod.drop(1))
+        case _ =>
+          getValue(pathToRead, nextMethod.head, nextMethod.drop(1))
+      }
+    }
+
+    def readPath(currentPath: Seq[String], nextPath: Seq[String]): IterableOnce[Any] =
+      if (nextPath.isEmpty) {
+        getValue(currentPath, methods.head, methods.drop(1))
+      } else {
+        getValue(currentPath, methods.head, methods.drop(1)) match {
+          case Some(_: JsObject) =>
+            readPath(currentPath :+ nextPath.head, nextPath.drop(1))
+          case Some(seq: Seq[_]) =>
+            seq.head match {
+              case JsObject =>
+                seq.map(_ => readPath(currentPath :+ nextPath.head, nextPath.drop(1)))
+              case _ =>
+                throw new RuntimeException("Cannot parse field path.")
+            }
+          case _ =>
+            throw new RuntimeException("Cannot parse field path.")
+        }
+      }
+
+    readPath(path.take(1), path.drop(1))
+  }
 
   /** Private helper methods */
 
@@ -88,7 +166,6 @@ trait JsonFieldReader {
   private def getStringOpt(parent: JsObject, child: String): Option[String] =
     parent.getFields(child) match {
       case Seq(JsString(value)) => Some(value)
-      case Seq(JsNumber(value)) => Some(value.toString)
       case _ => None
     }
 
@@ -98,7 +175,6 @@ trait JsonFieldReader {
         case JsString(value) => Some(value)
         case _ => None
       }))
-      case Seq(JsString(value)) => Some(Seq(value))
       case _ => None
     }
 

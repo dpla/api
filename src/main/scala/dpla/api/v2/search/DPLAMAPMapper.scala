@@ -98,8 +98,12 @@ object DPLAMAPMapper {
   private def mapDPLADocList(params: SearchParams, body: String): Try[DPLADocList] =
     Try {
       val start = getStart(params.page, params.pageSize)
-      body.parseJson.convertTo[DPLADocList]
+      val mapped = body.parseJson.convertTo[DPLADocList]
         .copy(limit=Some(params.pageSize), start=Some(start))
+      params.fields match {
+        case Some(f) => mapped.copy(docs = unNestFields(mapped.docs, f))
+        case None => mapped
+      }
     }
 
   private def mapSingleDPLADoc(body: String): Try[SingleDPLADoc] =
@@ -117,4 +121,35 @@ object DPLAMAPMapper {
    * (starting at 1)
    */
   private def getStart(page: Int, pageSize: Int): Int = ((page-1)*pageSize)+1
+
+  private def unNestFields(docs: Seq[JsValue], fields: Seq[String]): Seq[JsValue] = {
+    docs.map(doc => {
+      var docFields = JsObject()
+
+      fields.foreach(field => {
+        val fieldSeq: Seq[String] = field.split("\\.")
+        val value: IterableOnce[Any] = readUnknown(doc.asJsObject, fieldSeq:_*)
+
+        val json: JsValue = value match {
+          case Some(x: JsObject) => x.toJson
+          case Some(x: String) => x.toJson
+          case Some(x: Int) => x.toJson
+          case Some(x: Boolean) => x.toJson
+          case x: Seq[_] => x.headOption match {
+            case Some(_: JsObject) => x.map(_.asInstanceOf[JsObject]).toJson
+            case Some(_: String) => x.map(_.asInstanceOf[String]).toJson
+            case _ => null
+          }
+          case None => null
+          case _ => null
+        }
+
+        if (json != null) {
+          docFields = JsObject(docFields.fields + (field -> json))
+        }
+      })
+
+      docFields
+    })
+  }
 }
