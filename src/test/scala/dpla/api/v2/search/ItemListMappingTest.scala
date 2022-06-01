@@ -137,5 +137,11 @@ class ItemListMappingTest extends AnyWordSpec with Matchers
       val traversed = readString(firstEntry, "time")
       assert(traversed == expected)
     }
+
+//    "unnest string field" in {
+//      val expected = Some("California Digital Library")
+//      val traversed = readUnknown(itemList, "provider", "name").head
+//      assert(traversed == expected)
+//    }
   }
 }

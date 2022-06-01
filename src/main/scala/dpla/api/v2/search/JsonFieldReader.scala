@@ -6,23 +6,6 @@ import dpla.api.v2.search.JsonFormats._
 import scala.annotation.tailrec
 
 
-// Case class for reading JSON of an unknown type
-case class JsonValue(
-                      value: JsValue,
-                      `type`: JsonValueType,
-                      path: String
-                    )
-
-sealed trait JsonValueType
-case object ObjectType extends JsonValueType
-case object ObjectSeqType extends JsonValueType
-case object StringType extends JsonValueType
-case object StringSeqType extends JsonValueType
-case object IntType extends JsonValueType
-case object BooleanType extends JsonValueType
-case object NullType extends JsonValueType
-
-
 /**
  * Methods for reading JSON
  */
@@ -145,6 +128,7 @@ trait JsonFieldReader {
   private def getStringOpt(parent: JsObject, child: String): Option[String] =
     parent.getFields(child) match {
       case Seq(JsString(value)) => Some(value)
+      case Seq(JsNumber(value)) => Some(value.toString)
       case _ => None
     }
 
@@ -154,6 +138,7 @@ trait JsonFieldReader {
         case JsString(value) => Some(value)
         case _ => None
       }))
+      case Seq(JsString(value)) => Some(Seq(value))
       case _ => None
     }
 
