@@ -128,25 +128,10 @@ object DPLAMAPMapper {
 
       fields.foreach(field => {
         val fieldSeq: Seq[String] = field.split("\\.")
-        val value: IterableOnce[Any] = readUnknown(doc.asJsObject, fieldSeq:_*)
 
-        val json: JsValue = value match {
-          case Some(x: JsObject) => x.toJson
-          case Some(x: String) => x.toJson
-          case Some(x: Int) => x.toJson
-          case Some(x: Boolean) => x.toJson
-          case x: Seq[_] => x.headOption match {
-            case Some(_: JsObject) => x.map(_.asInstanceOf[JsObject]).toJson
-            case Some(_: String) => x.map(_.asInstanceOf[String]).toJson
-            case _ => null
-          }
-          case None => null
-          case _ => null
-        }
-
-        if (json != null) {
+        readUnknown(doc.asJsObject, fieldSeq:_*).foreach(json =>
           docFields = JsObject(docFields.fields + (field -> json))
-        }
+        )
       })
 
       docFields

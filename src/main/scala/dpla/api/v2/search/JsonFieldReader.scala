@@ -1,23 +1,26 @@
 package dpla.api.v2.search
 
-import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, deserializationError}
+import spray.json._
+import dpla.api.v2.search.JsonFormats._
 
 import scala.annotation.tailrec
 
 
 // Case class for reading JSON of an unknown type
 case class JsonValue(
-                      value: IterableOnce[Any],
-                      `type`: JsonValueType
+                      value: JsValue,
+                      `type`: JsonValueType,
+                      path: String
                     )
 
 sealed trait JsonValueType
-case object ObjectOpt extends JsonValueType
-case object ObjectSeq extends JsonValueType
-case object StringOpt extends JsonValueType
-case object StringSeq extends JsonValueType
-case object IntOpt extends JsonValueType
-case object BooleanOpt extends JsonValueType
+case object ObjectType extends JsonValueType
+case object ObjectSeqType extends JsonValueType
+case object StringType extends JsonValueType
+case object StringSeqType extends JsonValueType
+case object IntType extends JsonValueType
+case object BooleanType extends JsonValueType
+case object NullType extends JsonValueType
 
 
 /**
@@ -60,6 +63,41 @@ trait JsonFieldReader {
   def readBoolean(root: JsObject, path: String*): Option[Boolean] =
     read(getBooleanOpt, root, path)
 
+  def readUnknown(parent: JsObject, children: String*): Option[JsValue] = {
+
+    val child = children.headOption
+    val nextChildren = children.drop(1)
+
+    child match {
+      case Some(c) =>
+        parent.getFields(c) match {
+          case Seq(value: JsObject) =>
+            if (nextChildren.isEmpty) Some(value)
+            else readUnknown(value, nextChildren:_*)
+          case Seq(JsString(value)) =>
+            if (nextChildren.isEmpty) Some(value.toJson)
+            else None
+          case Seq(JsNumber(value)) =>
+            if (nextChildren.isEmpty) Some(value.intValue.toJson)
+            else None
+          case Seq(JsBoolean(value)) =>
+            if (nextChildren.isEmpty) Some(value.booleanValue.toJson)
+            else None
+          case Seq(JsArray(vector)) => Some(vector.flatMap(_ match {
+            case JsString(value) =>
+              if (nextChildren.isEmpty) Some(value.toJson)
+              else None
+            case JsObject(value) =>
+              if (nextChildren.isEmpty) Some(JsObject(value).toJson)
+              else readUnknown(value.toJson.asJsObject, nextChildren:_*)
+            case _ => None
+          })).map(_.toJson)
+          case _ => None
+        }
+      case None => None
+    }
+  }
+
   /**
    * Read a path with an unknown data type at the end.
    * @return Option[Any] or Seq[Any]
@@ -67,60 +105,105 @@ trait JsonFieldReader {
    * TODO: getValue can read a path unless there are internal arrays
    * Still trying to figure out how to deal with internal array(s).
    */
-  def readUnknown(root: JsObject, path: String*): IterableOnce[Any] = {
-
-    val methods:  Seq[(JsObject, Seq[String]) => IterableOnce[Any]] =
-      Seq(
-        readObject,
-        readObjectArray,
-        readString,
-        readStringArray,
-        readInt,
-        readBoolean
-      )
-
-    @ tailrec
-    def getValue(pathToRead: Seq[String],
-                 currentMethod: (JsObject, Seq[String]) => IterableOnce[Any],
-                 nextMethod: Seq[(JsObject, Seq[String]) => IterableOnce[Any]]
-                ): IterableOnce[Any] = {
-
-      // Try to read the path using the current method
-      val result: IterableOnce[Any] = currentMethod(root, pathToRead)
-
-      if (nextMethod.isEmpty) result
-      else result match {
-        case Some(_) =>
-          result
-        case x: Seq[Any] =>
-          if (x.nonEmpty) result
-          else getValue(pathToRead, nextMethod.head, nextMethod.drop(1))
-        case _ =>
-          getValue(pathToRead, nextMethod.head, nextMethod.drop(1))
-      }
-    }
-
-    def readPath(currentPath: Seq[String], nextPath: Seq[String]): IterableOnce[Any] =
-      if (nextPath.isEmpty) {
-        getValue(currentPath, methods.head, methods.drop(1))
-      } else {
-        getValue(currentPath, methods.head, methods.drop(1)) match {
-          case Some(_: JsObject) =>
-            readPath(currentPath :+ nextPath.head, nextPath.drop(1))
-          case Some(seq: Seq[_]) =>
-            seq.head match {
-              case JsObject =>
-                seq.map(_ => readPath(currentPath :+ nextPath.head, nextPath.drop(1)))
-              case _ =>
-                throw new RuntimeException("Cannot parse field path.")
-            }
-          case _ =>
-            throw new RuntimeException("Cannot parse field path.")
-        }
-      }
-
-    readPath(path.take(1), path.drop(1))
-  }
+//  private def readUnknownOld(root: JsObject, path: String*): IterableOnce[Any] = {
+//
+//    val methods:  Seq[(JsObject, Seq[String]) => IterableOnce[Any]] =
+//      Seq(
+//        readObject,
+//        readObjectArray,
+//        readString,
+//        readStringArray,
+//        readInt,
+//        readBoolean
+//      )
+//
+//    @ tailrec
+//    def getValue(pathToRead: Seq[String],
+//                 currentMethod: (JsObject, Seq[String]) => IterableOnce[Any],
+//                 nextMethod: Seq[(JsObject, Seq[String]) => IterableOnce[Any]]
+//                ): IterableOnce[Any] = {
+//
+//      // Try to read the path using the current method
+//      val result: IterableOnce[Any] = currentMethod(root, pathToRead)
+//
+//      if (nextMethod.isEmpty) result
+//      else result match {
+//        case Some(_) =>
+//          result
+//        case x: Seq[Any] =>
+//          if (x.nonEmpty) result
+//          else getValue(pathToRead, nextMethod.head, nextMethod.drop(1))
+//        case _ =>
+//          getValue(pathToRead, nextMethod.head, nextMethod.drop(1))
+//      }
+//    }
+//
+//    // Parse the value into JSON and find it's data type
+//    // TODO roll this into getValue
+//    def parseValue(value: IterableOnce[Any], path: Seq[String]): JsonValue = {
+//      val pathStr = path.mkString(".")
+//
+//      value match {
+//        case Some(x: JsObject) =>
+//          JsonValue(x.toJson, ObjectType, pathStr)
+//        case Some(x: String) =>
+//          JsonValue(x.toJson, StringType, pathStr)
+//        case Some(x: Int) =>
+//          JsonValue(x.toJson, IntType, pathStr)
+//        case Some(x: Boolean) =>
+//          JsonValue(x.toJson, BooleanType, pathStr)
+//        case x: Seq[_] => x.headOption match {
+//          case Some(_: JsObject) =>
+//            JsonValue(x.map(_.asInstanceOf[JsObject]).toJson, ObjectSeqType, pathStr)
+//          case Some(_: String) =>
+//            JsonValue(x.map(_.asInstanceOf[String]).toJson, StringSeqType, pathStr)
+//          case _ =>
+//            JsonValue(null, NullType, pathStr)
+//        }
+//        case None => JsonValue(null, NullType, pathStr)
+//        case _ => JsonValue(null, NullType, pathStr)
+//      }
+//    }
+//
+//    def readPath(currentPath: Seq[String], nextPath: Seq[String]): Seq[JsonValue] ={
+//      val rawValue = getValue(currentPath, methods.head, methods.drop(1))
+//      val value = parseValue(rawValue, currentPath)
+//
+//      if (value.`type` != ObjectType && value.`type` != ObjectSeqType) {
+//        value
+//      } else if (nextPath.isEmpty) {
+//        value
+//      } else if (value.`type` == ObjectType) {
+//        readPath(currentPath :+ nextPath.head, nextPath.drop(1))
+//      } else {
+//        // value.`type` == ObjectSeqType
+//        rawValue.iterator.zipWithIndex.flatMap { case (obj, index) =>
+//          val root = obj.asInstanceOf[JsObject]
+//          readUnknown(root, nextPath.drop(1): _*)
+//        }.toSeq
+//      }
+//
+//    }
+////      if (nextPath.isEmpty) {
+////        getValue(currentPath, methods.head, methods.drop(1))
+////      } else {
+////        getValue(currentPath, methods.head, methods.drop(1)) match {
+////          case Some(_: JsObject) =>
+////            readPath(currentPath :+ nextPath.head, nextPath.drop(1))
+////          case Some(seq: Seq[_]) =>
+////            seq.head match {
+////              case JsObject =>
+////                seq.map(_ => readPath(currentPath :+ nextPath.head, nextPath.drop(1)))
+////              case _ =>
+////                throw new RuntimeException("Cannot parse field path.")
+////            }
+////          case _ =>
+////            throw new RuntimeException("Cannot parse field path.")
+////        }
+////      }
+//
+//    readPath(path.take(1), path.drop(1))
+//  }
 
   /** Private helper methods */
 
