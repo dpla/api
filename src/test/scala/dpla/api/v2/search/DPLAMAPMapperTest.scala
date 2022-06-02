@@ -87,8 +87,18 @@ class DPLAMAPMapperTest
       val msg = probe.expectMessageType[DPLAMAPSearchResult]
       val firstEntry = msg.dplaDocList.docs.head
       val firstTemporal =
-        readObjectArray(firstEntry.asJsObject, "sourceResource.temporal").head
+        readObject(firstEntry.asJsObject, "sourceResource.temporal").get
       val traversed = readString(firstTemporal, "displayDate")
+      assert(traversed == expected)
+    }
+
+    "collapse arrays with a single element" in {
+      val expected = Some("Children play with hamsters, Saint Vincent Center, Los Angeles, 1996")
+      val fieldsParams = params.copy(fields = Some(Seq("sourceResource.title")))
+      itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
+      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val firstEntry = msg.dplaDocList.docs.head
+      val traversed = readString(firstEntry.asJsObject, "sourceResource.title")
       assert(traversed == expected)
     }
   }

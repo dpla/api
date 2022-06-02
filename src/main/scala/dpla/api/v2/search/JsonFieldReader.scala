@@ -77,7 +77,10 @@ trait JsonFieldReader {
               if (nextChildren.isEmpty) Some(JsObject(value).toJson)
               else readUnknown(value.toJson.asJsObject, nextChildren:_*)
             case _ => None
-          })).map(_.toJson)
+          })).map(vector => {
+            if (vector.length == 1) vector.headOption.toJson
+            else vector.toJson
+          })
           case _ => None
         }
       case None => None
