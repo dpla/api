@@ -2,7 +2,6 @@ package dpla.api.v2.search
 
 import spray.json._
 import dpla.api.v2.search.JsonFormats._
-
 import scala.annotation.tailrec
 
 
@@ -78,6 +77,7 @@ trait JsonFieldReader {
               else readUnknown(value.toJson.asJsObject, nextChildren:_*)
             case _ => None
           })).map(vector => {
+            // collapse arrays with a single value
             if (vector.length == 1) vector.headOption.toJson
             else vector.toJson
           })
