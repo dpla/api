@@ -22,7 +22,7 @@ class EbookListMappingTest extends AnyWordSpec with Matchers
   "a list of ebook records" should {
     "map count" in {
       val expected = 248887
-      val traversed = readInt(ebookList, "count").getOrElse("NOT FOUND")
+      val traversed = readInt(ebookList, "count").get
       assert(traversed == expected)
     }
 

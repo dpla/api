@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class DPLAMAPMapperTest
-  extends AnyWordSpec with Matchers with FileReader
+  extends AnyWordSpec with Matchers with FileReader with JsonFieldReader
   with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
@@ -41,6 +41,8 @@ class DPLAMAPMapperTest
     readFile("/elasticSearchMinimalItemList.json")
   val esItem: String =
     readFile("/elasticSearchItem.json")
+  val itemList: String =
+    readFile("/elasticSearchItemList.json")
 
   "search response mapper" should {
     "return success for mappable response" in {
@@ -52,6 +54,52 @@ class DPLAMAPMapperTest
       val unmappable: String = ""
       itemMapper ! SearchQueryResponse(params, unmappable, probe.ref)
       probe.expectMessage(SearchFailure)
+    }
+
+    "un-nest field paths with literals" in {
+      val expected = Some("California Digital Library")
+      val fieldsParams = params.copy(fields = Some(Seq("provider.name")))
+      itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
+      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val firstEntry = msg.dplaDocList.docs.head
+      val traversed = readString(firstEntry.asJsObject, "provider.name")
+      assert(traversed == expected)
+    }
+
+    "un-nest field paths with internal arrays" in {
+      val expected = Seq(
+        "Children",
+        "Dwarf hamsters",
+        "Saint Vincent Center (Los Angeles)"
+      )
+      val fieldsParams = params.copy(fields = Some(Seq("sourceResource.subject.name")))
+      itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
+      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val firstEntry = msg.dplaDocList.docs.head
+      val traversed = readStringArray(firstEntry.asJsObject, "sourceResource.subject.name")
+      traversed should contain allElementsOf expected
+    }
+
+    "un-nest field paths with objects" in {
+      val expected = Some("circa 1996")
+      val fieldsParams = params.copy(fields = Some(Seq("sourceResource.temporal")))
+      itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
+      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val firstEntry = msg.dplaDocList.docs.head
+      val firstTemporal =
+        readObject(firstEntry.asJsObject, "sourceResource.temporal").get
+      val traversed = readString(firstTemporal, "displayDate")
+      assert(traversed == expected)
+    }
+
+    "collapse arrays with a single element" in {
+      val expected = Some("Children play with hamsters, Saint Vincent Center, Los Angeles, 1996")
+      val fieldsParams = params.copy(fields = Some(Seq("sourceResource.title")))
+      itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
+      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val firstEntry = msg.dplaDocList.docs.head
+      val traversed = readString(firstEntry.asJsObject, "sourceResource.title")
+      assert(traversed == expected)
     }
   }
 

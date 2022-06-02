@@ -1,8 +1,9 @@
 package dpla.api.v2.search
 
-import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString}
-
+import spray.json._
+import dpla.api.v2.search.JsonFormats._
 import scala.annotation.tailrec
+
 
 /**
  * Methods for reading JSON
@@ -43,6 +44,48 @@ trait JsonFieldReader {
 
   def readBoolean(root: JsObject, path: String*): Option[Boolean] =
     read(getBooleanOpt, root, path)
+
+  /**
+   * Read a path with an unknown data type at the end.
+   */
+  def readUnknown(parent: JsObject, children: String*): Option[JsValue] = {
+
+    val child = children.headOption
+    val nextChildren = children.drop(1)
+
+    child match {
+      case Some(c) =>
+        parent.getFields(c) match {
+          case Seq(value: JsObject) =>
+            if (nextChildren.isEmpty) Some(value)
+            else readUnknown(value, nextChildren:_*)
+          case Seq(JsString(value)) =>
+            if (nextChildren.isEmpty) Some(value.toJson)
+            else None
+          case Seq(JsNumber(value)) =>
+            if (nextChildren.isEmpty) Some(value.intValue.toJson)
+            else None
+          case Seq(JsBoolean(value)) =>
+            if (nextChildren.isEmpty) Some(value.booleanValue.toJson)
+            else None
+          case Seq(JsArray(vector)) => Some(vector.flatMap(_ match {
+            case JsString(value) =>
+              if (nextChildren.isEmpty) Some(value.toJson)
+              else None
+            case JsObject(value) =>
+              if (nextChildren.isEmpty) Some(JsObject(value).toJson)
+              else readUnknown(value.toJson.asJsObject, nextChildren:_*)
+            case _ => None
+          })).map(vector => {
+            // collapse arrays with a single value
+            if (vector.length == 1) vector.headOption.toJson
+            else vector.toJson
+          })
+          case _ => None
+        }
+      case None => None
+    }
+  }
 
   /** Private helper methods */
 

@@ -98,8 +98,12 @@ object DPLAMAPMapper {
   private def mapDPLADocList(params: SearchParams, body: String): Try[DPLADocList] =
     Try {
       val start = getStart(params.page, params.pageSize)
-      body.parseJson.convertTo[DPLADocList]
+      val mapped = body.parseJson.convertTo[DPLADocList]
         .copy(limit=Some(params.pageSize), start=Some(start))
+      params.fields match {
+        case Some(f) => mapped.copy(docs = unNestFields(mapped.docs, f))
+        case None => mapped
+      }
     }
 
   private def mapSingleDPLADoc(body: String): Try[SingleDPLADoc] =
@@ -117,4 +121,20 @@ object DPLAMAPMapper {
    * (starting at 1)
    */
   private def getStart(page: Int, pageSize: Int): Int = ((page-1)*pageSize)+1
+
+  private def unNestFields(docs: Seq[JsValue], fields: Seq[String]): Seq[JsValue] = {
+    docs.map(doc => {
+      var docFields = JsObject()
+
+      fields.foreach(field => {
+        val fieldSeq: Seq[String] = field.split("\\.")
+
+        readUnknown(doc.asJsObject, fieldSeq:_*).foreach(json =>
+          docFields = JsObject(docFields.fields + (field -> json))
+        )
+      })
+
+      docFields
+    })
+  }
 }
