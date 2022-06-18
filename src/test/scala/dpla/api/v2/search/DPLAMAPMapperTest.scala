@@ -3,7 +3,7 @@ package dpla.api.v2.search
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.helpers.FileReader
-import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
+import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, RandomQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -109,7 +109,7 @@ class DPLAMAPMapperTest
       probe.expectMessageType[DPLAMAPFetchResult]
     }
 
-    "fetch failure for unmappable response" in {
+    "return failure for unmappable response" in {
       val unmappable: String = ""
       itemMapper ! FetchQueryResponse(unmappable, probe.ref)
       probe.expectMessage(SearchFailure)
@@ -122,9 +122,22 @@ class DPLAMAPMapperTest
       probe.expectMessageType[DPLAMAPMultiFetchResult]
     }
 
-    "fetch failure for unmappable response" in {
+    "return failure for unmappable response" in {
       val unmappable: String = ""
-      itemMapper ! FetchQueryResponse(unmappable, probe.ref)
+      itemMapper ! MultiFetchQueryResponse(unmappable, probe.ref)
+      probe.expectMessage(SearchFailure)
+    }
+  }
+
+  "random response mapper" should {
+    "return success for mappable response" in {
+      itemMapper ! RandomQueryResponse(RandomParams(), itemList, probe.ref)
+      probe.expectMessageType[DPLAMAPRandomResult]
+    }
+
+    "return failure for unmappable response" in {
+      val unmappable: String = ""
+      itemMapper ! RandomQueryResponse(RandomParams(), unmappable, probe.ref)
       probe.expectMessage(SearchFailure)
     }
   }

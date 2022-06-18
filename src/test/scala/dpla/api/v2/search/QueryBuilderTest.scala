@@ -2,7 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, SearchQuery, SearchResponse, ValidFetchIds, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, SearchResponse, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
@@ -32,6 +32,12 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   def getJsFetchQuery(ids: Seq[String]): JsObject = {
     queryBuilder ! ValidFetchIds(ids, replyProbe.ref)
     val msg: MultiFetchQuery = interProbe.expectMessageType[MultiFetchQuery]
+    msg.query.asJsObject
+  }
+
+  def getJsRandomQuery(params: RandomParams): JsObject = {
+    queryBuilder ! ValidRandomParams(params, replyProbe.ref)
+    val msg: RandomQuery = interProbe.expectMessageType[RandomQuery]
     msg.query.asJsObject
   }
 
@@ -156,6 +162,10 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val multiFetchQuery: JsObject = getJsFetchQuery(multiFetchIds)
 
+  val randomParams: RandomParams = RandomParams()
+
+  val randomQuery: JsObject = getJsRandomQuery(randomParams)
+
   val elasticSearchField: PrivateMethod[String] =
     PrivateMethod[String](Symbol("elasticSearchField"))
 
@@ -192,6 +202,20 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "specify sort order" in {
       val expected = Some("asc")
       val traversed = readString(multiFetchQuery, "sort", "id", "order")
+      assert(traversed == expected)
+    }
+  }
+
+  "random query builder" should {
+    "specify random score" in {
+      val traversed = readObject(randomQuery, "query", "function_score",
+        "random_score")
+      traversed should not be None
+    }
+
+    "specify page size" in {
+      val expected = Some(1)
+      val traversed = readInt(randomQuery, "size")
       assert(traversed == expected)
     }
   }
