@@ -33,7 +33,9 @@ private[search] case class SearchParams(
                                          sortOrder: String
                                        )
 
-private[search] case class RandomParams() // TODO add provider params
+private[search] case class RandomParams(
+                                        filter: Option[Filter] = None
+                                       )
 
 private[search] case class FieldQuery(
                                        fieldName: String,
@@ -172,7 +174,7 @@ trait ParamValidator extends FieldDefinitions {
         // Check for valid search params
         // Collect all the user-submitted field queries.
         val fieldQueries: Seq[FieldQuery] =
-        searchableDplaFields.flatMap(getValidFieldQuery(rawParams, _))
+          searchableDplaFields.flatMap(getValidFieldQuery(rawParams, _))
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -214,8 +216,19 @@ trait ParamValidator extends FieldDefinitions {
 
   private def getRandomParams(rawParams: Map[String, String]): Try[RandomParams] =
     Try {
-      // TODO
-      RandomParams()
+      // Check for unrecognized params
+      val unrecognized = rawParams.keys.toSeq diff Seq("filter")
+
+      if (unrecognized.nonEmpty)
+        throw ValidationException(
+          "Unrecognized parameter: " + unrecognized.mkString(", ")
+        )
+      else {
+        // Check for valid filter
+        val filter = getValidFilter(rawParams)
+
+        RandomParams(filter)
+      }
     }
 
   // Look up the parameter's field type.

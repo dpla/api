@@ -59,14 +59,29 @@ object QueryBuilder extends DPLAMAPFields {
     ).toJson
 
   def composeRandomQuery(params: RandomParams): JsValue = {
-    JsObject(
-      "size" -> 1.toJson,
-      "query" -> JsObject(
-        "function_score" -> JsObject(
-          "random_score" -> JsObject()
+    val filterClause: Option[JsObject] = params.filter.map(filterQuery)
+
+    var functionScore = JsObject(
+      "random_score" -> JsObject(),
+      "boost_mode" -> "sum".toJson
+    )
+
+    if (filterClause.nonEmpty) {
+      val boolQuery = JsObject(
+        "bool" -> JsObject(
+          "filter" -> filterClause.get
         )
       )
-    )
+
+      functionScore = JsObject(functionScore.fields + ("query" -> boolQuery))
+    }
+
+    JsObject(
+      "query" -> JsObject(
+        "function_score" -> functionScore
+      ),
+      "size" -> 1.toJson,
+    ).toJson
   }
 
   def composeSearchQuery(params: SearchParams): JsValue =
