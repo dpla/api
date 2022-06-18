@@ -3,7 +3,7 @@ package dpla.api.v2.search
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.api.v2.search.JsonFormats._
-import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, SearchFailure, SearchQueryResponse}
+import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, RandomQueryResponse, SearchFailure, SearchQueryResponse}
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -89,6 +89,18 @@ object DPLAMAPMapper {
           }
           Behaviors.same
 
+        case RandomQueryResponse(_, body, replyTo) =>
+          mapRandom(body) match {
+            case Success(dplaDocList) =>
+              replyTo ! DPLAMAPRandomResult(dplaDocList)
+            case Failure(e) =>
+              context.log.error(
+                "Failed to parse SingleDPLADoc from ElasticSearch response:", e
+              )
+              replyTo ! SearchFailure
+          }
+          Behaviors.same
+
         case _ =>
           Behaviors.unhandled
       }
@@ -112,6 +124,11 @@ object DPLAMAPMapper {
     }
 
   private def mapMultiFetch(body: String): Try[DPLADocList] =
+    Try{
+      body.parseJson.convertTo[DPLADocList]
+    }
+
+  private def mapRandom(body: String): Try[DPLADocList] =
     Try{
       body.parseJson.convertTo[DPLADocList]
     }

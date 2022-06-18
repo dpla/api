@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 import dpla.api.v2.search.JsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, FetchResult, MultiFetchResult, SearchRegistryCommand, SearchResult, ExistingApiKey, RegisterFetch, NewApiKey, RegisterSearch}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
 
 
@@ -89,6 +89,16 @@ class Routes(
     itemRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
   }
 
+  def randomItem(
+                  auth: Option[String],
+                  params: Map[String, String],
+                ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params)
+    itemRegistry.ask(RegisterRandom(apiKey, cleanParams, _))
+  }
+
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
     if (auth.nonEmpty) auth
     else params.get("api_key")
@@ -97,7 +107,6 @@ class Routes(
     params.filterNot(_._1 == "api_key").filterNot(_._2.trim.isEmpty)
 
   // Create API key requests are sent to ApiKeyRegistry for processing.
-
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
 
@@ -106,11 +115,13 @@ class Routes(
       pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("items")(itemsRoutes),
       pathPrefix("api_key")(apiKeyRoute),
+      pathPrefix("random")(randomRoute),
       pathPrefix("v2") {
         concat(
           pathPrefix("ebooks")(ebooksRoutes),
           pathPrefix("items")(itemsRoutes),
-          pathPrefix("api_key")(apiKeyRoute)
+          pathPrefix("api_key")(apiKeyRoute),
+          pathPrefix("random")(randomRoute)
         )
       },
       path("health-check")(healthCheckRoute)
@@ -320,6 +331,42 @@ class Routes(
           }
         }
       }
+    }
+
+  lazy val randomRoute: Route =
+    get {
+      parameterMap { params =>
+        // Get the API key from Authorization header if it exists.
+        optionalHeaderValueByName("Authorization") { auth =>
+          respondWithHeaders(securityResponseHeaders) {
+            onComplete(randomItem(auth, params)) {
+              case Success(response) =>
+                response match {
+                  case RandomResult(singleItem) =>
+                    complete(singleItem)
+                  case ForbiddenFailure =>
+                    complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                  case ValidationFailure(message) =>
+                    complete(HttpResponse(BadRequest, entity = message))
+                  case InternalFailure =>
+                    complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                  case _ =>
+                    log.error(
+                      "Routes /random received unexpected RegistryResponse {}",
+                      response.getClass.getName
+                    )
+                    complete(HttpResponse(ImATeapot, entity = teapotMessage))
+                }
+              case Failure(e) =>
+                log.error(
+                  "Routes /random failed to get response from Registry:", e
+                )
+                complete(HttpResponse(ImATeapot, entity = teapotMessage))
+            }
+          }
+        }
+      }
+
     }
 
   lazy val healthCheckRoute: Route =

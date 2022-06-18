@@ -7,13 +7,14 @@ import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch
 import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Search, SearchCommand, SearchFailure}
+import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Random, Search, SearchCommand, SearchFailure}
 import dpla.api.v2.search._
 
 
 final case class SearchResult(result: DPLADocList) extends RegistryResponse
 final case class FetchResult(result: SingleDPLADoc) extends RegistryResponse
 final case class MultiFetchResult(result: DPLADocList) extends RegistryResponse
+final case class RandomResult(result: DPLADocList) extends RegistryResponse
 
 sealed trait SearchRegistryCommand
 
@@ -33,6 +34,12 @@ final case class RegisterFetch(
                                 path: String,
                                 replyTo: ActorRef[RegistryResponse]
                               ) extends SearchRegistryCommand
+
+final case class RegisterRandom(
+                                 apiKey: Option[String],
+                                 rawParams: Map[String, String],
+                                 replyTo: ActorRef[RegistryResponse]
+                               ) extends SearchRegistryCommand
 
 trait SearchRegistryBehavior {
 
@@ -68,6 +75,14 @@ trait SearchRegistryBehavior {
           val sessionChildActor =
             processFetch(apiKey, id, rawParams, host, path, replyTo,
               authenticator, searchActor, analyticsClient)
+          context.spawnAnonymous(sessionChildActor)
+          Behaviors.same
+
+        case RegisterRandom(apiKey, rawParams, replyTo) =>
+          // Create a session child actor to process the request.
+          val sessionChildActor =
+            processRandom(apiKey, rawParams, replyTo,
+              authenticator, searchActor)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -296,6 +311,93 @@ trait SearchRegistryBehavior {
 
         case SearchFailure =>
           fetchResponse = Some(InternalFailure)
+          possibleSessionResolution
+
+        case _ =>
+          Behaviors.unhandled
+      }
+    }.narrow[NotUsed]
+  }
+
+  private def processRandom(
+                             apiKey: Option[String],
+                             rawParams: Map[String, String],
+                             replyTo: ActorRef[RegistryProtocol.RegistryResponse],
+                             authenticator: ActorRef[AuthProtocol.AuthenticationCommand],
+                             searchActor: ActorRef[SearchProtocol.SearchCommand],
+                           ): Behavior[NotUsed] = {
+
+    Behaviors.setup[AnyRef] { context =>
+
+      var authorizedAccount: Option[Account] = None
+      var randomResult: Option[Either[SingleDPLADoc, DPLADocList]] = None
+      var randomResponse: Option[RegistryResponse] = None
+
+      // This behavior is invoked if either the API key has been authorized
+      // or the random fetch has been complete.
+      def possibleSessionResolution: Behavior[AnyRef] =
+        (randomResponse, authorizedAccount) match {
+          case (Some(response), Some(_)) =>
+            // We've received both message replies, time to complete session.
+            // Send final result back to Routes.
+            replyTo ! response
+            Behaviors.stopped
+          case _ =>
+            // Still waiting for one of the message replies.
+            Behaviors.same
+        }
+
+      // Send initial messages.
+      authenticator ! FindAccountByKey(apiKey, context.self)
+      searchActor ! Random(rawParams, context.self)
+
+      Behaviors.receiveMessage {
+
+        /**
+         * Possible responses from Authenticator.
+         * If authentication fails, no need to wait for search actor to reply to
+         * Routes.
+         */
+
+        case AccountFound(account) =>
+          if (account.enabled.getOrElse(false)) {
+            authorizedAccount = Some(account)
+            possibleSessionResolution
+          }
+          else {
+            replyTo ! ForbiddenFailure
+            Behaviors.stopped
+          }
+
+        case AccountNotFound =>
+          replyTo ! ForbiddenFailure
+          Behaviors.stopped
+
+        case InvalidApiKey =>
+          replyTo ! ForbiddenFailure
+          Behaviors.stopped
+
+        case AuthenticationFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
+
+        /**
+         * Possible responses from search actor.
+         * Always check to see if user is authenticated before replying to
+         * Routes.
+         */
+
+        case DPLAMAPRandomResult(dplaDocList) =>
+          randomResult = Some(Right(dplaDocList))
+          randomResponse = Some(RandomResult(dplaDocList))
+          possibleSessionResolution
+
+        case InvalidSearchParams(message) =>
+          randomResponse = Some(ValidationFailure(message))
+          possibleSessionResolution
+
+        case SearchFailure =>
+          randomResponse = Some(InternalFailure)
           possibleSessionResolution
 
         case _ =>

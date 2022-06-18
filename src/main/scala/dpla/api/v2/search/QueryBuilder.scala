@@ -4,7 +4,7 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, SearchQuery, ValidFetchIds, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,12 +32,17 @@ object QueryBuilder extends DPLAMAPFields {
         }
         Behaviors.same
 
+      case ValidRandomParams(randomParams, replyTo) =>
+        nextPhase ! RandomQuery(randomParams, composeRandomQuery(randomParams),
+          replyTo)
+        Behaviors.same
+
       case _ =>
         Behaviors.unhandled
     }
   }
 
-  def composeMultiFetchQuery(ids: Seq[String]): JsValue = {
+  def composeMultiFetchQuery(ids: Seq[String]): JsValue =
     JsObject(
       "from" -> 0.toJson,
       "size" -> ids.size.toJson,
@@ -52,6 +57,16 @@ object QueryBuilder extends DPLAMAPFields {
         )
       )
     ).toJson
+
+  def composeRandomQuery(params: RandomParams): JsValue = {
+    JsObject(
+      "size" -> 1.toJson,
+      "query" -> JsObject(
+        "function_score" -> JsObject(
+          "random_score" -> JsObject()
+        )
+      )
+    )
   }
 
   def composeSearchQuery(params: SearchParams): JsValue =

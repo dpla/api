@@ -2,7 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{ValidFetchIds, ValidSearchParams, IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams}
+import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawRandomParams, RawSearchParams, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
@@ -32,6 +32,8 @@ private[search] case class SearchParams(
                                          sortByPin: Option[String],
                                          sortOrder: String
                                        )
+
+private[search] case class RandomParams() // TODO add provider params
 
 private[search] case class FieldQuery(
                                        fieldName: String,
@@ -73,12 +75,26 @@ trait ParamValidator extends FieldDefinitions {
               nextPhase ! ValidFetchIds(validIds, replyTo)
             case Failure(e) =>
               context.log.warn2(
-                "Invalid fetch params: '{}' params '{}'",
+                "Invalid fetch params: '{}' for params '{}'",
                 e.getMessage,
                 rawParams
                   .map { case(key, value) => s"$key: $value"}
                   .++(Map("id" -> id))
                   .mkString(", ")
+              )
+              replyTo ! InvalidSearchParams(e.getMessage)
+          }
+          Behaviors.same
+
+        case RawRandomParams(rawParams, replyTo) =>
+          getRandomParams(rawParams) match {
+            case Success(validParams) =>
+              nextPhase ! ValidRandomParams(validParams, replyTo)
+            case Failure(e) =>
+              context.log.warn2(
+                "Invalid random params: '{}' for params '{}'",
+                e.getMessage,
+                rawParams.map { case(key, value) => s"$key: $value"}.mkString(", ")
               )
               replyTo ! InvalidSearchParams(e.getMessage)
           }
@@ -194,6 +210,12 @@ trait ParamValidator extends FieldDefinitions {
               .getOrElse(defaultSortOrder)
         )
       }
+    }
+
+  private def getRandomParams(rawParams: Map[String, String]): Try[RandomParams] =
+    Try {
+      // TODO
+      RandomParams()
     }
 
   // Look up the parameter's field type.

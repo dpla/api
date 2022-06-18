@@ -19,6 +19,11 @@ object SearchProtocol {
                           replyTo: ActorRef[SearchResponse]
                         ) extends SearchCommand
 
+  final case class Random(
+                           rawParams: Map[String, String],
+                           replyTo: ActorRef[SearchResponse],
+                         ) extends SearchCommand
+
   /** Public response protocol */
   sealed trait SearchResponse
 
@@ -33,6 +38,10 @@ object SearchProtocol {
   final case class DPLAMAPMultiFetchResult(
                                             dplaDocList: DPLADocList
                                           ) extends SearchResponse
+
+  final case class DPLAMAPRandomResult(
+                                        dplaDocList: DPLADocList
+                                      ) extends SearchResponse
 
   final case class InvalidSearchParams(
                                         message: String
@@ -58,6 +67,11 @@ object SearchProtocol {
                                                    replyTo: ActorRef[SearchResponse]
                                                  ) extends IntermediateSearchResult
 
+  private[search] final case class RawRandomParams(
+                                                    params: Map[String, String],
+                                                    replyTo: ActorRef[SearchResponse]
+                                                  ) extends IntermediateSearchResult
+
   private[search] final case class ValidSearchParams(
                                                       params: SearchParams,
                                                       replyTo: ActorRef[SearchResponse]
@@ -67,6 +81,11 @@ object SearchProtocol {
                                                   ids: Seq[String],
                                                   replyTo: ActorRef[SearchResponse]
                                                 ) extends IntermediateSearchResult
+
+  private[search] final case class ValidRandomParams(
+                                                      params: RandomParams,
+                                                      replyTo: ActorRef[SearchResponse]
+                                                    ) extends IntermediateSearchResult
 
   private[search] final case class SearchQuery(
                                                 params: SearchParams,
@@ -84,6 +103,12 @@ object SearchProtocol {
                                                     replyTo: ActorRef[SearchResponse]
                                                   ) extends IntermediateSearchResult
 
+  private[search] final case class RandomQuery(
+                                                params: RandomParams,
+                                                query: JsValue,
+                                                replyTo: ActorRef[SearchResponse]
+                                              ) extends IntermediateSearchResult
+
   private[search] final case class SearchQueryResponse(
                                                         params: SearchParams,
                                                         esResponseBody: String,
@@ -99,4 +124,10 @@ object SearchProtocol {
                                                             esResponseBody: String,
                                                             replyTo: ActorRef[SearchResponse]
                                                           ) extends IntermediateSearchResult
+
+  private[search] final case class RandomQueryResponse(
+                                                        params: RandomParams,
+                                                        esResponseBody: String,
+                                                        replyTo: ActorRef[SearchResponse]
+                                                      ) extends IntermediateSearchResult
 }
