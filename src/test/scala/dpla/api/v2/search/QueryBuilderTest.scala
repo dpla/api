@@ -162,7 +162,9 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val multiFetchQuery: JsObject = getJsFetchQuery(multiFetchIds)
 
-  val randomParams: RandomParams = RandomParams()
+  val randomParams: RandomParams = RandomParams(
+    filter = Some(Filter("provider.@id", "http://dp.la/api/contributor/lc")),
+  )
 
   val randomQuery: JsObject = getJsRandomQuery(randomParams)
 
@@ -213,9 +215,23 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       traversed should not be None
     }
 
+    "specify boost mode" in {
+      val expected = Some("sum")
+      val traversed = readString(randomQuery, "query", "function_score",
+        "boost_mode")
+      assert(traversed == expected)
+    }
+
     "specify page size" in {
       val expected = Some(1)
       val traversed = readInt(randomQuery, "size")
+      assert(traversed == expected)
+    }
+
+    "specify filter" in {
+      val expected = Some("http://dp.la/api/contributor/lc")
+      val traversed = readString(randomQuery, "query", "function_score",
+        "query", "bool", "filter", "bool", "must", "term", "provider.@id")
       assert(traversed == expected)
     }
   }

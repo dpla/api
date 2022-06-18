@@ -61,6 +61,9 @@ object QueryBuilder extends DPLAMAPFields {
   def composeRandomQuery(params: RandomParams): JsValue = {
     val filterClause: Option[JsObject] = params.filter.map(filterQuery)
 
+    // Setting "boost_mode" to "sum" ensures that if a filter is used, the
+    // random query will return a different doc every time (otherwise, it will
+    // return the same doc over and over).
     var functionScore = JsObject(
       "random_score" -> JsObject(),
       "boost_mode" -> "sum".toJson
