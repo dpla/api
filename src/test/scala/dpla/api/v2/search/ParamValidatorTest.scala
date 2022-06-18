@@ -2,7 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawSearchParams, SearchResponse, ValidFetchIds, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawRandomParams, RawSearchParams, SearchResponse, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 import org.scalactic.TimesOnInt.convertIntToRepeater
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -42,6 +42,20 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val id = "R0VfVX4BfY91SSpFGqxt"
       val params = Map("foo" -> "bar")
       ebookParamValidator ! RawFetchParams(id, params, replyProbe.ref)
+      replyProbe.expectMessageType[InvalidSearchParams]
+    }
+  }
+
+  "random param validator" should {
+    "accept valid filter" in {
+      val params = Map("filter" -> "provider.@id:http://dp.la/api/contributor/lc")
+      itemParamValidator ! RawRandomParams(params, replyProbe.ref)
+      interProbe.expectMessageType[ValidRandomParams]
+    }
+
+    "reject unrecognized params" in {
+      val params = Map("foo" -> "bar")
+      itemParamValidator ! RawRandomParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
     }
   }

@@ -366,7 +366,6 @@ class Routes(
           }
         }
       }
-
     }
 
   lazy val healthCheckRoute: Route =

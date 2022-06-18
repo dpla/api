@@ -95,7 +95,7 @@ object DPLAMAPMapper {
               replyTo ! DPLAMAPRandomResult(dplaDocList)
             case Failure(e) =>
               context.log.error(
-                "Failed to parse SingleDPLADoc from ElasticSearch response:", e
+                "Failed to parse DPLADocList from ElasticSearch response:", e
               )
               replyTo ! SearchFailure
           }
