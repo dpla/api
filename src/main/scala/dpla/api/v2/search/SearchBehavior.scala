@@ -2,7 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dpla.api.v2.search.SearchProtocol.{Fetch, Search, SearchCommand, IntermediateSearchResult, RawFetchParams, RawSearchParams}
+import dpla.api.v2.search.SearchProtocol.{Fetch, IntermediateSearchResult, Random, RawFetchParams, RawRandomParams, RawSearchParams, Search, SearchCommand}
 
 trait SearchBehavior {
 
@@ -51,6 +51,10 @@ trait SearchBehavior {
 
         case Fetch(id, rawParams, replyTo) =>
           searchParamValidator ! RawFetchParams(id, rawParams, replyTo)
+          Behaviors.same
+
+        case Random(rawParams, replyTo) =>
+          searchParamValidator ! RawRandomParams(rawParams, replyTo)
           Behaviors.same
 
         case _ =>

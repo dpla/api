@@ -5,7 +5,7 @@ import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 import dpla.api.v2.search.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
-import dpla.api.v2.search.SearchProtocol.{FetchNotFound, FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, SearchFailure, SearchQuery, SearchQueryResponse, SearchResponse, ValidFetchIds}
+import dpla.api.v2.search.SearchProtocol.{FetchNotFound, FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, RandomQuery, RandomQueryResponse, SearchFailure, SearchQuery, SearchQueryResponse, SearchResponse, ValidFetchIds}
 import spray.json.JsValue
 
 import scala.concurrent.Future
@@ -47,6 +47,13 @@ object ElasticSearchClient {
         case MultiFetchQuery(query, replyTo) =>
           val sessionChildActor = processMultiFetch(query, endpoint, replyTo,
             responseHandler, nextPhase)
+          context.spawnAnonymous(sessionChildActor)
+          Behaviors.same
+
+        case RandomQuery(params, query, replyTo) =>
+          // Create a session child actor to process the request.
+          val sessionChildActor = processRandom(params, query, endpoint,
+            replyTo, responseHandler, nextPhase)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
@@ -198,6 +205,58 @@ object ElasticSearchClient {
 
         case ElasticSearchSuccess(body) =>
           nextPhase ! MultiFetchQueryResponse(body, replyTo)
+          Behaviors.stopped
+
+        case ElasticSearchHttpError(_) =>
+          replyTo ! SearchFailure
+          Behaviors.stopped
+
+        case ElasticSearchResponseFailure =>
+          replyTo ! SearchFailure
+          Behaviors.stopped
+
+        case _ =>
+          Behaviors.unhandled
+      }
+    }
+  }
+
+  private def processRandom(
+                            params: RandomParams,
+                            query: JsValue,
+                            endpoint: String,
+                            replyTo: ActorRef[SearchResponse],
+                            responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
+                            nextPhase: ActorRef[IntermediateSearchResult]
+                          ): Behavior[ElasticSearchResponse] = {
+
+    Behaviors.setup { context =>
+
+      implicit val system: ActorSystem[Nothing] = context.system
+
+      // Make an HTTP request to elastic search.
+      val searchUri: String = s"$endpoint/_search"
+      val request: HttpRequest = HttpRequest(
+        method = HttpMethods.GET,
+        uri = searchUri,
+        entity = HttpEntity(ContentTypes.`application/json`, query.toString)
+      )
+      val futureResp: Future[HttpResponse] =
+        Http().singleRequest(request)
+
+      context.log.info2(
+        "ElasticSearch random QUERY: {}: {}",
+        searchUri,
+        query.toString
+      )
+
+      // Send response future to ElasticSearchResponseProcessor
+      responseProcessor ! ProcessElasticSearchResponse(futureResp, context.self)
+
+      Behaviors.receiveMessage[ElasticSearchResponse] {
+
+        case ElasticSearchSuccess(body) =>
+          nextPhase ! RandomQueryResponse(params, body, replyTo)
           Behaviors.stopped
 
         case ElasticSearchHttpError(_) =>

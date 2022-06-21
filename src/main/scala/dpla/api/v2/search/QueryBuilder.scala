@@ -4,7 +4,7 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, SearchQuery, ValidFetchIds, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,12 +32,17 @@ object QueryBuilder extends DPLAMAPFields {
         }
         Behaviors.same
 
+      case ValidRandomParams(randomParams, replyTo) =>
+        nextPhase ! RandomQuery(randomParams, composeRandomQuery(randomParams),
+          replyTo)
+        Behaviors.same
+
       case _ =>
         Behaviors.unhandled
     }
   }
 
-  def composeMultiFetchQuery(ids: Seq[String]): JsValue = {
+  def composeMultiFetchQuery(ids: Seq[String]): JsValue =
     JsObject(
       "from" -> 0.toJson,
       "size" -> ids.size.toJson,
@@ -51,6 +56,34 @@ object QueryBuilder extends DPLAMAPFields {
           "order" -> "asc".toJson
         )
       )
+    ).toJson
+
+  def composeRandomQuery(params: RandomParams): JsValue = {
+    val filterClause: Option[JsObject] = params.filter.map(filterQuery)
+
+    // Setting "boost_mode" to "sum" ensures that if a filter is used, the
+    // random query will return a different doc every time (otherwise, it will
+    // return the same doc over and over).
+    var functionScore = JsObject(
+      "random_score" -> JsObject(),
+      "boost_mode" -> "sum".toJson
+    )
+
+    if (filterClause.nonEmpty) {
+      val boolQuery = JsObject(
+        "bool" -> JsObject(
+          "filter" -> filterClause.get
+        )
+      )
+
+      functionScore = JsObject(functionScore.fields + ("query" -> boolQuery))
+    }
+
+    JsObject(
+      "query" -> JsObject(
+        "function_score" -> functionScore
+      ),
+      "size" -> 1.toJson,
     ).toJson
   }
 

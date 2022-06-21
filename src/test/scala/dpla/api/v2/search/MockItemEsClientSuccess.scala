@@ -3,7 +3,7 @@ package dpla.api.v2.search
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import dpla.api.helpers.FileReader
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, SearchQuery, SearchQueryResponse}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, RandomQuery, RandomQueryResponse, SearchQuery, SearchQueryResponse}
 
 
 object MockItemEsClientSuccess extends FileReader {
@@ -27,6 +27,10 @@ object MockItemEsClientSuccess extends FileReader {
 
       case MultiFetchQuery(_, replyTo) =>
         nextPhase ! MultiFetchQueryResponse(searchBody, replyTo)
+        Behaviors.same
+
+      case RandomQuery(params, _, replyTo) =>
+        nextPhase ! RandomQueryResponse(params, searchBody, replyTo)
         Behaviors.same
 
       case _ =>

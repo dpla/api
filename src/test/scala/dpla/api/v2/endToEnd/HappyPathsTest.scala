@@ -179,7 +179,18 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "/api_key/[email]" should {
+  "v2/random route" should {
+    "be happy with empty params and successful es response" in {
+      val request = Get(s"/v2/random?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
+        contentType should === (ContentTypes.`application/json`)
+      }
+    }
+  }
+
+  "/api_key/[email] route" should {
     "be happy with valid input, successful db write, & successful email" in {
       val validEmail = "test@example.com"
       val request = Post(s"/v2/api_key/$validEmail")
