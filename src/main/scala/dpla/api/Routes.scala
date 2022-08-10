@@ -388,7 +388,7 @@ class Routes(
     "There was an unexpected internal error. Please try again later."
 
   private val notFoundMessage: String =
-    "The ebook you are searching for could not be found."
+    "The record you are searching for could not be found."
 
   private val forbiddenMessage: String =
     "Invalid or inactive API key"
