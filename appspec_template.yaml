@@ -6,7 +6,7 @@ Resources:
         TaskDefinition: "$TASK_DEFINITION"
         LoadBalancerInfo:
           ContainerName: "$CONTAINER_NAME"
-          ContainerPort: "80"
+          ContainerPort: "$APP_PORT"
         PlatformVersion: "LATEST"
         NetworkConfiguration:
           AwsvpcConfiguration:
