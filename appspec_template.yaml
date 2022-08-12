@@ -11,5 +11,5 @@ Resources:
         NetworkConfiguration:
           AwsvpcConfiguration:
             Subnets: ["$SUBNET_1","$SUBNET_2"]
-	    SecurityGroups: ["$SECURITY_GROUP"]
+            SecurityGroups: ["$SECURITY_GROUP"]
             AssignPublicIp: "ENABLED"
