@@ -185,7 +185,7 @@ class Routes(
                           case MultiFetchResult(ebookList) =>
                             complete(ebookList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
                             complete(HttpResponse(BadRequest, entity = message))
                           case NotFoundFailure =>
@@ -231,7 +231,7 @@ class Routes(
                           case SearchResult(itemList) =>
                             complete(itemList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
                             complete(HttpResponse(BadRequest, entity = message))
                           case InternalFailure =>
@@ -272,7 +272,7 @@ class Routes(
                           case MultiFetchResult(itemList) =>
                             complete(itemList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
                             complete(HttpResponse(BadRequest, entity = message))
                           case NotFoundFailure =>
@@ -346,7 +346,7 @@ class Routes(
                   case RandomResult(singleItem) =>
                     complete(singleItem)
                   case ForbiddenFailure =>
-                    complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                    complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                   case ValidationFailure(message) =>
                     complete(HttpResponse(BadRequest, entity = message))
                   case InternalFailure =>
@@ -390,9 +390,6 @@ class Routes(
 
   private val notFoundMessage: String =
     "The record you are searching for could not be found."
-
-  private val forbiddenMessage: String =
-    "\"Invalid or inactive API key\""
 
   private val forbiddenEntity: ResponseEntity =
     HttpEntity(

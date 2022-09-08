@@ -84,6 +84,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.Forbidden
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
@@ -111,6 +112,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.Forbidden
+        contentType should === (ContentTypes.`application/json`)
       }
     }
 
@@ -136,6 +138,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.Forbidden
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
