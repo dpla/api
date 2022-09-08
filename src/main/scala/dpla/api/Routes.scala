@@ -18,7 +18,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
-import spray.json.enrichAny
 
 
 class Routes(
@@ -189,7 +188,7 @@ class Routes(
                           case ValidationFailure(message) =>
                             complete(HttpResponse(BadRequest, entity = message))
                           case NotFoundFailure =>
-                            complete(HttpResponse(NotFound, entity = notFoundMessage))
+                            complete(HttpResponse(NotFound, entity = notFoundEntity))
                           case InternalFailure =>
                             complete(HttpResponse(ImATeapot, entity = teapotMessage))
                           case _ =>
@@ -276,7 +275,7 @@ class Routes(
                           case ValidationFailure(message) =>
                             complete(HttpResponse(BadRequest, entity = message))
                           case NotFoundFailure =>
-                            complete(HttpResponse(NotFound, entity = notFoundMessage))
+                            complete(HttpResponse(NotFound, entity = notFoundEntity))
                           case InternalFailure =>
                             complete(HttpResponse(ImATeapot, entity = teapotMessage))
                           case _ =>
@@ -388,8 +387,11 @@ class Routes(
   private val teapotMessage: String =
     "There was an unexpected internal error. Please try again later."
 
-  private val notFoundMessage: String =
-    "The record you are searching for could not be found."
+  private val notFoundEntity: ResponseEntity =
+    HttpEntity(
+      ContentTypes.`application/json`,
+      "\"The record you are searching for could not be found.\""
+    )
 
   private val forbiddenEntity: ResponseEntity =
     HttpEntity(

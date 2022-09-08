@@ -14,7 +14,7 @@ import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{MockEbookSearch, MockEsClientFailure, MockEsClientNotFound, MockItemSearch}
+import dpla.api.v2.search.{MockEbookSearch, MockEsClientFailure, MockEsClientNotFound}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -100,6 +100,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.NotFound
+        contentType should === (ContentTypes.`application/json`)
       }
     }
 
