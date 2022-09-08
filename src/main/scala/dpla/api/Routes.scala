@@ -394,9 +394,11 @@ class Routes(
   private val forbiddenMessage: String =
     "\"Invalid or inactive API key\""
 
-  private val forbiddenEntity: ResponseEntity = {
-    HttpEntity(ContentTypes.`application/json`, forbiddenMessage)
-  }
+  private val forbiddenEntity: ResponseEntity =
+    HttpEntity(
+      ContentTypes.`application/json`,
+      "\"Invalid or inactive API key\""
+    )
 
   private def existingKeyMessage(email: String): String =
     s"There is already an API key for $email. We have sent a reminder " +
