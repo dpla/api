@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
@@ -18,6 +18,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
+import spray.json.enrichAny
 
 
 class Routes(
@@ -143,7 +144,7 @@ class Routes(
                           case SearchResult(ebookList) =>
                             complete(ebookList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenMessage))
+                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
                             complete(HttpResponse(BadRequest, entity = message))
                           case InternalFailure =>
@@ -391,7 +392,11 @@ class Routes(
     "The record you are searching for could not be found."
 
   private val forbiddenMessage: String =
-    "Invalid or inactive API key"
+    "\"Invalid or inactive API key\""
+
+  private val forbiddenEntity: ResponseEntity = {
+    HttpEntity(ContentTypes.`application/json`, forbiddenMessage)
+  }
 
   private def existingKeyMessage(email: String): String =
     s"There is already an API key for $email. We have sent a reminder " +
