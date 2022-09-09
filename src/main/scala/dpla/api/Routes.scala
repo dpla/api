@@ -145,7 +145,7 @@ class Routes(
                           case ForbiddenFailure =>
                             complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = message))
+                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
                           case InternalFailure =>
                             complete(HttpResponse(ImATeapot, entity = teapotEntity))
                           case _ =>
@@ -186,7 +186,7 @@ class Routes(
                           case ForbiddenFailure =>
                             complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = message))
+                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
                           case NotFoundFailure =>
                             complete(HttpResponse(NotFound, entity = notFoundEntity))
                           case InternalFailure =>
@@ -232,7 +232,7 @@ class Routes(
                           case ForbiddenFailure =>
                             complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = message))
+                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
                           case InternalFailure =>
                             complete(HttpResponse(ImATeapot, entity = teapotEntity))
                           case _ =>
@@ -273,7 +273,7 @@ class Routes(
                           case ForbiddenFailure =>
                             complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = message))
+                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
                           case NotFoundFailure =>
                             complete(HttpResponse(NotFound, entity = notFoundEntity))
                           case InternalFailure =>
@@ -319,7 +319,9 @@ class Routes(
                     HttpResponse(Conflict, entity = disabledKeyEntity(email))
                   )
                 case ValidationFailure(message) =>
-                  complete(HttpResponse(BadRequest, entity = message))
+                  complete(
+                    HttpResponse(BadRequest, entity = jsonEntity(message))
+                  )
                 case InternalFailure =>
                   complete(HttpResponse(ImATeapot, entity = teapotEntity))
               }
@@ -347,7 +349,7 @@ class Routes(
                   case ForbiddenFailure =>
                     complete(HttpResponse(Forbidden, entity = forbiddenEntity))
                   case ValidationFailure(message) =>
-                    complete(HttpResponse(BadRequest, entity = message))
+                    complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
                   case InternalFailure =>
                     complete(HttpResponse(ImATeapot, entity = teapotEntity))
                   case _ =>
@@ -383,37 +385,34 @@ class Routes(
     RawHeader("X-Content-Type-Options", "nosniff"),
     RawHeader("X-Frame-Options", "DENY")
   )
+
+  private def jsonEntity(message: String): ResponseEntity =
+    HttpEntity(ContentTypes.`application/json`, message)
     
   private val teapotEntity: ResponseEntity =
-    HttpEntity(
-      ContentTypes.`application/json`,
+    jsonEntity(
       "\"There was an unexpected internal error. Please try again later.\""
     )
 
   private val notFoundEntity: ResponseEntity =
-    HttpEntity(
-      ContentTypes.`application/json`,
+    jsonEntity(
       "\"The record you are searching for could not be found.\""
     )
 
   private val forbiddenEntity: ResponseEntity =
-    HttpEntity(
-      ContentTypes.`application/json`,
-      "\"Invalid or inactive API key\""
+    jsonEntity(
+      "\"Invalid or inactive API key.\""
     )
 
   private def existingKeyEntity(email: String): ResponseEntity =
-    HttpEntity(
-      ContentTypes.`application/json`,
-      s"\"There is already an API key for $email. We have sent a reminder " +
-        "message to that address.\""
+    jsonEntity("\"There is already an API key for " + email + ". We have " +
+      "sent a reminder message to that address.\""
     )
 
   private def disabledKeyEntity(email: String): ResponseEntity =
-    HttpEntity(
-      ContentTypes.`application/json`,
-      s"\"The API key associated with email address $email has been disabled. " +
-        "If you would like to reactivate it, please contact DPLA.\""
+    jsonEntity("\"The API key associated with email address " + email +
+      " has been disabled. If you would like to reactivate it, please " +
+      "contact DPLA.\""
     )
 
   private def newKeyMessage(email: String): String =
