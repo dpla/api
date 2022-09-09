@@ -312,7 +312,7 @@ class Routes(
                   complete(newKeyMessage(email))
                 case ExistingApiKey(email) =>
                   complete(
-                    HttpResponse(Conflict, entity = existingKeyMessage(email))
+                    HttpResponse(Conflict, entity = existingKeyEntity(email))
                   )
                 case DisabledApiKey(email) =>
                   complete(
@@ -402,9 +402,12 @@ class Routes(
       "\"Invalid or inactive API key\""
     )
 
-  private def existingKeyMessage(email: String): String =
-    s"There is already an API key for $email. We have sent a reminder " +
-      "message to that address."
+  private def existingKeyEntity(email: String): ResponseEntity =
+    HttpEntity(
+      ContentTypes.`application/json`,
+      s"\"There is already an API key for $email. We have sent a reminder " +
+        "message to that address.\""
+    )
 
   private def newKeyMessage(email: String): String =
     s"API key created and sent to $email"

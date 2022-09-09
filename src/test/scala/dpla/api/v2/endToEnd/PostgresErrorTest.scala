@@ -146,6 +146,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.Conflict
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
