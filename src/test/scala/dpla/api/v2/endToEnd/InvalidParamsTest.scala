@@ -56,6 +56,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        contentType should === (ContentTypes.`application/json`)
       }
     }
 
@@ -64,6 +65,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status should not be StatusCodes.BadRequest
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
@@ -74,6 +76,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        contentType should === (ContentTypes.`application/json`)
       }
     }
 
@@ -83,6 +86,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
@@ -93,6 +97,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
