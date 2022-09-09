@@ -59,6 +59,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.ImATeapot
+        contentType should === (ContentTypes.`application/json`)
       }
     }
 
@@ -78,6 +79,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.ImATeapot
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
@@ -121,6 +123,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.ImATeapot
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }

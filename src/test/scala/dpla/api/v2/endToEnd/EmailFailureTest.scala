@@ -58,6 +58,7 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.ImATeapot
+        contentType should === (ContentTypes.`application/json`)
       }
     }
   }
