@@ -18,6 +18,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
 import org.slf4j.{Logger, LoggerFactory}
+import spray.json.enrichAny
 
 
 class Routes(
@@ -380,14 +381,18 @@ class Routes(
     RawHeader("X-Frame-Options", "DENY")
   )
 
-  private def jsonEntity(message: String): ResponseEntity =
-    HttpEntity(ContentTypes.`application/json`, message)
+  private def jsonEntity(message: String): ResponseEntity = {
+    // Converting to json and back to string ensures that the string is
+    // encased in quotation marks, and external quotation marks are escaped.
+    val json = message.toJson.toString
+    HttpEntity(ContentTypes.`application/json`, json)
+  }
 
   private val teapotResponse: HttpResponse =
     HttpResponse(
       ImATeapot,
       entity = jsonEntity(
-        "\"There was an unexpected internal error. Please try again later.\""
+        "There was an unexpected internal error. Please try again later."
       )
     )
 
@@ -395,7 +400,7 @@ class Routes(
     HttpResponse(
       NotFound,
       entity = jsonEntity(
-        "\"The record you are searching for could not be found.\""
+        "The record you are searching for could not be found."
       )
     )
 
@@ -403,33 +408,33 @@ class Routes(
     HttpResponse(
       Forbidden,
       entity = jsonEntity(
-        "\"Invalid or inactive API key.\""
+        "Invalid or inactive API key."
       )
     )
 
   private def badRequestResponse(message: String): HttpResponse =
     HttpResponse(
       BadRequest,
-      entity = jsonEntity("\"" + message + "\"")
+      entity = jsonEntity(message)
     )
 
   private def existingKeyResponse(email: String): HttpResponse =
     HttpResponse(
       Conflict,
-      entity = jsonEntity("\"There is already an API key for " + email +
-        ". We have sent a reminder message to that address.\""
+      entity = jsonEntity(s"There is already an API key for $email" +
+        ". We have sent a reminder message to that address."
       )
     )
 
   private def disabledKeyResponse(email: String): HttpResponse =
     HttpResponse(
       Conflict,
-      entity = jsonEntity("\"The API key associated with email address " +
-        email + " has been disabled. If you would like to reactivate it, " +
-        "please contact DPLA.\""
+      entity = jsonEntity(s"The API key associated with email address $email" +
+        " has been disabled. If you would like to reactivate it, " +
+        "please contact DPLA."
       )
     )
 
   private def newKeyMessage(email: String): String =
-    "\"API key created and sent to " + email + ".\""
+    s"API key created and sent to $email."
 }
