@@ -316,7 +316,7 @@ class Routes(
                   )
                 case DisabledApiKey(email) =>
                   complete(
-                    HttpResponse(Conflict, entity = disabledKeyMessage(email))
+                    HttpResponse(Conflict, entity = disabledKeyEntity(email))
                   )
                 case ValidationFailure(message) =>
                   complete(HttpResponse(BadRequest, entity = message))
@@ -409,10 +409,13 @@ class Routes(
         "message to that address.\""
     )
 
+  private def disabledKeyEntity(email: String): ResponseEntity =
+    HttpEntity(
+      ContentTypes.`application/json`,
+      s"\"The API key associated with email address $email has been disabled. " +
+        "If you would like to reactivate it, please contact DPLA.\""
+    )
+
   private def newKeyMessage(email: String): String =
     s"API key created and sent to $email"
-
-  private def disabledKeyMessage(email: String): String =
-    s"The API key associated with email address $email has been disabled. " +
-      "If you would like to reactivate it, please contact DPLA."
 }
