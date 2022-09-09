@@ -143,23 +143,23 @@ class Routes(
                           case SearchResult(ebookList) =>
                             complete(ebookList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
+                            complete(forbiddenResponse)
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
+                            complete(badRequestResponse(message))
                           case InternalFailure =>
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                           case _ =>
                             log.error(
                               "Routes /ebooks received unexpected RegistryResponse {}",
                               response.getClass.getName
                             )
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                         }
                       case Failure(e) =>
                         log.error(
                           "Routes /ebooks failed to get response from Registry:", e
                         )
-                        complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                        complete(teapotResponse)
                     }
                   }
                 }
@@ -184,26 +184,26 @@ class Routes(
                           case MultiFetchResult(ebookList) =>
                             complete(ebookList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
+                            complete(forbiddenResponse)
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
+                            complete(badRequestResponse(message))
                           case NotFoundFailure =>
-                            complete(HttpResponse(NotFound, entity = notFoundEntity))
+                            complete(notFoundResponse)
                           case InternalFailure =>
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                           case _ =>
                             log.error(
                               "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
                               response.getClass.getName
                             )
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                         }
                       case Failure(e) =>
                         log.error(
                           "Routes /ebooks/[ID] failed to get response from Registry:",
                           e
                         )
-                        complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                        complete(teapotResponse)
                     }
                   }
                 }
@@ -230,23 +230,23 @@ class Routes(
                           case SearchResult(itemList) =>
                             complete(itemList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
+                            complete(forbiddenResponse)
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
+                            complete(badRequestResponse(message))
                           case InternalFailure =>
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                           case _ =>
                             log.error(
                               "Routes /items received unexpected RegistryResponse {}",
                               response.getClass.getName
                             )
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                         }
                       case Failure(e) =>
                         log.error(
                           "Routes /items failed to get response from Registry:", e
                         )
-                        complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                        complete(teapotResponse)
                     }
                   }
                 }
@@ -271,26 +271,26 @@ class Routes(
                           case MultiFetchResult(itemList) =>
                             complete(itemList)
                           case ForbiddenFailure =>
-                            complete(HttpResponse(Forbidden, entity = forbiddenEntity))
+                            complete(forbiddenResponse)
                           case ValidationFailure(message) =>
-                            complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
+                            complete(badRequestResponse(message))
                           case NotFoundFailure =>
-                            complete(HttpResponse(NotFound, entity = notFoundEntity))
+                            complete(notFoundResponse)
                           case InternalFailure =>
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                           case _ =>
                             log.error(
                               "Routes /items/[ID] received unexpected RegistryResponse {}",
                               response.getClass.getName
                             )
-                            complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                            complete(teapotResponse)
                         }
                       case Failure(e) =>
                         log.error(
                           "Routes /items/[ID] failed to get response from Registry:",
                           e
                         )
-                        complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                        complete(teapotResponse)
                     }
                   }
                 }
@@ -311,25 +311,19 @@ class Routes(
                 case NewApiKey(email) =>
                   complete(newKeyMessage(email))
                 case ExistingApiKey(email) =>
-                  complete(
-                    HttpResponse(Conflict, entity = existingKeyEntity(email))
-                  )
+                  complete(existingKeyResponse(email))
                 case DisabledApiKey(email) =>
-                  complete(
-                    HttpResponse(Conflict, entity = disabledKeyEntity(email))
-                  )
+                  complete(disabledKeyResponse(email))
                 case ValidationFailure(message) =>
-                  complete(
-                    HttpResponse(BadRequest, entity = jsonEntity(message))
-                  )
+                  complete(badRequestResponse(message))
                 case InternalFailure =>
-                  complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                  complete(teapotResponse)
               }
             case Failure(e) =>
               log.error(
                 "Routes /api_key failed to get response from Registry:", e
               )
-              complete(HttpResponse(ImATeapot, entity = teapotEntity))
+              complete(teapotResponse)
           }
         }
       }
@@ -347,23 +341,23 @@ class Routes(
                   case RandomResult(singleItem) =>
                     complete(singleItem)
                   case ForbiddenFailure =>
-                    complete(HttpResponse(Forbidden, entity = forbiddenEntity))
+                    complete(forbiddenResponse)
                   case ValidationFailure(message) =>
-                    complete(HttpResponse(BadRequest, entity = jsonEntity(message)))
+                    complete(badRequestResponse(message))
                   case InternalFailure =>
-                    complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                    complete(teapotResponse)
                   case _ =>
                     log.error(
                       "Routes /random received unexpected RegistryResponse {}",
                       response.getClass.getName
                     )
-                    complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                    complete(teapotResponse)
                 }
               case Failure(e) =>
                 log.error(
                   "Routes /random failed to get response from Registry:", e
                 )
-                complete(HttpResponse(ImATeapot, entity = teapotEntity))
+                complete(teapotResponse)
             }
           }
         }
@@ -388,33 +382,54 @@ class Routes(
 
   private def jsonEntity(message: String): ResponseEntity =
     HttpEntity(ContentTypes.`application/json`, message)
-    
-  private val teapotEntity: ResponseEntity =
-    jsonEntity(
-      "\"There was an unexpected internal error. Please try again later.\""
+
+  private val teapotResponse: HttpResponse =
+    HttpResponse(
+      ImATeapot,
+      entity = jsonEntity(
+        "\"There was an unexpected internal error. Please try again later.\""
+      )
     )
 
-  private val notFoundEntity: ResponseEntity =
-    jsonEntity(
-      "\"The record you are searching for could not be found.\""
+  private val notFoundResponse: HttpResponse =
+    HttpResponse(
+      NotFound,
+      entity = jsonEntity(
+        "\"The record you are searching for could not be found.\""
+      )
     )
 
-  private val forbiddenEntity: ResponseEntity =
-    jsonEntity(
-      "\"Invalid or inactive API key.\""
+  private val forbiddenResponse: HttpResponse =
+    HttpResponse(
+      Forbidden,
+      entity = jsonEntity(
+        "\"Invalid or inactive API key.\""
+      )
     )
 
-  private def existingKeyEntity(email: String): ResponseEntity =
-    jsonEntity("\"There is already an API key for " + email + ". We have " +
-      "sent a reminder message to that address.\""
+  private def badRequestResponse(message: String): HttpResponse =
+    HttpResponse(
+      BadRequest,
+      entity = jsonEntity("\"" + message + "\"")
     )
 
-  private def disabledKeyEntity(email: String): ResponseEntity =
-    jsonEntity("\"The API key associated with email address " + email +
-      " has been disabled. If you would like to reactivate it, please " +
-      "contact DPLA.\""
+  private def existingKeyResponse(email: String): HttpResponse =
+    HttpResponse(
+      Conflict,
+      entity = jsonEntity("\"There is already an API key for " + email +
+        ". We have sent a reminder message to that address.\""
+      )
+    )
+
+  private def disabledKeyResponse(email: String): HttpResponse =
+    HttpResponse(
+      Conflict,
+      entity = jsonEntity("\"The API key associated with email address " +
+        email + " has been disabled. If you would like to reactivate it, " +
+        "please contact DPLA.\""
+      )
     )
 
   private def newKeyMessage(email: String): String =
-    s"API key created and sent to $email"
+    "\"API key created and sent to " + email + ".\""
 }
