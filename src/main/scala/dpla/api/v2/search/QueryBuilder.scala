@@ -7,6 +7,9 @@ import akka.actor.typed.{ActorRef, Behavior}
 import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.matching
+import scala.util.matching.Regex
+
 
 
 /**
@@ -140,7 +143,7 @@ object QueryBuilder extends DPLAMAPFields {
       q.map(keywordQuery(_, keywordQueryFields)).toSeq
     val filterClause: Option[JsObject] = filter.map(filterQuery)
     val fieldQuery: Seq[JsObject] =
-      fieldQueries.map(singleFieldQuery(_, exactFieldMatch))
+      fieldQueries.flatMap(singleFieldQuery(_, exactFieldMatch))
     val queryTerms: Seq[JsObject] = keyword ++ fieldQuery
     val boolTerm: String = if (op == "OR") "should" else "must"
 
@@ -205,7 +208,7 @@ object QueryBuilder extends DPLAMAPFields {
    * - It is only for fields that non-analyzed (i.e. indexed as "keyword")
    */
   private def singleFieldQuery(fieldQuery: FieldQuery,
-                               exactFieldMatch: Boolean): JsObject =
+                               exactFieldMatch: Boolean): Seq[JsObject] =
 
     if (fieldQuery.fieldName.endsWith(".before")) {
       // Range query
@@ -214,13 +217,15 @@ object QueryBuilder extends DPLAMAPFields {
           throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
         )
 
-      JsObject(
+      val obj = JsObject(
         "range" -> JsObject(
           field -> JsObject(
             "lte" -> fieldQuery.value.toJson
           )
         )
       )
+      Seq(obj)
+
     } else if (fieldQuery.fieldName.endsWith(".after")) {
       // Range query
       val field: String = getElasticSearchField(fieldQuery.fieldName)
@@ -228,13 +233,15 @@ object QueryBuilder extends DPLAMAPFields {
           throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
         )
 
-      JsObject(
+      val obj = JsObject(
         "range" -> JsObject(
           field -> JsObject(
             "gte" -> fieldQuery.value.toJson
           )
         )
       )
+      Seq(obj)
+
     } else if (exactFieldMatch) {
       // Exact match query
       val field: String = getElasticSearchExactMatchField(fieldQuery.fieldName)
@@ -242,23 +249,36 @@ object QueryBuilder extends DPLAMAPFields {
           throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
         ) // This should not happen
 
-      // Strip leading and trailing quotation marks
-      val value: String =
-        if (fieldQuery.value.startsWith("\"") && fieldQuery.value.endsWith("\""))
-          fieldQuery.value.stripPrefix("\"").stripSuffix("\"")
-        else fieldQuery.value
+      val values = stripLeadingAndTrainingQuotationMarks(fieldQuery.value)
+        .split("\\+AND\\+")
+        .flatMap(_.split("\\+OR\\+"))
+        .map(stripLeadingAndTrainingQuotationMarks)
 
-      JsObject(
-        "term" -> JsObject(
-          field -> value.toJson
+      values.map { value =>
+        JsObject(
+          "term" -> JsObject(
+            field -> value.toJson
+          )
         )
-      )
+      }
+
     } else {
       // Basic field query
       val fields: Seq[String] =
         Seq(getElasticSearchField(fieldQuery.fieldName)).flatten
-      keywordQuery(fieldQuery.value, fields)
+      val obj: JsObject = keywordQuery(fieldQuery.value, fields)
+      Seq(obj)
     }
+
+  /**
+   * Strip leading and trailing quotation marks only if there are no
+   * internal quotation marks.
+   */
+  private def stripLeadingAndTrainingQuotationMarks(str: String): String =
+    if (str.matches("^\"[^\"]*\"$"))
+      str.stripPrefix("\"").stripSuffix("\"")
+    else
+      str
 
   /**
    * Composes an aggregates (facets) query object.

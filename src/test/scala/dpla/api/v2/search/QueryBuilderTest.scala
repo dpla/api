@@ -400,11 +400,26 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         assert(traversed == expected)
       }
 
-      "handle multiple terms joined by +AND+ or +OR+" in {
-        val expected = Seq("Legislators", "City Council")
+      "handle multiple terms joined by +AND+" in {
+        val expected = Seq(Some("Legislators"), Some("City Council"))
         val fieldQueries = Seq(FieldQuery(
           "sourceResource.subject.name",
           "\"Legislators\"+AND+\"City Council\""
+        ))
+        val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerms = boolMust.flatMap(obj => readObject(obj, "term"))
+        val traversed =
+          queryTerms.map(readString(_, "sourceResource.subject.name.not_analyzed"))
+        assert(traversed == expected)
+      }
+
+      "handle multiple terms joined by +OR+" in {
+        val expected = Seq(Some("Legislators"), Some("City Council"))
+        val fieldQueries = Seq(FieldQuery(
+          "sourceResource.subject.name",
+          "\"Legislators+OR+City Council\""
         ))
         val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
         val query = getJsSearchQuery(params)
