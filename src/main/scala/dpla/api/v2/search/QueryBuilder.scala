@@ -250,8 +250,9 @@ object QueryBuilder extends DPLAMAPFields {
         ) // This should not happen
 
       val values = stripLeadingAndTrainingQuotationMarks(fieldQuery.value)
-        .split("\\+AND\\+")
-        .flatMap(_.split("\\+OR\\+"))
+        .split("AND")
+        .flatMap(_.split("OR"))
+        .map(_.trim)
         .map(stripLeadingAndTrainingQuotationMarks)
 
       values.map { value =>
