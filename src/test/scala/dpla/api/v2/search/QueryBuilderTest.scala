@@ -404,7 +404,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val expected = Seq(Some("Legislators"), Some("City Council"))
         val fieldQueries = Seq(FieldQuery(
           "sourceResource.subject.name",
-          "\"Legislators\"+AND+\"City Council\""
+          "\"Legislators\" AND \"City Council\""
         ))
         val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
         val query = getJsSearchQuery(params)
@@ -419,7 +419,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val expected = Seq(Some("Legislators"), Some("City Council"))
         val fieldQueries = Seq(FieldQuery(
           "sourceResource.subject.name",
-          "\"Legislators+OR+City Council\""
+          "\"Legislators OR City Council\""
         ))
         val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
         val query = getJsSearchQuery(params)
