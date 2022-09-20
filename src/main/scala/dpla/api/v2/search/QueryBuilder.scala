@@ -7,8 +7,6 @@ import akka.actor.typed.{ActorRef, Behavior}
 import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchIds, ValidRandomParams, ValidSearchParams}
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.matching
-import scala.util.matching.Regex
 
 
 

@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, ResponseEntity}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, ResponseEntity, Uri}
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
@@ -111,6 +111,12 @@ class Routes(
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
 
+  // Log the URL with the API key or email address redacted
+  private def logURL(uri: Uri) =
+    log.info(uri.toString
+      .replaceAll("api_key=[^&]*", "api_key=REDACTED")
+      .replaceAll("/api_key/.*", "/api_key/REDACTED"))
+
   lazy val applicationRoutes: Route =
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
@@ -132,35 +138,38 @@ class Routes(
     concat(
       pathEnd {
         get {
-          extractHost { host =>
-            extractMatchedPath { path =>
-              parameterMap { params =>
-                // Get the API key from Authorization header if it exists.
-                optionalHeaderValueByName("Authorization") { auth =>
-                  respondWithHeaders(securityResponseHeaders) {
-                    onComplete(searchEbooks(auth, params, host, path.toString)) {
-                      case Success(response) =>
-                        response match {
-                          case SearchResult(ebookList) =>
-                            complete(ebookList)
-                          case ForbiddenFailure =>
-                            complete(forbiddenResponse)
-                          case ValidationFailure(message) =>
-                            complete(badRequestResponse(message))
-                          case InternalFailure =>
-                            complete(teapotResponse)
-                          case _ =>
-                            log.error(
-                              "Routes /ebooks received unexpected RegistryResponse {}",
-                              response.getClass.getName
-                            )
-                            complete(teapotResponse)
-                        }
-                      case Failure(e) =>
-                        log.error(
-                          "Routes /ebooks failed to get response from Registry:", e
-                        )
-                        complete(teapotResponse)
+          extractUri { uri =>
+            logURL(uri)
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(searchEbooks(auth, params, host, path.toString)) {
+                        case Success(response) =>
+                          response match {
+                            case SearchResult(ebookList) =>
+                              complete(ebookList)
+                            case ForbiddenFailure =>
+                              complete(forbiddenResponse)
+                            case ValidationFailure(message) =>
+                              complete(badRequestResponse(message))
+                            case InternalFailure =>
+                              complete(teapotResponse)
+                            case _ =>
+                              log.error(
+                                "Routes /ebooks received unexpected RegistryResponse {}",
+                                response.getClass.getName
+                              )
+                              complete(teapotResponse)
+                          }
+                        case Failure(e) =>
+                          log.error(
+                            "Routes /ebooks failed to get response from Registry:", e
+                          )
+                          complete(teapotResponse)
+                      }
                     }
                   }
                 }
@@ -171,40 +180,43 @@ class Routes(
       },
       path(Segment) { id =>
         get {
-          extractHost { host =>
-            extractMatchedPath { path =>
-              parameterMap { params =>
-                // Get the API key from Authorization header if it exists.
-                optionalHeaderValueByName("Authorization") { auth =>
-                  respondWithHeaders(securityResponseHeaders) {
-                    onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
-                      case Success(response) =>
-                        response match {
-                          case FetchResult(singleEbook) =>
-                            complete(singleEbook)
-                          case MultiFetchResult(ebookList) =>
-                            complete(ebookList)
-                          case ForbiddenFailure =>
-                            complete(forbiddenResponse)
-                          case ValidationFailure(message) =>
-                            complete(badRequestResponse(message))
-                          case NotFoundFailure =>
-                            complete(notFoundResponse)
-                          case InternalFailure =>
-                            complete(teapotResponse)
-                          case _ =>
-                            log.error(
-                              "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
-                              response.getClass.getName
-                            )
-                            complete(teapotResponse)
-                        }
-                      case Failure(e) =>
-                        log.error(
-                          "Routes /ebooks/[ID] failed to get response from Registry:",
-                          e
-                        )
-                        complete(teapotResponse)
+          extractUri { uri =>
+            logURL(uri)
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
+                        case Success(response) =>
+                          response match {
+                            case FetchResult(singleEbook) =>
+                              complete(singleEbook)
+                            case MultiFetchResult(ebookList) =>
+                              complete(ebookList)
+                            case ForbiddenFailure =>
+                              complete(forbiddenResponse)
+                            case ValidationFailure(message) =>
+                              complete(badRequestResponse(message))
+                            case NotFoundFailure =>
+                              complete(notFoundResponse)
+                            case InternalFailure =>
+                              complete(teapotResponse)
+                            case _ =>
+                              log.error(
+                                "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
+                                response.getClass.getName
+                              )
+                              complete(teapotResponse)
+                          }
+                        case Failure(e) =>
+                          log.error(
+                            "Routes /ebooks/[ID] failed to get response from Registry:",
+                            e
+                          )
+                          complete(teapotResponse)
+                      }
                     }
                   }
                 }
@@ -218,36 +230,39 @@ class Routes(
   lazy val itemsRoutes: Route =
     concat(
       pathEnd {
-        get {
-          extractHost { host =>
-            extractMatchedPath { path =>
-              parameterMap { params =>
-                // Get the API key from Authorization header if it exists.
-                optionalHeaderValueByName("Authorization") { auth =>
-                  respondWithHeaders(securityResponseHeaders) {
-                    onComplete(searchItems(auth, params, host, path.toString)) {
-                      case Success(response) =>
-                        response match {
-                          case SearchResult(itemList) =>
-                            complete(itemList)
-                          case ForbiddenFailure =>
-                            complete(forbiddenResponse)
-                          case ValidationFailure(message) =>
-                            complete(badRequestResponse(message))
-                          case InternalFailure =>
-                            complete(teapotResponse)
-                          case _ =>
-                            log.error(
-                              "Routes /items received unexpected RegistryResponse {}",
-                              response.getClass.getName
-                            )
-                            complete(teapotResponse)
-                        }
-                      case Failure(e) =>
-                        log.error(
-                          "Routes /items failed to get response from Registry:", e
-                        )
-                        complete(teapotResponse)
+        extractUri { uri =>
+          logURL(uri)
+          get {
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(searchItems(auth, params, host, path.toString)) {
+                        case Success(response) =>
+                          response match {
+                            case SearchResult(itemList) =>
+                              complete(itemList)
+                            case ForbiddenFailure =>
+                              complete(forbiddenResponse)
+                            case ValidationFailure(message) =>
+                              complete(badRequestResponse(message))
+                            case InternalFailure =>
+                              complete(teapotResponse)
+                            case _ =>
+                              log.error(
+                                "Routes /items received unexpected RegistryResponse {}",
+                                response.getClass.getName
+                              )
+                              complete(teapotResponse)
+                          }
+                        case Failure(e) =>
+                          log.error(
+                            "Routes /items failed to get response from Registry:", e
+                          )
+                          complete(teapotResponse)
+                      }
                     }
                   }
                 }
@@ -258,40 +273,43 @@ class Routes(
       },
       path(Segment) { id =>
         get {
-          extractHost { host =>
-            extractMatchedPath { path =>
-              parameterMap { params =>
-                // Get the API key from Authorization header if it exists.
-                optionalHeaderValueByName("Authorization") { auth =>
-                  respondWithHeaders(securityResponseHeaders) {
-                    onComplete(fetchItems(auth, id, params, host, path.toString)) {
-                      case Success(response) =>
-                        response match {
-                          case FetchResult(singleItem) =>
-                            complete(singleItem)
-                          case MultiFetchResult(itemList) =>
-                            complete(itemList)
-                          case ForbiddenFailure =>
-                            complete(forbiddenResponse)
-                          case ValidationFailure(message) =>
-                            complete(badRequestResponse(message))
-                          case NotFoundFailure =>
-                            complete(notFoundResponse)
-                          case InternalFailure =>
-                            complete(teapotResponse)
-                          case _ =>
-                            log.error(
-                              "Routes /items/[ID] received unexpected RegistryResponse {}",
-                              response.getClass.getName
-                            )
-                            complete(teapotResponse)
-                        }
-                      case Failure(e) =>
-                        log.error(
-                          "Routes /items/[ID] failed to get response from Registry:",
-                          e
-                        )
-                        complete(teapotResponse)
+          extractUri { uri =>
+            logURL(uri)
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(fetchItems(auth, id, params, host, path.toString)) {
+                        case Success(response) =>
+                          response match {
+                            case FetchResult(singleItem) =>
+                              complete(singleItem)
+                            case MultiFetchResult(itemList) =>
+                              complete(itemList)
+                            case ForbiddenFailure =>
+                              complete(forbiddenResponse)
+                            case ValidationFailure(message) =>
+                              complete(badRequestResponse(message))
+                            case NotFoundFailure =>
+                              complete(notFoundResponse)
+                            case InternalFailure =>
+                              complete(teapotResponse)
+                            case _ =>
+                              log.error(
+                                "Routes /items/[ID] received unexpected RegistryResponse {}",
+                                response.getClass.getName
+                              )
+                              complete(teapotResponse)
+                          }
+                        case Failure(e) =>
+                          log.error(
+                            "Routes /items/[ID] failed to get response from Registry:",
+                            e
+                          )
+                          complete(teapotResponse)
+                      }
                     }
                   }
                 }
@@ -305,26 +323,29 @@ class Routes(
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
-        respondWithHeaders(securityResponseHeaders) {
-          onComplete(createApiKey(email)) {
-            case Success(response) =>
-              response match {
-                case NewApiKey(email) =>
-                  complete(newKeyMessage(email))
-                case ExistingApiKey(email) =>
-                  complete(existingKeyResponse(email))
-                case DisabledApiKey(email) =>
-                  complete(disabledKeyResponse(email))
-                case ValidationFailure(message) =>
-                  complete(badRequestResponse(message))
-                case InternalFailure =>
-                  complete(teapotResponse)
-              }
-            case Failure(e) =>
-              log.error(
-                "Routes /api_key failed to get response from Registry:", e
-              )
-              complete(teapotResponse)
+        extractUri { uri =>
+          logURL(uri)
+          respondWithHeaders(securityResponseHeaders) {
+            onComplete(createApiKey(email)) {
+              case Success(response) =>
+                response match {
+                  case NewApiKey(email) =>
+                    complete(newKeyMessage(email))
+                  case ExistingApiKey(email) =>
+                    complete(existingKeyResponse(email))
+                  case DisabledApiKey(email) =>
+                    complete(disabledKeyResponse(email))
+                  case ValidationFailure(message) =>
+                    complete(badRequestResponse(message))
+                  case InternalFailure =>
+                    complete(teapotResponse)
+                }
+              case Failure(e) =>
+                log.error(
+                  "Routes /api_key failed to get response from Registry:", e
+                )
+                complete(teapotResponse)
+            }
           }
         }
       }
@@ -332,33 +353,36 @@ class Routes(
 
   lazy val randomRoute: Route =
     get {
-      parameterMap { params =>
-        // Get the API key from Authorization header if it exists.
-        optionalHeaderValueByName("Authorization") { auth =>
-          respondWithHeaders(securityResponseHeaders) {
-            onComplete(randomItem(auth, params)) {
-              case Success(response) =>
-                response match {
-                  case RandomResult(singleItem) =>
-                    complete(singleItem)
-                  case ForbiddenFailure =>
-                    complete(forbiddenResponse)
-                  case ValidationFailure(message) =>
-                    complete(badRequestResponse(message))
-                  case InternalFailure =>
-                    complete(teapotResponse)
-                  case _ =>
-                    log.error(
-                      "Routes /random received unexpected RegistryResponse {}",
-                      response.getClass.getName
-                    )
-                    complete(teapotResponse)
-                }
-              case Failure(e) =>
-                log.error(
-                  "Routes /random failed to get response from Registry:", e
-                )
-                complete(teapotResponse)
+      extractUri { uri =>
+        logURL(uri)
+        parameterMap { params =>
+          // Get the API key from Authorization header if it exists.
+          optionalHeaderValueByName("Authorization") { auth =>
+            respondWithHeaders(securityResponseHeaders) {
+              onComplete(randomItem(auth, params)) {
+                case Success(response) =>
+                  response match {
+                    case RandomResult(singleItem) =>
+                      complete(singleItem)
+                    case ForbiddenFailure =>
+                      complete(forbiddenResponse)
+                    case ValidationFailure(message) =>
+                      complete(badRequestResponse(message))
+                    case InternalFailure =>
+                      complete(teapotResponse)
+                    case _ =>
+                      log.error(
+                        "Routes /random received unexpected RegistryResponse {}",
+                        response.getClass.getName
+                      )
+                      complete(teapotResponse)
+                  }
+                case Failure(e) =>
+                  log.error(
+                    "Routes /random failed to get response from Registry:", e
+                  )
+                  complete(teapotResponse)
+              }
             }
           }
         }
