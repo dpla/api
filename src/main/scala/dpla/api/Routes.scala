@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, ResponseEntity}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, ResponseEntity, Uri}
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
@@ -111,6 +111,10 @@ class Routes(
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
 
+  // Log the URL with the API key redacted
+  private def logURL(uri: Uri) =
+    log.info(uri.toString.replaceAll("api_key=[^&]*", "api_key=REDACTED"))
+
   lazy val applicationRoutes: Route =
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
@@ -132,35 +136,38 @@ class Routes(
     concat(
       pathEnd {
         get {
-          extractHost { host =>
-            extractMatchedPath { path =>
-              parameterMap { params =>
-                // Get the API key from Authorization header if it exists.
-                optionalHeaderValueByName("Authorization") { auth =>
-                  respondWithHeaders(securityResponseHeaders) {
-                    onComplete(searchEbooks(auth, params, host, path.toString)) {
-                      case Success(response) =>
-                        response match {
-                          case SearchResult(ebookList) =>
-                            complete(ebookList)
-                          case ForbiddenFailure =>
-                            complete(forbiddenResponse)
-                          case ValidationFailure(message) =>
-                            complete(badRequestResponse(message))
-                          case InternalFailure =>
-                            complete(teapotResponse)
-                          case _ =>
-                            log.error(
-                              "Routes /ebooks received unexpected RegistryResponse {}",
-                              response.getClass.getName
-                            )
-                            complete(teapotResponse)
-                        }
-                      case Failure(e) =>
-                        log.error(
-                          "Routes /ebooks failed to get response from Registry:", e
-                        )
-                        complete(teapotResponse)
+          extractUri { uri =>
+            logURL(uri)
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(searchEbooks(auth, params, host, path.toString)) {
+                        case Success(response) =>
+                          response match {
+                            case SearchResult(ebookList) =>
+                              complete(ebookList)
+                            case ForbiddenFailure =>
+                              complete(forbiddenResponse)
+                            case ValidationFailure(message) =>
+                              complete(badRequestResponse(message))
+                            case InternalFailure =>
+                              complete(teapotResponse)
+                            case _ =>
+                              log.error(
+                                "Routes /ebooks received unexpected RegistryResponse {}",
+                                response.getClass.getName
+                              )
+                              complete(teapotResponse)
+                          }
+                        case Failure(e) =>
+                          log.error(
+                            "Routes /ebooks failed to get response from Registry:", e
+                          )
+                          complete(teapotResponse)
+                      }
                     }
                   }
                 }
