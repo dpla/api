@@ -111,9 +111,11 @@ class Routes(
   def createApiKey(email: String): Future[RegistryResponse] =
     apiKeyRegistry.ask(CreateApiKey(email, _))
 
-  // Log the URL with the API key redacted
+  // Log the URL with the API key or email address redacted
   private def logURL(uri: Uri) =
-    log.info(uri.toString.replaceAll("api_key=[^&]*", "api_key=REDACTED"))
+    log.info(uri.toString
+      .replaceAll("api_key=[^&]*", "api_key=REDACTED")
+      .replaceAll("/api_key/.*", "/api_key/REDACTED"))
 
   lazy val applicationRoutes: Route =
     concat (
@@ -321,26 +323,29 @@ class Routes(
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
-        respondWithHeaders(securityResponseHeaders) {
-          onComplete(createApiKey(email)) {
-            case Success(response) =>
-              response match {
-                case NewApiKey(email) =>
-                  complete(newKeyMessage(email))
-                case ExistingApiKey(email) =>
-                  complete(existingKeyResponse(email))
-                case DisabledApiKey(email) =>
-                  complete(disabledKeyResponse(email))
-                case ValidationFailure(message) =>
-                  complete(badRequestResponse(message))
-                case InternalFailure =>
-                  complete(teapotResponse)
-              }
-            case Failure(e) =>
-              log.error(
-                "Routes /api_key failed to get response from Registry:", e
-              )
-              complete(teapotResponse)
+        extractUri { uri =>
+          logURL(uri)
+          respondWithHeaders(securityResponseHeaders) {
+            onComplete(createApiKey(email)) {
+              case Success(response) =>
+                response match {
+                  case NewApiKey(email) =>
+                    complete(newKeyMessage(email))
+                  case ExistingApiKey(email) =>
+                    complete(existingKeyResponse(email))
+                  case DisabledApiKey(email) =>
+                    complete(disabledKeyResponse(email))
+                  case ValidationFailure(message) =>
+                    complete(badRequestResponse(message))
+                  case InternalFailure =>
+                    complete(teapotResponse)
+                }
+              case Failure(e) =>
+                log.error(
+                  "Routes /api_key failed to get response from Registry:", e
+                )
+                complete(teapotResponse)
+            }
           }
         }
       }
