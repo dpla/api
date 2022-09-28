@@ -50,12 +50,12 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
   "/api_key/[email]" should {
-    "return Teapot if email fails" in {
+    "return InternalServerError if email fails" in {
       val validEmail = "test@example.com"
       val request = Post(s"/v2/api_key/$validEmail")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }

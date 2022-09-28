@@ -43,7 +43,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     MockItemRegistry(testKit, authenticator, analyticsClient)
 
   "/v2/ebooks route" should {
-    "return Teapot if ElasticSearch entity cannot be parsed" in {
+    "return InternalServerError if ElasticSearch entity cannot be parsed" in {
       val elasticSearchClient = testKit.spawn(MockEsClientFailure())
 
       val ebookSearch: ActorRef[SearchCommand] =
@@ -58,12 +58,12 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
 
-    "return Teapot if call to ElasticSearch fails" in {
+    "return InternalServerError if call to ElasticSearch fails" in {
       val elasticSearchClient = testKit.spawn(MockEsClientFailure())
 
       val ebookSearch: ActorRef[SearchCommand] =
@@ -78,7 +78,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
@@ -106,7 +106,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
       }
     }
 
-    "return Teapot if call to ElasticSearch fails" in {
+    "return InternalServerError if call to ElasticSearch fails" in {
       val elasticSearchClient = testKit.spawn(MockEsClientFailure())
 
       val ebookSearch: ActorRef[SearchCommand] =
@@ -122,7 +122,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }

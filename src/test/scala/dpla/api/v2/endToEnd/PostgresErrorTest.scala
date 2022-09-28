@@ -38,7 +38,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
 
   "/v2/ebooks route" should {
-    "return Teapot if Postgres errors" in {
+    "return InternalServerError if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
       val authenticator: ActorRef[AuthenticationCommand] =
@@ -59,14 +59,14 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
   }
 
   "/v2/ebooks[id] route" should {
-    "return Teapot if Postgres errors" in {
+    "return InternalServerError if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
       val authenticator: ActorRef[AuthenticationCommand] =
@@ -87,14 +87,14 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
   }
 
   "/api_key/[email]" should {
-    "return Teapot if Postgres errors" in {
+    "return InternalServerError if Postgres errors" in {
       val postgresClient = testKit.spawn(MockPostgresClientError())
 
       val authenticator: ActorRef[AuthenticationCommand] =
@@ -115,7 +115,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val request = Post(s"/v2/api_key/email@example.com")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
