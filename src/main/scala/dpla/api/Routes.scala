@@ -156,19 +156,19 @@ class Routes(
                             case ValidationFailure(message) =>
                               complete(badRequestResponse(message))
                             case InternalFailure =>
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                             case _ =>
                               log.error(
                                 "Routes /ebooks received unexpected RegistryResponse {}",
                                 response.getClass.getName
                               )
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                           }
                         case Failure(e) =>
                           log.error(
                             "Routes /ebooks failed to get response from Registry:", e
                           )
-                          complete(teapotResponse)
+                          complete(internalErrorResponse)
                       }
                     }
                   }
@@ -202,20 +202,20 @@ class Routes(
                             case NotFoundFailure =>
                               complete(notFoundResponse)
                             case InternalFailure =>
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                             case _ =>
                               log.error(
                                 "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
                                 response.getClass.getName
                               )
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                           }
                         case Failure(e) =>
                           log.error(
                             "Routes /ebooks/[ID] failed to get response from Registry:",
                             e
                           )
-                          complete(teapotResponse)
+                          complete(internalErrorResponse)
                       }
                     }
                   }
@@ -249,19 +249,19 @@ class Routes(
                             case ValidationFailure(message) =>
                               complete(badRequestResponse(message))
                             case InternalFailure =>
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                             case _ =>
                               log.error(
                                 "Routes /items received unexpected RegistryResponse {}",
                                 response.getClass.getName
                               )
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                           }
                         case Failure(e) =>
                           log.error(
                             "Routes /items failed to get response from Registry:", e
                           )
-                          complete(teapotResponse)
+                          complete(internalErrorResponse)
                       }
                     }
                   }
@@ -295,20 +295,20 @@ class Routes(
                             case NotFoundFailure =>
                               complete(notFoundResponse)
                             case InternalFailure =>
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                             case _ =>
                               log.error(
                                 "Routes /items/[ID] received unexpected RegistryResponse {}",
                                 response.getClass.getName
                               )
-                              complete(teapotResponse)
+                              complete(internalErrorResponse)
                           }
                         case Failure(e) =>
                           log.error(
                             "Routes /items/[ID] failed to get response from Registry:",
                             e
                           )
-                          complete(teapotResponse)
+                          complete(internalErrorResponse)
                       }
                     }
                   }
@@ -338,13 +338,13 @@ class Routes(
                   case ValidationFailure(message) =>
                     complete(badRequestResponse(message))
                   case InternalFailure =>
-                    complete(teapotResponse)
+                    complete(internalErrorResponse)
                 }
               case Failure(e) =>
                 log.error(
                   "Routes /api_key failed to get response from Registry:", e
                 )
-                complete(teapotResponse)
+                complete(internalErrorResponse)
             }
           }
         }
@@ -369,19 +369,19 @@ class Routes(
                     case ValidationFailure(message) =>
                       complete(badRequestResponse(message))
                     case InternalFailure =>
-                      complete(teapotResponse)
+                      complete(internalErrorResponse)
                     case _ =>
                       log.error(
                         "Routes /random received unexpected RegistryResponse {}",
                         response.getClass.getName
                       )
-                      complete(teapotResponse)
+                      complete(internalErrorResponse)
                   }
                 case Failure(e) =>
                   log.error(
                     "Routes /random failed to get response from Registry:", e
                   )
-                  complete(teapotResponse)
+                  complete(internalErrorResponse)
               }
             }
           }
@@ -412,9 +412,9 @@ class Routes(
     HttpEntity(ContentTypes.`application/json`, json)
   }
 
-  private val teapotResponse: HttpResponse =
+  private val internalErrorResponse: HttpResponse =
     HttpResponse(
-      ImATeapot,
+      InternalServerError,
       entity = jsonEntity(
         "There was an unexpected internal error. Please try again later."
       )

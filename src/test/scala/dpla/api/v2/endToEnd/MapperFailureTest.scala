@@ -43,7 +43,7 @@ class MapperFailureTest extends AnyWordSpec with Matchers
 
   "/v2/ebooks route" should {
 
-    "return Teapot if ElasticSearch response cannot be mapped" in {
+    "return InternalServerError if ElasticSearch response cannot be mapped" in {
       val mapper = testKit.spawn(MockMapperFailure())
 
       val ebookSearch: ActorRef[SearchCommand] =
@@ -59,7 +59,7 @@ class MapperFailureTest extends AnyWordSpec with Matchers
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
@@ -67,7 +67,7 @@ class MapperFailureTest extends AnyWordSpec with Matchers
 
   "/v2/ebooks[id] route" should {
 
-    "return Teapot if ElasticSearch response cannot be mapped" in {
+    "return InternalServerError if ElasticSearch response cannot be mapped" in {
       val mapper = testKit.spawn(MockMapperFailure())
 
       val ebookSearch: ActorRef[SearchCommand] =
@@ -83,7 +83,7 @@ class MapperFailureTest extends AnyWordSpec with Matchers
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.ImATeapot
+        status shouldEqual StatusCodes.InternalServerError
         contentType should === (ContentTypes.`application/json`)
       }
     }
