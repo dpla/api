@@ -384,18 +384,6 @@ object QueryBuilder extends DPLAMAPFields {
         "_score".toJson,
         "_doc".toJson
       )
-//      JsArray(
-//        JsObject(
-//          "_score" -> JsObject(
-//            "order" -> "desc".toJson
-//          )
-//        ),
-//        JsObject(
-//          "_doc" -> JsObject(
-//            "order" -> "asc".toJson
-//          )
-//        )
-//      )
 
     sortBy match {
       case Some(field) =>
