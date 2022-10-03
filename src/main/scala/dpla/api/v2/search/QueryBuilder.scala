@@ -94,7 +94,7 @@ object QueryBuilder extends DPLAMAPFields {
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filter, params.fieldQueries, params.exactFieldMatch, params.op),
       "aggs" -> aggs(params.facets, params.facetSize),
-      "sort" -> sort(params.sortBy, params.sortOrder, params.sortByPin),
+      "sort" -> sort(params),
       "_source" -> fieldRetrieval(params.fields),
       "track_total_hits" -> true.toJson
     ).toJson
@@ -375,9 +375,7 @@ object QueryBuilder extends DPLAMAPFields {
       case None => JsObject()
     }
 
-  private def sort(sortBy: Option[String],
-                   sortOrder: String,
-                   sortByPin: Option[String]): JsValue = {
+  private def sort(params: SearchParams): JsValue = {
 
     val defaultSort: JsArray =
       JsArray(
@@ -385,13 +383,20 @@ object QueryBuilder extends DPLAMAPFields {
         "_doc".toJson
       )
 
-    sortBy match {
+    // This is the fastest way to sort documents but is meaningless.
+    // It is the order in which they are saved to disk.
+    val diskSort: JsArray =
+      JsArray(
+        "_doc".toJson
+      )
+
+    params.sortBy match {
       case Some(field) =>
         if (coordinatesField.map(_.name).contains(field)) {
           // Geo sort
           coordinatesField.map(_.elasticSearchDefault) match {
             case Some(coordinates) =>
-              sortByPin match {
+              params.sortByPin match {
                 case Some(pin) =>
                   JsArray(
                     JsObject(
@@ -404,8 +409,10 @@ object QueryBuilder extends DPLAMAPFields {
                     "_score".toJson,
                     "_doc".toJson
                   )
+                // No sort_by_pin parameter
                 case None => defaultSort
               }
+            // No ElasticSearch mapping for this field
             case None => defaultSort
           }
         } else {
@@ -415,16 +422,22 @@ object QueryBuilder extends DPLAMAPFields {
               JsArray(
                 JsObject(
                   esField -> JsObject(
-                    "order" -> sortOrder.toJson
+                    "order" -> params.sortOrder.toJson
                   )
                 ),
                 "_score".toJson,
                 "_doc".toJson
               )
+            // No ElasticSearch mapping for this field
             case None => defaultSort
           }
         }
-      case None => defaultSort
+      // No sort_by parameter
+      case None =>
+        if (params.q.isEmpty && params.fieldQueries.isEmpty)
+          diskSort
+        else
+          defaultSort
     }
   }
 
