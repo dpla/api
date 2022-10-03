@@ -379,11 +379,10 @@ object QueryBuilder extends DPLAMAPFields {
                    sortOrder: String,
                    sortByPin: Option[String]): JsValue = {
 
-    val defaultSort: JsValue =
-      JsObject(
-        "_score" -> JsObject(
-          "order" -> "desc".toJson
-        )
+    val defaultSort: JsArray =
+      JsArray(
+        "_score".toJson,
+        "_doc".toJson
       )
 
     sortBy match {
@@ -402,11 +401,12 @@ object QueryBuilder extends DPLAMAPFields {
                         "unit" -> "mi".toJson
                       )
                     ),
-                    defaultSort
+                    "_score".toJson,
+                    "_doc".toJson
                   )
-                case None => JsArray(defaultSort)
+                case None => defaultSort
               }
-            case None => JsArray(defaultSort)
+            case None => defaultSort
           }
         } else {
           // Regular sort
@@ -418,12 +418,13 @@ object QueryBuilder extends DPLAMAPFields {
                     "order" -> sortOrder.toJson
                   )
                 ),
-                defaultSort
+                "_score".toJson,
+                "_doc".toJson
               )
-            case None => JsArray(defaultSort)
+            case None => defaultSort
           }
         }
-      case None => JsArray(defaultSort)
+      case None => defaultSort
     }
   }
 
