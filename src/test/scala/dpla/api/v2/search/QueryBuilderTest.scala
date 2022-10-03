@@ -670,15 +670,34 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   }
 
   "sort query builder" should {
-    "default to sorting by score" in {
-      val expected = "_score"
+    "default to index order when no scorable query is present" in {
+      val expected = "_doc"
       val traversed: String = readStringArray(minQuery, "sort").head
+      assert(traversed == expected)
+    }
+
+    "default to sorting by score when q is present" in {
+      val expected = "_score"
+      val params = minSearchParams.copy(q = Some("foo"))
+      val query: JsObject = getJsSearchQuery(params)
+      val traversed: String = readStringArray(query, "sort").head
+      assert(traversed == expected)
+    }
+
+    "default to sorting by score when fieldQuery is present" in {
+      val expected = "_score"
+      val params = minSearchParams
+        .copy(fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "adventure")))
+      val query: JsObject = getJsSearchQuery(params)
+      val traversed: String = readStringArray(query, "sort").head
       assert(traversed == expected)
     }
 
     "default to using index order as tiebreaker" in {
       val expected = "_doc"
-      val traversed: String = readStringArray(minQuery, "sort")(1)
+      val params = minSearchParams.copy(q = Some("foo"))
+      val query: JsObject = getJsSearchQuery(params)
+      val traversed: String = readStringArray(query, "sort")(1)
       assert(traversed == expected)
     }
 
