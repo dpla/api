@@ -1,13 +1,14 @@
 lazy val akkaHttpVersion = "10.2.9"
 lazy val akkaVersion     = "2.6.18"
 
-lazy val root = (project in file(".")).
-  settings(
+lazy val root = (project in file("."))
+  .configs(IntegrationTest)
+  .settings(
     inThisBuild(List(
       organization    := "dpla",
       scalaVersion    := "2.13.4"
     )),
-
+    
     name := "api",
     assembly / mainClass := Some("dpla.api.RunApp"),
     assembly / assemblyJarName := "dpla-api.jar",
@@ -27,7 +28,11 @@ lazy val root = (project in file(".")).
 
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
-      "org.scalatest"     %% "scalatest"                % "3.2.11"         % Test
+      "org.scalatest"     %% "scalatest"                % "3.2.11"        % Test,
+
+      "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % IntegrationTest,
+      "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % IntegrationTest,
+      "org.scalatest"     %% "scalatest"                % "3.2.11"        % IntegrationTest
     )
   )
 
