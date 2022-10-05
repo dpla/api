@@ -14,7 +14,7 @@ import dpla.api.v2.authentication.Authenticator
 import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
 
 
-class HealthCheckIntegrationTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
+class ITHealthCheck extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
