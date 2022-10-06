@@ -12,16 +12,17 @@ import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
 import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
-import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, JsonFieldReader}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import spray.json._
 
-class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
-  with JsonFieldReader {
+
+/**
+ * Test that expected fields are facetable in item search.
+ */
+class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
+
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
@@ -45,17 +46,62 @@ class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     testKit.spawn(ItemRegistry(authenticator, analyticsClient))
 
-  lazy val routes: Route =
+  val routes: Route =
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
-  "Facet by field" should {
-    "return OK" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=dataProvider")
+  val facetableFields = Seq(
+    "admin.contributingInstitution",
+    "dataProvider",
+    "dataProvider.@id",
+    "dataProvider.exactMatch",
+    "dataProvider.name",
+    "hasView.@id",
+    "hasView.format",
+    "intermediateProvider",
+    "isPartOf.@id",
+    "isPartOf.name",
+    "provider.@id",
+    "provider.exactMatch",
+    "provider.name",
+    "rights",
+    "rightsCategory",
+    "sourceResource.collection.title",
+    "sourceResource.contributor",
+    "sourceResource.date.begin",
+    "sourceResource.date.begin.month",
+    "sourceResource.date.begin.year",
+    "sourceResource.date.end",
+    "sourceResource.date.end.month",
+    "sourceResource.date.end.year",
+    "sourceResource.format",
+    "sourceResource.language.name",
+    "sourceResource.language.iso639_3",
+    "sourceResource.publisher",
+    "sourceResource.spatial.city",
+    "sourceResource.spatial.country",
+    "sourceResource.spatial.county",
+    "sourceResource.spatial.name",
+    "sourceResource.spatial.region",
+    "sourceResource.spatial.state",
+    "sourceResource.subject.@id",
+    "sourceResource.subject.name",
+    "sourceResource.temporal.begin",
+    "sourceResource.temporal.end",
+    "sourceResource.title",
+    "sourceResource.type"
+  )
 
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
+  for (facet <- facetableFields) {
+
+    s"Facet by $facet" should {
+      "return OK" in {
+
+        val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=$facet")
+
+        request ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+        }
       }
     }
   }
-
 }
