@@ -26,6 +26,11 @@ import scala.util.Try
 class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   with JsonFieldReader {
 
+  // The following variables may change based on the contents of the search index.
+  val testProviderId = "http://dp.la/api/contributor/esdn"
+  val testProviderCount = 443200 // The number of docs expected for the provider id, above
+  val testItemId = "00002e1fe8817b91ef4a9ef65a212a18"
+
   lazy val testKit: ActorTestKit = ActorTestKit()
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -55,15 +60,15 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   val routes: Route =
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
-  "Filter by dataProvider ESDN" should {
+  "Filter by provider" should {
     "return the correct doc count" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:http%3A%2F%2Fdp.la%2Fapi%2Fcontributor%2Fesdn")
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:$testProviderId")
 
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
 
         val count: Option[Int] = readInt(entity, "count")
-        count should === (Some(443200))
+        count should === (Some(testProviderCount))
       }
     }
   }
@@ -127,6 +132,40 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
           // assert that the end date for this doc is equal to or after the query date
           isOk shouldBe true
         })
+      }
+    }
+  }
+
+  "Fetch one item by id" should {
+    val request = Get(s"/v2/items/$testItemId?api_key=$fakeApiKey")
+
+    "return a count of one" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val count: Option[Int] = readInt(entity, "count")
+        count should === (Some(1))
+      }
+    }
+
+    "return an array with a single doc" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        docs.size should === (1)
+      }
+    }
+
+    "return a doc with the correct id" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        val id = docs.headOption.flatMap(doc => {
+          readString(doc, "id")
+        })
+        id should === (Some(testItemId))
       }
     }
   }
