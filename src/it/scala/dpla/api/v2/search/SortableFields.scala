@@ -17,10 +17,10 @@ import org.scalatest.wordspec.AnyWordSpec
 
 
 /**
- * Test that expected fields are facetable in item search.
- * Facet by coordinates is not included here as it requires special syntax.
+ * Test that expected fields are sortable in item search.
+ * Sort by coordinates is not included here as it requires special syntax.
  */
-class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest {
+class SortableFields extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
 
@@ -50,30 +50,24 @@ class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest 
   val routes: Route =
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
-  val facetableFields = Seq(
-    "admin.contributingInstitution",
+  val sortableFields = Seq(
+    "@id",
     "dataProvider",
     "dataProvider.@id",
-    "dataProvider.exactMatch",
     "dataProvider.name",
     "hasView.@id",
     "hasView.format",
-    "intermediateProvider",
+    "id",
     "isPartOf.@id",
     "isPartOf.name",
+    "isShownAt",
+    "object",
     "provider.@id",
-    "provider.exactMatch",
     "provider.name",
-    "rights",
-    "rightsCategory",
-    "sourceResource.collection.title",
     "sourceResource.contributor",
     "sourceResource.date.begin",
-    "sourceResource.date.begin.month",
-    "sourceResource.date.begin.year",
     "sourceResource.date.end",
-    "sourceResource.date.end.month",
-    "sourceResource.date.end.year",
+    "sourceResource.extent",
     "sourceResource.format",
     "sourceResource.language.iso639_3",
     "sourceResource.language.name",
@@ -92,12 +86,12 @@ class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest 
     "sourceResource.type"
   )
 
-  for (facet <- facetableFields) {
+  for (sortBy <- sortableFields) {
 
-    s"Facet by $facet" should {
+    s"Sort by $sortBy" should {
       "return OK" in {
 
-        val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=$facet")
+        val request = Get(s"/v2/items?api_key=$fakeApiKey&sort_by=$sortBy&fields=$sortBy")
 
         request ~> routes ~> check {
           status shouldEqual StatusCodes.OK
