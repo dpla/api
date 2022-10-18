@@ -8,7 +8,7 @@ lazy val root = (project in file(".")).
       scalaVersion    := "2.13.4"
     )),
 
-    name := "ebook-api",
+    name := "api",
     assembly / mainClass := Some("dpla.api.RunApp"),
     assembly / assemblyJarName := "dpla-api.jar",
     libraryDependencies ++= Seq(
