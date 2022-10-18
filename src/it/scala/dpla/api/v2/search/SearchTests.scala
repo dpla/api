@@ -169,4 +169,72 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Spatial search by name" should {
+    "match term in at least one of each doc's place names" in {
+      val searchTerm = "Boston"
+
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.spatial=$searchTerm&fields=sourceResource.spatial&page_size=500")
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").map(doc => {
+
+          // get all values for sourceResource.spatial.name
+          val spatialNames = readObjectArray(doc, "sourceResource.spatial").flatMap(spatial => {
+            readString(spatial, "name")
+          }).mkString(" ").toLowerCase
+
+          spatialNames should include(searchTerm.toLowerCase)
+        })
+      }
+    }
+  }
+
+  "Temporal search by sourceResource.date.after" should {
+    "return docs with date ranges that come after the given date" in {
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=1960&fields=sourceResource.date&page_size=500")
+
+      val dateFormats = Seq(
+        "yyyy",
+        "yyyy-MM",
+        "yyyy-MM-dd"
+      )
+      val queryTime = new SimpleDateFormat("yyyy").parse("1960")
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").map(doc => {
+          // will be made true if at least 1 of the dates in this array fits
+          var isOk = false
+
+          readObjectArray(doc, "sourceResource.date").map(temporal => {
+            readString(temporal, "end").map(end => {
+              // if sourceResource.temporal.end is null, that is allowed, move on
+              if (end != null) {
+                // parse the end date
+                dateFormats.flatMap(format => {
+                  Try { new SimpleDateFormat(format).parse(end) }.toOption
+                })
+                  // get the first successfully parsed date (there should be only one)
+                  .headOption.map(endDate => {
+                  // endDate should be greater than or equal to query date
+                  if (endDate.after(queryTime) || endDate.equals(queryTime)) {
+                    isOk = true
+                  }
+                })
+              }
+            })
+          })
+
+          // assert that the end date for this doc is equal to or after the query date
+          isOk shouldBe true
+        })
+      }
+    }
+  }
 }
