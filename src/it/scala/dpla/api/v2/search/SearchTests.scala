@@ -2,6 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
@@ -76,6 +77,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   "Search by phrase" should {
     "match exactly a phrase in each doc's sourceResource" in {
       val searchPhrase = "\"old\\+victorian\""
+      val expectedPhrase = "old victorian"
+
       val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
 
       request ~> routes ~> check {
@@ -85,7 +88,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
           val sourceResource = readObject(doc, "sourceResource").toString
             .toLowerCase
 
-          sourceResource should include("old victorian")
+          sourceResource should include(expectedPhrase)
         })
       }
     }
@@ -93,14 +96,16 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Temporal search by sourceResource.temporal.after" should {
     "return docs with date ranges that come after the given date" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=1960&fields=sourceResource.temporal&page_size=500")
+      val queryAfter = "1960"
+
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
 
       val dateFormats = Seq(
         "yyyy",
         "yyyy-MM",
         "yyyy-MM-dd"
       )
-      val queryTime = new SimpleDateFormat("yyyy").parse("1960")
+      val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
 
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -121,7 +126,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
                   // get the first successfully parsed date (there should be only one)
                   .headOption.map(endDate => {
                   // endDate should be greater than or equal to query date
-                  if (endDate.after(queryTime) || endDate.equals(queryTime)) {
+                  if (endDate.after(queryDate) || endDate.equals(queryDate)) {
                     isOk = true
                   }
                 })
@@ -195,14 +200,16 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Temporal search by sourceResource.date.after" should {
     "return docs with date ranges that come after the given date" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=1960&fields=sourceResource.date&page_size=500")
+      val queryAfter = "1960"
+      
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=$queryAfter&fields=sourceResource.date&page_size=500")
 
       val dateFormats = Seq(
         "yyyy",
         "yyyy-MM",
         "yyyy-MM-dd"
       )
-      val queryTime = new SimpleDateFormat("yyyy").parse("1960")
+      val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
 
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -223,7 +230,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
                   // get the first successfully parsed date (there should be only one)
                   .headOption.map(endDate => {
                   // endDate should be greater than or equal to query date
-                  if (endDate.after(queryTime) || endDate.equals(queryTime)) {
+                  if (endDate.after(queryDate) || endDate.equals(queryDate)) {
                     isOk = true
                   }
                 })
@@ -241,6 +248,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   "Wildcard pattern" should {
     "match exactly a phrase in each doc's sourceResource" in {
       val searchPhrase = "manuscr*"
+      val expectedPhrase = "manuscr"
+
       val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
 
       request ~> routes ~> check {
@@ -250,8 +259,43 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
           val sourceResource = readObject(doc, "sourceResource").toString
             .toLowerCase
 
-          sourceResource should include("manuscr")
+          sourceResource should include(expectedPhrase)
         })
+      }
+    }
+  }
+
+  "Facet by field, coordinates" should {
+    "have status code 200" in {
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&facets=sourceResource.spatial.coordinates:42:-70&page_size=0")
+
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  "Page size, truncated" should {
+    val requestSize = "501"
+    val expectedSize = 500
+
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=$requestSize&fields=id")
+
+    s"have limit of $expectedSize" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val limit: Option[Int] = readInt(entity, "limit")
+        limit should === (Some(expectedSize))
+      }
+    }
+
+    s"return $expectedSize docs" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        docs.size should === (expectedSize)
       }
     }
   }
