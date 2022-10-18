@@ -246,6 +246,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
           // will be made true if at least 1 of the dates in this array fits
           var isOk = false
 
+          // iterate through the dates
           readObjectArray(doc, "sourceResource.date").map(temporal => {
             readString(temporal, "end").map(end => {
               // if sourceResource.temporal.end is null, that is allowed, move on
@@ -456,6 +457,90 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val facetKeys = readObject(entity, "facets").map(_.fields.keys)
           .getOrElse(Iterable())
         facetKeys should contain allElementsOf expectedFacets
+      }
+    }
+  }
+
+  "Temporal Search, sourceResource.date within a range" should {
+    val queryAfter = "1960"
+    val queryBefore = "1980"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=$queryAfter&sourceResource.date.before=$queryBefore&fields=sourceResource.date&page_size=500")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with dates that overlap the given range" in {
+      val afterDate = new SimpleDateFormat("yyyy").parse(queryAfter)
+      val beforeDate = new SimpleDateFormat("yyyy").parse(queryBefore)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").foreach(doc => {
+//          // will be made true if at least 1 of the dates in this array fits
+//          var docOk = false
+
+          // iterate through the dates
+          readObject(doc, "sourceResource.date").foreach(date => {
+            var beginOk = false
+            var endOk = false
+
+            readString(date, "begin") match {
+              case Some(begin) =>
+                if (begin == null) {
+                  // null is allowed
+                  beginOk = true
+                } else {
+                  // parse the begin date
+                  dateFormats.flatMap(format => {
+                    Try { new SimpleDateFormat(format).parse(begin) }.toOption
+                  })
+                    // get the first successfully parsed date (there should be only one)
+                    .headOption.foreach(beginDate => {
+                    // beginDate should be before beforeDate
+                    if (beginDate.before(beforeDate) || beginDate.equals(beforeDate)) {
+                      beginOk = true
+                    }
+                  })
+                }
+              case None =>
+                // None is allowed
+                beginOk = true
+            }
+
+            readString(date, "end") match {
+              case Some(end) =>
+                if (end == null) {
+                  // null is allowed
+                  endOk = true
+                } else {
+                  // parse the end date
+                  dateFormats.flatMap(format => {
+                    Try {
+                      new SimpleDateFormat(format).parse(end)
+                    }.toOption
+                  })
+                    // get the first successfully parsed date (there should be only one)
+                    .headOption.foreach(endDate => {
+                    // endDate should be after afterDate
+                    if (endDate.after(afterDate) || endDate.equals(afterDate)) {
+                      endOk = true
+                    }
+                  })
+                }
+              case None =>
+                // None is allowed
+                endOk = true
+            }
+
+            beginOk shouldBe true
+            endOk shouldBe true
+          })
+        })
       }
     }
   }
