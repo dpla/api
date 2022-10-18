@@ -481,9 +481,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
         // iterate through the docs
         readObjectArray(entity, "docs").foreach(doc => {
-//          // will be made true if at least 1 of the dates in this array fits
-//          var docOk = false
-
           // iterate through the dates
           readObject(doc, "sourceResource.date").foreach(date => {
             var beginOk = false
@@ -501,7 +498,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
                   })
                     // get the first successfully parsed date (there should be only one)
                     .headOption.foreach(beginDate => {
-                    // beginDate should be before beforeDate
+                    // beginDate should be before or equal to beforeDate
                     if (beginDate.before(beforeDate) || beginDate.equals(beforeDate)) {
                       beginOk = true
                     }
@@ -526,7 +523,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
                   })
                     // get the first successfully parsed date (there should be only one)
                     .headOption.foreach(endDate => {
-                    // endDate should be after afterDate
+                    // endDate should be after or equal to afterDate
                     if (endDate.after(afterDate) || endDate.equals(afterDate)) {
                       endOk = true
                     }
