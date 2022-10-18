@@ -27,11 +27,6 @@ import scala.util.Try
 class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   with JsonFieldReader {
 
-  // The following variables may change based on the contents of the search index.
-  val testProviderId = "http://dp.la/api/contributor/esdn"
-  val testProviderCount = 443200 // The number of docs expected for the provider id, above
-  val testItemId = "00002e1fe8817b91ef4a9ef65a212a18"
-
   // All dates in the search index are expected to be in one of these formats.
   val dateFormats = Seq(
     "yyyy",
@@ -69,7 +64,9 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
   "Filter by provider" should {
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:$testProviderId")
+    val providerId = "http://dp.la/api/contributor/esdn"
+    val expectedCount = 443200
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:$providerId")
 
     "return status code 200" in {
       request ~> routes ~> check {
@@ -82,7 +79,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
 
         val count: Option[Int] = readInt(entity, "count")
-        count should === (Some(testProviderCount))
+        count should === (Some(expectedCount))
       }
     }
   }
@@ -160,7 +157,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Fetch one item by id" should {
-    val request = Get(s"/v2/items/$testItemId?api_key=$fakeApiKey")
+    val itemId = "00002e1fe8817b91ef4a9ef65a212a18"
+    val request = Get(s"/v2/items/$itemId?api_key=$fakeApiKey")
 
     "return status code 200" in {
       request ~> routes ~> check {
@@ -194,7 +192,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val id = docs.headOption.flatMap(doc => {
           readString(doc, "id")
         })
-        id should === (Some(testItemId))
+        id should === (Some(itemId))
       }
     }
   }
@@ -364,9 +362,9 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Date facet combo used by frontend" should {
-    "return status code 200" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=sourceResource.date.begin.year,sourceResource.date.end.year")
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=sourceResource.date.begin.year,sourceResource.date.end.year")
 
+    "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
@@ -374,12 +372,25 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Sort by distance from a point" should {
-    "return status code 200" in {
+    val coordinates = "38.897316,+-77.030027"
+    val expectedPlaceName = "district of columbia"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sort_by=sourceResource.spatial.coordinates&sort_by_pin=$coordinates&fields=sourceResource.spatial&page_size=5")
 
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
     }
 
     "return top results reasonably close to pin" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
 
+        readObjectArray(entity, "docs").map(doc => {
+          val docString = doc.toString.toLowerCase()
+          docString should include(expectedPlaceName)
+        })
+      }
     }
   }
 }
