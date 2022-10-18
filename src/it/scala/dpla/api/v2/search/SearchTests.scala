@@ -318,4 +318,14 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Date facet combo used by frontend" should {
+    "return status code 200" in {
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=sourceResource.date.begin.year,sourceResource.date.end.year")
+
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
 }
