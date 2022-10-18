@@ -417,4 +417,25 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Facet with size limit" should {
+    val queryFacetSize = "3"
+    val expectedFacetSize = 3
+
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&facets=dataProvider&page_size=0&facet_size=$queryFacetSize")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "have facet size of the given limit" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val facets = readObjectArray(entity, "facets", "dataProvider", "terms")
+        facets.size should === (expectedFacetSize)
+      }
+    }
+  }
 }
