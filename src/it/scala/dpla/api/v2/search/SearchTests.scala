@@ -410,9 +410,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
 
         readObjectArray(entity, "docs").map(doc => {
-          doc.fields.keys.map(key => {
-            expectedFields should contain(key)
-          })
+          val fields = doc.fields.keys
+          expectedFields should contain allElementsOf fields
         })
       }
     }
@@ -435,6 +434,28 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val facets = readObjectArray(entity, "facets", "dataProvider", "terms")
         facets.size should === (expectedFacetSize)
+      }
+    }
+  }
+
+  "Multiple facets" should {
+    val facetQuery = "dataProvider,sourceResource.publisher"
+    val expectedFacets = Seq("dataProvider", "sourceResource.publisher")
+
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&fields=id,dataProvider,sourceResource.title&facets=$facetQuery")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return the given facet fields" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val facetKeys = readObject(entity, "facets").map(_.fields.keys)
+          .getOrElse(Iterable())
+        facetKeys should contain allElementsOf expectedFacets
       }
     }
   }
