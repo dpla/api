@@ -393,4 +393,28 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Only certain fields" should {
+    val queryFields = "id,dataProvider,sourceResource.title"
+    val expectedFields = Seq("id", "dataProvider", "sourceResource.title", "score")
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&fields=$queryFields")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return only the requested fields in each doc" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          doc.fields.keys.map(key => {
+            expectedFields should contain(key)
+          })
+        })
+      }
+    }
+  }
 }
