@@ -201,7 +201,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   "Temporal search by sourceResource.date.after" should {
     "return docs with date ranges that come after the given date" in {
       val queryAfter = "1960"
-      
+
       val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=$queryAfter&fields=sourceResource.date&page_size=500")
 
       val dateFormats = Seq(
@@ -296,6 +296,25 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
         val docs = readObjectArray(entity, "docs")
         docs.size should === (expectedSize)
+      }
+    }
+  }
+
+  "Boolean AND" should {
+    "match both terms in each doc" in {
+      val term1 = "fruit"
+      val term2 = "banana"
+
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$term1+AND+$term2")
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          val docString = doc.toString.toLowerCase()
+          docString should include(term1)
+          docString should include(term2)
+        })
       }
     }
   }
