@@ -237,4 +237,22 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Wildcard pattern" should {
+    "match exactly a phrase in each doc's sourceResource" in {
+      val searchPhrase = "manuscr*"
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          val sourceResource = readObject(doc, "sourceResource").toString
+            .toLowerCase
+
+          sourceResource should include("manuscr")
+        })
+      }
+    }
+  }
 }
