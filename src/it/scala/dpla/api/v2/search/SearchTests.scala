@@ -738,4 +738,52 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Sort by field, spatial coordinates" should {
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sort_by=sourceResource.spatial.coordinates&fields=sourceResource.spatial&sort_by_pin=42,-70")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  "Q and field filters combined" should {
+    val query = "test"
+    val titleQuery = "tube"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$query&sourceResource.title=$titleQuery")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with q keyword in sourceResource" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          val sourceResource = readObject(doc, "sourceResource").toString
+            .toLowerCase
+
+          sourceResource should include(query)
+        })
+      }
+    }
+
+    "return docs with title keyword in title" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          val titles = readStringArray(doc, "sourceResource", "title")
+            .mkString(" ").toLowerCase
+
+           titles should include(titleQuery)
+        })
+      }
+    }
+  }
 }
