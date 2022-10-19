@@ -652,6 +652,32 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Multiple items, comma-separated" should {
-    
+    val id1 = "00002e1fe8817b91ef4a9ef65a212a18"
+    val id2 = "cc7a1cbdeec0681cdb14ad0f315de3a9"
+    val request = Get(s"/v2/items/$id1,$id2?api_key=$fakeApiKey")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return a count of two" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val count: Option[Int] = readInt(entity, "count")
+        count should === (Some(2))
+      }
+    }
+
+    "return an array with two docs" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        docs.size should === (2)
+      }
+    }
   }
 }
