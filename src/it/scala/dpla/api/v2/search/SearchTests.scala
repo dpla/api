@@ -786,4 +786,107 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Facet, basic" should {
+    val facet = "dataProvider"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&fields=id,dataProvider,sourceResource.title&facets=$facet")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return the given facet field" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val facets = readObject(entity, "facets").map(_.fields.keys)
+          .getOrElse(Iterable())
+        facets should contain only facet
+      }
+    }
+
+    "have multiple terms for the facet" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val terms = readObjectArray(entity, "facets", facet)
+        terms.length shouldBe > (0)
+      }
+    }
+
+    "have a term and count for the facet" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val facetTerms = readObjectArray(entity, "facets", facet, "terms")
+          .headOption.map(_.fields.keys).getOrElse(Iterable())
+        facetTerms should contain allOf ("term", "count")
+      }
+    }
+  }
+
+  "Exact field match" should {
+    val queryTerm = "University+of+Pennsylvania"
+    val expectedTerm = "University of Pennsylvania"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&dataProvider=$queryTerm&exact_field_match=true&page_size=500&fields=dataProvider")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with the exact term in the given field" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          val dataProvider = readString(doc, "dataProvider", "name")
+
+          dataProvider should === (Some(expectedTerm))
+        })
+      }
+    }
+  }
+
+  "Match-all query" should {
+    val request = Get(s"/v2/items?api_key=$fakeApiKey")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return 10 docs" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val docs = readObjectArray(entity, "docs")
+        docs.size shouldBe 10
+      }
+    }
+
+    "have a count of greater than 10" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val count = readInt(entity, "count").get
+        count should be > 10
+      }
+    }
+
+    "have a limit of 10" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val limit = readInt(entity, "limit")
+        limit shouldBe Some(10)
+      }
+    }
+
+    "have an empty facets array" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val facets = readObjectArray(entity, "facets")
+        facets.size shouldBe 0
+      }
+    }
+  }
 }
