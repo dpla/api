@@ -680,4 +680,32 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Spatial Search, state" should {
+    val state = "Hawaii"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.spatial.state=$state&fields=sourceResource.spatial&page_size=500")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with state names that match the query" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through docs
+        readObjectArray(entity, "docs").map(doc => {
+
+          // get all state names for this doc
+          val stateNames = readObjectArray(doc, "sourceResource.spatial").flatMap(spatial => {
+            readString(spatial, "state")
+          })
+
+          stateNames should contain(state)
+        })
+      }
+    }
+  }
 }
