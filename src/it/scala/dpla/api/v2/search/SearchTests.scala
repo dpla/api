@@ -639,4 +639,19 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Bad request: search on originalRecord" should {
+    val queryTerm = "no+good"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&originalRecord.stringValue=$queryTerm")
+
+    "return status code 400" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "Multiple items, comma-separated" should {
+    
+  }
 }
