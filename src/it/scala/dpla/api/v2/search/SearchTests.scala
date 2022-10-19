@@ -440,10 +440,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Multiple facets" should {
-    val facetQuery = "dataProvider,sourceResource.publisher"
-    val expectedFacets = Seq("dataProvider", "sourceResource.publisher")
+    val facet1 = "dataProvider"
+    val facet2 = "sourceResource.publisher"
 
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&fields=id,dataProvider,sourceResource.title&facets=$facetQuery")
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&fields=id,dataProvider,sourceResource.title&facets=$facet1,$facet2")
 
     "return status code 200" in {
       request ~> routes ~> check {
@@ -456,7 +456,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val facetKeys = readObject(entity, "facets").map(_.fields.keys)
           .getOrElse(Iterable())
-        facetKeys should contain allElementsOf expectedFacets
+        facetKeys should contain allOf (facet1, facet2)
       }
     }
   }
@@ -705,6 +705,36 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
           stateNames should contain(state)
         })
+      }
+    }
+  }
+
+  "Facet, no documents" should {
+    val facet1 = "dataProvider"
+    val facet2 = "sourceResource.publisher"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&fields=id,dataProvider,sourceResource.title&facets=$facet1,$facet2&page_size=0")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return 0 docs" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        docs.size should === (0)
+      }
+    }
+
+    "return the given facet fields" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val facetKeys = readObject(entity, "facets").map(_.fields.keys)
+          .getOrElse(Iterable())
+        facetKeys should contain allOf(facet1, facet2)
       }
     }
   }
