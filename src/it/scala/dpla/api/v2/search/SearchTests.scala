@@ -541,4 +541,34 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Page size, within bounds" should {
+    val requestSize = "2"
+    val expectedSize = 2
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=$requestSize")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    s"have limit of $expectedSize" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val limit: Option[Int] = readInt(entity, "limit")
+        limit should === (Some(expectedSize))
+      }
+    }
+
+    s"return $expectedSize docs" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        docs.size should === (expectedSize)
+      }
+    }
+  }
 }
