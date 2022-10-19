@@ -109,7 +109,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Temporal search by sourceResource.temporal.after" should {
+  "Temporal search with sourceResource.temporal.after" should {
     val queryAfter = "1960"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
 
@@ -588,6 +588,53 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
         readObjectArray(entity, "docs").map(doc => {
           doc.toString.toLowerCase should include(query)
+        })
+      }
+    }
+  }
+
+  "Temporal search with sourceResource.date.before" should {
+    val queryBefore = "1980"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.before=$queryBefore&fields=sourceResource.date&page_size=500")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with date ranges that come before the given date" in {
+      val queryDate = new SimpleDateFormat("yyyy").parse(queryBefore)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").map(doc => {
+          // will be made true if at least 1 of the dates in this array fits
+          var isOk = false
+
+          readObjectArray(doc, "sourceResource.date").map(date => {
+            readString(date, "begin").map(begin => {
+              // if sourceResource.temporal.begin is null, that is allowed, move on
+              if (begin != null) {
+                // parse the end date
+                dateFormats.flatMap(format => {
+                  Try { new SimpleDateFormat(format).parse(begin) }.toOption
+                })
+                  // get the first successfully parsed date (there should be only one)
+                  .headOption.map(beginDate => {
+                  // beginDate should be greater than or equal to query date
+                  if (beginDate.before(queryDate) || beginDate.equals(queryDate)) {
+                    isOk = true
+                  }
+                })
+              }
+            })
+          })
+
+          // assert that the begin date for this doc is equal to or before the query date
+          isOk shouldBe true
         })
       }
     }
