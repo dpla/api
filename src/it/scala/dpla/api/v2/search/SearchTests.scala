@@ -1111,4 +1111,14 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Quoted isShownAt" should {
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&&fields=id&isShownAt=%22http://digitalcollections.nypl.org/items/510d47dd-c6ef-a3d9-e040-e00a18064a99%22")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
 }
