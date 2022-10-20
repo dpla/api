@@ -12,13 +12,12 @@ import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
 import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
-import org.scalatest.Ignore
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 
 import java.text.SimpleDateFormat
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 /**
@@ -76,6 +75,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "return the correct doc count" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -86,7 +92,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Search by phrase" should {
+  "Search for phrase" should {
     val searchPhrase = "\"old\\+victorian\""
     val expectedPhrase = "old victorian"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
@@ -94,6 +100,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -118,6 +131,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -157,13 +177,20 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Fetch one item by id" should {
+  "One item" should {
     val itemId = "00002e1fe8817b91ef4a9ef65a212a18"
     val request = Get(s"/v2/items/$itemId?api_key=$fakeApiKey")
 
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -208,6 +235,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "match term in at least one of each doc's place names" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -233,6 +267,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -284,6 +325,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "match exactly a phrase in each doc's sourceResource" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -299,11 +347,18 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Facet by field, coordinates" should {
-    "return status code 200" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey&facets=sourceResource.spatial.coordinates:42:-70&page_size=0")
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&facets=sourceResource.spatial.coordinates:42:-70&page_size=0")
 
+    "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
   }
@@ -316,6 +371,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -349,6 +411,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "match both terms in each doc" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -362,12 +431,19 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Date facet combo used by frontend" should {
+  "Facet, date facet combo used by frontend" should {
     val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=0&facets=sourceResource.date.begin.year,sourceResource.date.end.year")
 
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
   }
@@ -380,6 +456,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -403,6 +486,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -430,6 +520,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "have facet size of the given limit" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -439,7 +536,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Multiple facets" should {
+  "Facet, multiple" should {
     val facet1 = "dataProvider"
     val facet2 = "sourceResource.publisher"
 
@@ -448,6 +545,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -469,6 +573,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -553,6 +664,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     s"have limit of $expectedSize" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -582,6 +700,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "match a word in each doc" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -600,6 +725,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -648,6 +780,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         status shouldEqual StatusCodes.BadRequest
       }
     }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
   }
 
   "Multiple items, comma-separated" should {
@@ -658,6 +797,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -680,6 +826,94 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
+  "Temporal Search, sourceResource.temporal within a range" should {
+    val queryAfter = "1960"
+    val queryBefore = "1980"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&sourceResource.temporal.before=$queryBefore&fields=sourceResource.temporal&page_size=500")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
+    "return docs with dates that overlap the given range" in {
+      val afterDate = new SimpleDateFormat("yyyy").parse(queryAfter)
+      val beforeDate = new SimpleDateFormat("yyyy").parse(queryBefore)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").foreach(doc => {
+          // iterate through the dates
+          readObject(doc, "sourceResource.temporal").foreach(date => {
+            var beginOk = false
+            var endOk = false
+
+            readString(date, "begin") match {
+              case Some(begin) =>
+                if (begin == null) {
+                  // null is allowed
+                  beginOk = true
+                } else {
+                  // parse the date
+                  dateFormats.flatMap(format => {
+                    Try { new SimpleDateFormat(format).parse(begin) }.toOption
+                  })
+                    // get the first successfully parsed date (there should be only one)
+                    .headOption.foreach(beginDate => {
+                    // beginDate should be before or equal to beforeDate
+                    if (beginDate.before(beforeDate) || beginDate.equals(beforeDate)) {
+                      beginOk = true
+                    }
+                  })
+                }
+              case None =>
+                // None is allowed
+                beginOk = true
+            }
+
+            readString(date, "end") match {
+              case Some(end) =>
+                if (end == null) {
+                  // null is allowed
+                  endOk = true
+                } else {
+                  // parse the date
+                  dateFormats.flatMap(format => {
+                    Try {
+                      new SimpleDateFormat(format).parse(end)
+                    }.toOption
+                  })
+                    // get the first successfully parsed date (there should be only one)
+                    .headOption.foreach(endDate => {
+                    // endDate should be after or equal to afterDate
+                    if (endDate.after(afterDate) || endDate.equals(afterDate)) {
+                      endOk = true
+                    }
+                  })
+                }
+              case None =>
+                // None is allowed
+                endOk = true
+            }
+
+            beginOk shouldBe true
+            endOk shouldBe true
+          })
+        })
+      }
+    }
+  }
+
   "Spatial Search, state" should {
     val state = "Hawaii"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.spatial.state=$state&fields=sourceResource.spatial&page_size=500")
@@ -687,6 +921,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -719,6 +960,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "return 0 docs" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -738,12 +986,34 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
+  /**
+   * SKIP
+   * Though mentioned in https://pro.dp.la/developers/requests#spatial,
+   * there is actually a test in query_spec.rb in the original platform app that
+   * asserts that we ignore sourceResource.spatial.coordinates.
+   *
+   * "Spatial Search, coordinates, basic"
+   * "/v2/items?api_key=$fakeApiKey&sourceResource.spatial.coordinates=20.75028,-156.50028&fields=sourceResource.spatial&page_size=500"
+   * "return status code 200"
+   * "return JSON"
+   * "return a state Hawaii"
+   * "return city Honolulu"
+   */
+
+
   "Sort by field, spatial coordinates" should {
     val request = Get(s"/v2/items?api_key=$fakeApiKey&sort_by=sourceResource.spatial.coordinates&fields=sourceResource.spatial&sort_by_pin=42,-70")
 
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
   }
@@ -756,6 +1026,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -793,6 +1070,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -834,6 +1118,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "return docs with the exact term in the given field" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -853,6 +1144,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -896,6 +1194,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -949,6 +1254,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "have facet values at least one year apart" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -991,6 +1303,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "return docs with the given term in the correct field" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -1010,6 +1329,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
 
@@ -1071,6 +1397,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     "return docs with one of the search terms in sourceResource" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
@@ -1092,12 +1425,20 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
+
     /**
-     * IGNORED
+     * SKIP
      * Don't know how to test this because Scala sorts differently than
      * ElasticSearch on things like non-English characters.
+     *
+     * "sort titles in ascending order"
      */
-    //"sort titles in ascending order" in {}
   }
 
   "404 for no docs, /v2/items/ID" should {
@@ -1110,6 +1451,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         status shouldEqual StatusCodes.NotFound
       }
     }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
+      }
+    }
   }
 
   "Quoted isShownAt" should {
@@ -1118,6 +1466,13 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+    
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try { entityAs[String].parseJson }.toOption
+        parsed shouldNot be (None)
       }
     }
   }
