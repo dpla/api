@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ITUtils.fakeApiKey
-import dpla.api.v2.analytics.AnalyticsClient
+import dpla.api.v2.analytics.{AnalyticsClient, ITMockAnalyticsClient}
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
@@ -31,8 +31,9 @@ class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
+  // Stub out analytics client
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
+    testKit.spawn(ITMockAnalyticsClient())
 
   // Stub out authentication
   val postgresClient = testKit.spawn(ITMockPostgresClient())
