@@ -1,6 +1,6 @@
 package dpla.api.v2.search
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing}
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
@@ -20,7 +20,8 @@ import org.scalatest.wordspec.AnyWordSpec
  * Test that expected fields are sortable in item search.
  * Sort by coordinates is not included here as it requires special syntax.
  */
-class SortableFields extends AnyWordSpec with Matchers with ScalatestRouteTest {
+class SortableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
+  with LogCapturing {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
 

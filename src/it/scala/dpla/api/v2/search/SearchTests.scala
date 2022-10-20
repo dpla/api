@@ -1,6 +1,6 @@
 package dpla.api.v2.search
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing}
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
@@ -17,7 +17,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 
 import java.text.SimpleDateFormat
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 
 /**
@@ -25,7 +25,7 @@ import scala.util.{Failure, Success, Try}
  * Sort by coordinates is not included here as it requires special syntax.
  */
 class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
-  with JsonFieldReader {
+  with JsonFieldReader with LogCapturing {
 
   // All dates in the search index are expected to be in one of these formats.
   val dateFormats = Seq(
@@ -1436,9 +1436,39 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
      * SKIP
      * Don't know how to test this because Scala sorts differently than
      * ElasticSearch on things like non-English characters.
+     * Instead, I've added a test below that sorts by id.
      *
      * "sort titles in ascending order"
      */
+  }
+
+  "Sort by id, ascending" should {
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sort_by=id&fields=id")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return JSON" in {
+      request ~> routes ~> check {
+        val parsed = Try {
+          entityAs[String].parseJson
+        }.toOption
+        parsed shouldNot be(None)
+      }
+    }
+
+    "sort ids in ascending order" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val ids = readObjectArray(entity, "docs").flatMap({ doc =>
+          readString(doc, "id")
+        })
+        ids should contain theSameElementsInOrderAs ids.sorted
+      }
+    }
   }
 
   "404 for no docs, /v2/items/ID" should {
@@ -1468,7 +1498,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         status shouldEqual StatusCodes.OK
       }
     }
-    
+
     "return JSON" in {
       request ~> routes ~> check {
         val parsed = Try { entityAs[String].parseJson }.toOption
