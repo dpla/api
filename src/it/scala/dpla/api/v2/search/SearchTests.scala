@@ -981,7 +981,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Search by field" should {
     val field = "sourceResource.description"
-    val query = "salad"
+    val query = "president"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&$field=$query&fields=$field&page_size=500")
 
     "return status code 200" in {
@@ -998,6 +998,63 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
           val fieldValue = readStringArray(doc, field).mkString(" ").toLowerCase
           fieldValue should include(query)
         })
+      }
+    }
+  }
+
+  "Facet, spatial distance ranges" should {
+    val fieldName = "sourceResource.spatial.coordinates"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&facets=$fieldName:42.3:-71&page_size=0")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "have facet with correctly-named property" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val properties = readObject(entity, "facets").map(_.fields.keys)
+          .getOrElse(Seq())
+        properties should contain only fieldName
+      }
+    }
+
+    "return facet with _type and ranges properties" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val properties = readObject(entity, "facets", fieldName)
+          .map(_.fields.keys).getOrElse(Seq())
+        properties should contain allOf ("_type", "ranges")
+      }
+    }
+
+    "return a facet with _type geo_distance" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val typeProperty = readString(entity, "facets", fieldName, "_type")
+        typeProperty shouldBe Some("geo_distance")
+      }
+    }
+
+    "return a facet with a non-empty array of ranges" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val ranges = readObjectArray(entity, "facets", fieldName, "ranges")
+        ranges.size should be > 0
+      }
+    }
+
+    "return ranges with the correct properties" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        // The first element of 'ranges' lacks the 'from' property,
+        // and the last one lacks the 'to' property,
+        // but the 2nd element (index 1) should have both.
+        val properties = readObjectArray(entity, "facets", fieldName, "ranges")(2)
+          .fields.keys
+        properties should contain allOf ("from", "to", "count")
       }
     }
   }
