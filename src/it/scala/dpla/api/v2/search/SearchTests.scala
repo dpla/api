@@ -978,4 +978,27 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
   }
+
+  "Search by field" should {
+    val field = "sourceResource.description"
+    val query = "salad"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&$field=$query&fields=$field&page_size=500")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with the given term in the correct field" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        readObjectArray(entity, "docs").map(doc => {
+          val fieldValue = readStringArray(doc, field).mkString(" ").toLowerCase
+          fieldValue should include(query)
+        })
+      }
+    }
+  }
 }
