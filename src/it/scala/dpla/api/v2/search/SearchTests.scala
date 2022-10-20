@@ -17,6 +17,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import scala.util.Try
 
 
@@ -109,7 +110,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Temporal search with sourceResource.temporal.after" should {
+  "Temporal search, sourceResource.temporal.after" should {
     val queryAfter = "1960"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
 
@@ -132,9 +133,9 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
           readObjectArray(doc, "sourceResource.temporal").map(temporal => {
             readString(temporal, "end").map(end => {
-              // if sourceResource.temporal.end is null, that is allowed, move on
+              // null is allowed, move on
               if (end != null) {
-                // parse the end date
+                // parse the date
                 dateFormats.flatMap(format => {
                   Try { new SimpleDateFormat(format).parse(end) }.toOption
                 })
@@ -149,7 +150,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
             })
           })
 
-          // assert that the end date for this doc is equal to or after the query date
           isOk shouldBe true
         })
       }
@@ -225,7 +225,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Temporal search by sourceResource.date.after" should {
+  "Temporal search, sourceResource.date.after" should {
     val queryAfter = "1960"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=$queryAfter&fields=sourceResource.date&page_size=500")
 
@@ -249,9 +249,9 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
           // iterate through the dates
           readObjectArray(doc, "sourceResource.date").map(temporal => {
             readString(temporal, "end").map(end => {
-              // if sourceResource.temporal.end is null, that is allowed, move on
+              // null is allowed, move on
               if (end != null) {
-                // parse the end date
+                // parse the date
                 dateFormats.flatMap(format => {
                   Try { new SimpleDateFormat(format).parse(end) }.toOption
                 })
@@ -266,7 +266,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
             })
           })
 
-          // assert that the end date for this doc is equal to or after the query date
           isOk shouldBe true
         })
       }
@@ -492,7 +491,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
                   // null is allowed
                   beginOk = true
                 } else {
-                  // parse the begin date
+                  // parse the date
                   dateFormats.flatMap(format => {
                     Try { new SimpleDateFormat(format).parse(begin) }.toOption
                   })
@@ -515,7 +514,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
                   // null is allowed
                   endOk = true
                 } else {
-                  // parse the end date
+                  // parse the date
                   dateFormats.flatMap(format => {
                     Try {
                       new SimpleDateFormat(format).parse(end)
@@ -593,7 +592,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "Temporal search with sourceResource.date.before" should {
+  "Temporal search, sourceResource.date.before" should {
     val queryBefore = "1980"
     val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.before=$queryBefore&fields=sourceResource.date&page_size=500")
 
@@ -616,9 +615,9 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
           readObjectArray(doc, "sourceResource.date").map(date => {
             readString(date, "begin").map(begin => {
-              // if sourceResource.temporal.begin is null, that is allowed, move on
+              // null is allowed, move on
               if (begin != null) {
-                // parse the end date
+                // parse the date
                 dateFormats.flatMap(format => {
                   Try { new SimpleDateFormat(format).parse(begin) }.toOption
                 })
@@ -633,7 +632,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
             })
           })
 
-          // assert that the begin date for this doc is equal to or before the query date
           isOk shouldBe true
         })
       }
@@ -886,6 +884,97 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val facets = readObjectArray(entity, "facets")
         facets.size shouldBe 0
+      }
+    }
+  }
+
+  "Temporal search, sourceResource.temporal.before" should {
+    val queryBefore = "1980"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.before=$queryBefore&fields=sourceResource.temporal&page_size=500")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with date ranges that come before the given date" in {
+      val queryDate = new SimpleDateFormat("yyyy").parse(queryBefore)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").map(doc => {
+          // will be made true if at least 1 of the dates in this array fits
+          var isOk = false
+
+          readObjectArray(doc, "sourceResource.temporal").map(date => {
+            readString(date, "begin").map(begin => {
+              // null is allowed, move on
+              if (begin != null) {
+                // parse the date
+                dateFormats.flatMap(format => {
+                  Try {
+                    new SimpleDateFormat(format).parse(begin)
+                  }.toOption
+                })
+                  // get the first successfully parsed date (there should be only one)
+                  .headOption.map(beginDate => {
+                  // beginDate should be greater than or equal to query date
+                  if (beginDate.before(queryDate) || beginDate.equals(queryDate)) {
+                    isOk = true
+                  }
+                })
+              }
+            })
+          })
+
+          isOk shouldBe true
+        })
+      }
+    }
+  }
+
+  "Facet, date with year modifier" should {
+    val facetName = "sourceResource.date.begin.year"
+    val after = "1000"
+    val before = "2020"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&facets=$facetName&page_size=0&sourceResource.date.after=$after&sourceResource.date.before=$before")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "have facet values at least one year apart" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        val times: Seq[Int] = readObjectArray(entity, "facets", facetName, "entries")
+          .flatMap(entry => {
+            val dateString = readString(entry, "time").getOrElse("")
+            // parse the date
+            dateFormats.flatMap(format => {
+              Try { new SimpleDateFormat(format).parse(dateString) }.toOption
+            }).headOption
+              // transform date into year
+              .map(date => {
+                val yearFormatter = new SimpleDateFormat("yyyy")
+                yearFormatter.format(date).toInt
+              })
+          })
+
+        val sorted = times.sorted.reverse // sort largest to smallest
+        val left = sorted.dropRight(1) // left side of equation
+        val right = sorted.drop(1) // right side of equation
+        val zipped = left.zip(right)
+        val differences = zipped.map({ case (a,b) => a-b }) // subtract
+        val min = differences.min // smallest difference between two subsequent dates
+
+        min should be >= 1
       }
     }
   }
