@@ -12,6 +12,7 @@ import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
 import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
+import org.scalatest.Ignore
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
@@ -1078,6 +1079,35 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
             .toString.toLowerCase
           sourceResource should (include (term1) or include (term2))
         })
+      }
+    }
+  }
+
+  "Sort by title, ascending" should {
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&sort_by=sourceResource.title&fields=sourceResource.title")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    /**
+     * IGNORED
+     * Don't know how to test this because Scala sorts differently than
+     * ElasticSearch on things like non-English characters.
+     */
+    //"sort titles in ascending order" in {}
+  }
+
+  "404 for no docs, /v2/items/ID" should {
+    // Assumes that this ID is not in the search index
+    val id = "4b91c7105e6dff907d416d83ad1db450"
+    val request = Get(s"/v2/items/$id?api_key=$fakeApiKey")
+
+    "return status code 404" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
       }
     }
   }
