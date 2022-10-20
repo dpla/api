@@ -33,6 +33,7 @@ class SortableFields extends AnyWordSpec with Matchers with ScalatestRouteTest {
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
 
+  // Stub out authentication
   val postgresClient = testKit.spawn(ITMockPostgresClient())
 
   val authenticator: ActorRef[AuthenticationCommand] =

@@ -17,7 +17,6 @@ import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import scala.util.Try
 
 
@@ -47,6 +46,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   val analyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(AnalyticsClient())
 
+  // Stub out authentication
   val postgresClient = testKit.spawn(ITMockPostgresClient())
 
   val authenticator: ActorRef[AuthenticationCommand] =
@@ -1055,6 +1055,29 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val properties = readObjectArray(entity, "facets", fieldName, "ranges")(2)
           .fields.keys
         properties should contain allOf ("from", "to", "count")
+      }
+    }
+  }
+
+  "Boolean OR" should {
+    val term1 = "president"
+    val term2 = "congress"
+    val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$term1+OR+$term2")
+
+    "return status code 200" in {
+      request ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return docs with one of the search terms in sourceResource" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        readObjectArray(entity, "docs").map({ doc =>
+          val sourceResource = readObject(doc, "sourceResource")
+            .toString.toLowerCase
+          sourceResource should (include (term1) or include (term2))
+        })
       }
     }
   }
