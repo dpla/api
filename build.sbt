@@ -8,7 +8,8 @@ lazy val root = (project in file("."))
       organization    := "dpla",
       scalaVersion    := "2.13.4"
     )),
-    
+    Defaults.itSettings,
+
     name := "api",
     assembly / mainClass := Some("dpla.api.RunApp"),
     assembly / assemblyJarName := "dpla-api.jar",
