@@ -2,7 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing}
 import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
@@ -65,23 +65,28 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   val routes: Route =
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
-  "Filter by provider" should {
-    val providerId = "http://dp.la/api/contributor/esdn"
-    val expectedCount = 443200
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:$providerId")
-
+  private def returnStatusCode200(implicit request: HttpRequest): Unit =
     "return status code 200" in {
       request ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
     }
 
+  private def returnJSON(implicit request: HttpRequest): Unit =
     "return JSON" in {
       request ~> routes ~> check {
         val parsed = Try { entityAs[String].parseJson }.toOption
         parsed shouldNot be (None)
       }
     }
+
+  "Filter by provider" should {
+    val providerId = "http://dp.la/api/contributor/esdn"
+    val expectedCount = 443200
+    implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:$providerId")
+
+    returnStatusCode200
+    returnJSON
 
     "return the correct doc count" in {
       request ~> routes ~> check {
@@ -96,20 +101,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   "Search for phrase" should {
     val searchPhrase = "\"old\\+victorian\""
     val expectedPhrase = "old victorian"
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
+    implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
 
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
-      }
-    }
+    returnStatusCode200
+    returnJSON
 
     "match exactly a phrase in each doc's sourceResource" in {
       request ~> routes ~> check {
@@ -127,20 +122,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Temporal search, sourceResource.temporal.after" should {
     val queryAfter = "1960"
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
+    implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
 
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
-      }
-    }
+    returnStatusCode200
+    returnJSON
 
     "return docs with date ranges that come after the given date" in {
       val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
@@ -180,20 +165,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "One item" should {
     val itemId = "00002e1fe8817b91ef4a9ef65a212a18"
-    val request = Get(s"/v2/items/$itemId?api_key=$fakeApiKey")
+    implicit val request = Get(s"/v2/items/$itemId?api_key=$fakeApiKey")
 
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
-      }
-    }
+    returnStatusCode200
+    returnJSON
 
     "return a count of one" in {
       request ~> routes ~> check {
@@ -228,20 +203,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Spatial search by name" should {
     val searchTerm = "Boston"
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.spatial=$searchTerm&fields=sourceResource.spatial&page_size=500")
+    implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.spatial=$searchTerm&fields=sourceResource.spatial&page_size=500")
 
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
-      }
-    }
+    returnStatusCode200
+    returnJSON
 
     "match term in at least one of each doc's place names" in {
       request ~> routes ~> check {
@@ -263,20 +228,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Temporal search, sourceResource.date.after" should {
     val queryAfter = "1960"
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=$queryAfter&fields=sourceResource.date&page_size=500")
+    implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.date.after=$queryAfter&fields=sourceResource.date&page_size=500")
 
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
-      }
-    }
+    returnStatusCode200
+    returnJSON
 
     "return docs with date ranges that come after the given date" in {
       val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
@@ -318,20 +273,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   "Wildcard pattern" should {
     val searchPhrase = "manuscr*"
     val expectedPhrase = "manuscr"
-    val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
+    implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&q=$searchPhrase")
 
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
-      }
-    }
+    returnStatusCode200
+    returnJSON
 
     "match exactly a phrase in each doc's sourceResource" in {
       request ~> routes ~> check {
