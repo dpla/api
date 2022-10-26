@@ -100,6 +100,16 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+  private def returnDocArrayWithSize(expected: Int)(implicit request: HttpRequest): Unit =
+    s"return doc array with size $expected" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val docs = readObjectArray(entity, "docs")
+        docs.size should === (expected)
+      }
+    }
+
 //  private def returnDocWith(expected: String)(implicit request: HttpRequest): Unit =
 //    s"return doc with '$expected''" in {
 //
@@ -188,15 +198,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     returnStatusCode(200)
     returnJSON
     returnCount(1)
-
-    "return an array with a single doc" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val docs = readObjectArray(entity, "docs")
-        docs.size should === (1)
-      }
-    }
+    returnDocArrayWithSize(1)
 
     "return a doc with the correct id" in {
       request ~> routes ~> check {
@@ -311,21 +313,12 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Page size, truncated" should {
     val requestSize = "501"
-    val expectedSize = 500
     implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=$requestSize&fields=id")
 
     returnStatusCode(200)
     returnJSON
     returnLimit(500)
-
-    s"return $expectedSize docs" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val docs = readObjectArray(entity, "docs")
-        docs.size should === (expectedSize)
-      }
-    }
+    returnDocArrayWithSize(500)
   }
 
   "Boolean AND" should {
@@ -511,21 +504,12 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "Page size, within bounds" should {
     val requestSize = "2"
-    val expectedSize = 2
     implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&page_size=$requestSize")
 
     returnStatusCode(200)
     returnJSON
     returnLimit(2)
-
-    s"return $expectedSize docs" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val docs = readObjectArray(entity, "docs")
-        docs.size should === (expectedSize)
-      }
-    }
+    returnDocArrayWithSize(2)
   }
 
   "Simple search" should {
@@ -605,15 +589,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     returnStatusCode(200)
     returnJSON
     returnCount(2)
-
-    "return an array with two docs" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val docs = readObjectArray(entity, "docs")
-        docs.size should === (2)
-      }
-    }
+    returnDocArrayWithSize(2)
   }
 
   "Temporal Search, sourceResource.temporal within a range" should {
@@ -726,15 +702,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return 0 docs" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val docs = readObjectArray(entity, "docs")
-        docs.size should === (0)
-      }
-    }
+    returnDocArrayWithSize(0)
 
     "return the given facet fields" in {
       request ~> routes ~> check {
@@ -864,14 +832,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     returnStatusCode(200)
     returnJSON
     returnLimit(10)
-
-    "return 10 docs" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val docs = readObjectArray(entity, "docs")
-        docs.size shouldBe 10
-      }
-    }
+    returnDocArrayWithSize(10)
 
     "have a count of greater than 10" in {
       request ~> routes ~> check {
