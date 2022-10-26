@@ -110,6 +110,42 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+  private def haveDateRangesAfter(queryAfter: String, field: String)(implicit request: HttpRequest): Unit =
+    "return docs with date ranges that come after the given date" in {
+      val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").map(doc => {
+          // will be made true if at least 1 of the dates in this array fits
+          var isOk = false
+
+          readObjectArray(doc, field).map(temporal => {
+            readString(temporal, "end").map(end => {
+              // null is allowed, move on
+              if (end != null) {
+                // parse the date
+                dateFormats.flatMap(format => {
+                  Try { new SimpleDateFormat(format).parse(end) }.toOption
+                })
+                  // get the first successfully parsed date (there should be only one)
+                  .headOption.map(endDate => {
+                  // endDate should be greater than or equal to query date
+                  if (endDate.after(queryDate) || endDate.equals(queryDate)) {
+                    isOk = true
+                  }
+                })
+              }
+            })
+          })
+
+          isOk shouldBe true
+        })
+      }
+    }
+
 //  private def returnDocWith(expected: String)(implicit request: HttpRequest): Unit =
 //    s"return doc with '$expected''" in {
 //
@@ -149,46 +185,11 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Temporal search, sourceResource.temporal.after" should {
-    val queryAfter = "1960"
     implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
 
     returnStatusCode(200)
     returnJSON
-
-    "return docs with date ranges that come after the given date" in {
-      val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
-
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        // iterate through the docs
-        readObjectArray(entity, "docs").map(doc => {
-          // will be made true if at least 1 of the dates in this array fits
-          var isOk = false
-
-          readObjectArray(doc, "sourceResource.temporal").map(temporal => {
-            readString(temporal, "end").map(end => {
-              // null is allowed, move on
-              if (end != null) {
-                // parse the date
-                dateFormats.flatMap(format => {
-                  Try { new SimpleDateFormat(format).parse(end) }.toOption
-                })
-                  // get the first successfully parsed date (there should be only one)
-                  .headOption.map(endDate => {
-                  // endDate should be greater than or equal to query date
-                  if (endDate.after(queryDate) || endDate.equals(queryDate)) {
-                    isOk = true
-                  }
-                })
-              }
-            })
-          })
-
-          isOk shouldBe true
-        })
-      }
-    }
+    haveDateRangesAfter("1960", "sourceResource.temporal")
   }
 
   "One item" should {
@@ -244,42 +245,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return docs with date ranges that come after the given date" in {
-      val queryDate = new SimpleDateFormat("yyyy").parse(queryAfter)
-
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        // iterate through the docs
-        readObjectArray(entity, "docs").map(doc => {
-          // will be made true if at least 1 of the dates in this array fits
-          var isOk = false
-
-          // iterate through the dates
-          readObjectArray(doc, "sourceResource.date").map(temporal => {
-            readString(temporal, "end").map(end => {
-              // null is allowed, move on
-              if (end != null) {
-                // parse the date
-                dateFormats.flatMap(format => {
-                  Try { new SimpleDateFormat(format).parse(end) }.toOption
-                })
-                  // get the first successfully parsed date (there should be only one)
-                  .headOption.map(endDate => {
-                  // endDate should be greater than or equal to query date
-                  if (endDate.after(queryDate) || endDate.equals(queryDate)) {
-                    isOk = true
-                  }
-                })
-              }
-            })
-          })
-
-          isOk shouldBe true
-        })
-      }
-    }
+    haveDateRangesAfter("1960", "sourceResource.date")
   }
 
   "Wildcard pattern" should {
