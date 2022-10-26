@@ -256,11 +256,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
-//  private def returnDocWith(expected: String)(implicit request: HttpRequest): Unit =
-//    s"return doc with '$expected''" in {
-//
-//    }
-
   /** Tests */
 
   "Filter by provider" should {
