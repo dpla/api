@@ -146,6 +146,112 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+  private def haveDateRangesBefore(queryBefore: String, field: String)(implicit request: HttpRequest): Unit =
+    "return docs with date ranges that come before the given date" in {
+      val queryDate = new SimpleDateFormat("yyyy").parse(queryBefore)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").map(doc => {
+          // will be made true if at least 1 of the dates in this array fits
+          var isOk = false
+
+          readObjectArray(doc, field).map(date => {
+            readString(date, "begin").map(begin => {
+              // null is allowed, move on
+              if (begin != null) {
+                // parse the date
+                dateFormats.flatMap(format => {
+                  Try { new SimpleDateFormat(format).parse(begin) }.toOption
+                })
+                  // get the first successfully parsed date (there should be only one)
+                  .headOption.map(beginDate => {
+                  // beginDate should be greater than or equal to query date
+                  if (beginDate.before(queryDate) || beginDate.equals(queryDate)) {
+                    isOk = true
+                  }
+                })
+              }
+            })
+          })
+
+          isOk shouldBe true
+        })
+      }
+    }
+
+  private def haveDatesInRange(queryAfter: String, queryBefore: String, field: String)(implicit request: HttpRequest): Unit =
+    "return docs with dates that overlap the given range" in {
+      val afterDate = new SimpleDateFormat("yyyy").parse(queryAfter)
+      val beforeDate = new SimpleDateFormat("yyyy").parse(queryBefore)
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        // iterate through the docs
+        readObjectArray(entity, "docs").foreach(doc => {
+          // iterate through the dates
+          readObject(doc, field).foreach(date => {
+            var beginOk = false
+            var endOk = false
+
+            readString(date, "begin") match {
+              case Some(begin) =>
+                if (begin == null) {
+                  // null is allowed
+                  beginOk = true
+                } else {
+                  // parse the date
+                  dateFormats.flatMap(format => {
+                    Try { new SimpleDateFormat(format).parse(begin) }.toOption
+                  })
+                    // get the first successfully parsed date (there should be only one)
+                    .headOption.foreach(beginDate => {
+                    // beginDate should be before or equal to beforeDate
+                    if (beginDate.before(beforeDate) || beginDate.equals(beforeDate)) {
+                      beginOk = true
+                    }
+                  })
+                }
+              case None =>
+                // None is allowed
+                beginOk = true
+            }
+
+            readString(date, "end") match {
+              case Some(end) =>
+                if (end == null) {
+                  // null is allowed
+                  endOk = true
+                } else {
+                  // parse the date
+                  dateFormats.flatMap(format => {
+                    Try {
+                      new SimpleDateFormat(format).parse(end)
+                    }.toOption
+                  })
+                    // get the first successfully parsed date (there should be only one)
+                    .headOption.foreach(endDate => {
+                    // endDate should be after or equal to afterDate
+                    if (endDate.after(afterDate) || endDate.equals(afterDate)) {
+                      endOk = true
+                    }
+                  })
+                }
+              case None =>
+                // None is allowed
+                endOk = true
+            }
+
+            beginOk shouldBe true
+            endOk shouldBe true
+          })
+        })
+      }
+    }
+
 //  private def returnDocWith(expected: String)(implicit request: HttpRequest): Unit =
 //    s"return doc with '$expected''" in {
 //
@@ -185,11 +291,12 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   "Temporal search, sourceResource.temporal.after" should {
+    val queryAfter = "1960"
     implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&sourceResource.temporal.after=$queryAfter&fields=sourceResource.temporal&page_size=500")
 
     returnStatusCode(200)
     returnJSON
-    haveDateRangesAfter("1960", "sourceResource.temporal")
+    haveDateRangesAfter(queryAfter, "sourceResource.temporal")
   }
 
   "One item" should {
@@ -397,75 +504,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return docs with dates that overlap the given range" in {
-      val afterDate = new SimpleDateFormat("yyyy").parse(queryAfter)
-      val beforeDate = new SimpleDateFormat("yyyy").parse(queryBefore)
-
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        // iterate through the docs
-        readObjectArray(entity, "docs").foreach(doc => {
-          // iterate through the dates
-          readObject(doc, "sourceResource.date").foreach(date => {
-            var beginOk = false
-            var endOk = false
-
-            readString(date, "begin") match {
-              case Some(begin) =>
-                if (begin == null) {
-                  // null is allowed
-                  beginOk = true
-                } else {
-                  // parse the date
-                  dateFormats.flatMap(format => {
-                    Try { new SimpleDateFormat(format).parse(begin) }.toOption
-                  })
-                    // get the first successfully parsed date (there should be only one)
-                    .headOption.foreach(beginDate => {
-                    // beginDate should be before or equal to beforeDate
-                    if (beginDate.before(beforeDate) || beginDate.equals(beforeDate)) {
-                      beginOk = true
-                    }
-                  })
-                }
-              case None =>
-                // None is allowed
-                beginOk = true
-            }
-
-            readString(date, "end") match {
-              case Some(end) =>
-                if (end == null) {
-                  // null is allowed
-                  endOk = true
-                } else {
-                  // parse the date
-                  dateFormats.flatMap(format => {
-                    Try {
-                      new SimpleDateFormat(format).parse(end)
-                    }.toOption
-                  })
-                    // get the first successfully parsed date (there should be only one)
-                    .headOption.foreach(endDate => {
-                    // endDate should be after or equal to afterDate
-                    if (endDate.after(afterDate) || endDate.equals(afterDate)) {
-                      endOk = true
-                    }
-                  })
-                }
-              case None =>
-                // None is allowed
-                endOk = true
-            }
-
-            beginOk shouldBe true
-            endOk shouldBe true
-          })
-        })
-      }
-    }
+    haveDatesInRange(queryAfter, queryBefore, "sourceResource.date")
   }
 
   "Page size, within bounds" should {
@@ -502,41 +541,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return docs with date ranges that come before the given date" in {
-      val queryDate = new SimpleDateFormat("yyyy").parse(queryBefore)
-
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        // iterate through the docs
-        readObjectArray(entity, "docs").map(doc => {
-          // will be made true if at least 1 of the dates in this array fits
-          var isOk = false
-
-          readObjectArray(doc, "sourceResource.date").map(date => {
-            readString(date, "begin").map(begin => {
-              // null is allowed, move on
-              if (begin != null) {
-                // parse the date
-                dateFormats.flatMap(format => {
-                  Try { new SimpleDateFormat(format).parse(begin) }.toOption
-                })
-                  // get the first successfully parsed date (there should be only one)
-                  .headOption.map(beginDate => {
-                  // beginDate should be greater than or equal to query date
-                  if (beginDate.before(queryDate) || beginDate.equals(queryDate)) {
-                    isOk = true
-                  }
-                })
-              }
-            })
-          })
-
-          isOk shouldBe true
-        })
-      }
-    }
+    haveDateRangesBefore(queryBefore, "sourceResource.date")
   }
 
   "Bad request: search on originalRecord" should {
@@ -565,75 +570,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return docs with dates that overlap the given range" in {
-      val afterDate = new SimpleDateFormat("yyyy").parse(queryAfter)
-      val beforeDate = new SimpleDateFormat("yyyy").parse(queryBefore)
-
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        // iterate through the docs
-        readObjectArray(entity, "docs").foreach(doc => {
-          // iterate through the dates
-          readObject(doc, "sourceResource.temporal").foreach(date => {
-            var beginOk = false
-            var endOk = false
-
-            readString(date, "begin") match {
-              case Some(begin) =>
-                if (begin == null) {
-                  // null is allowed
-                  beginOk = true
-                } else {
-                  // parse the date
-                  dateFormats.flatMap(format => {
-                    Try { new SimpleDateFormat(format).parse(begin) }.toOption
-                  })
-                    // get the first successfully parsed date (there should be only one)
-                    .headOption.foreach(beginDate => {
-                    // beginDate should be before or equal to beforeDate
-                    if (beginDate.before(beforeDate) || beginDate.equals(beforeDate)) {
-                      beginOk = true
-                    }
-                  })
-                }
-              case None =>
-                // None is allowed
-                beginOk = true
-            }
-
-            readString(date, "end") match {
-              case Some(end) =>
-                if (end == null) {
-                  // null is allowed
-                  endOk = true
-                } else {
-                  // parse the date
-                  dateFormats.flatMap(format => {
-                    Try {
-                      new SimpleDateFormat(format).parse(end)
-                    }.toOption
-                  })
-                    // get the first successfully parsed date (there should be only one)
-                    .headOption.foreach(endDate => {
-                    // endDate should be after or equal to afterDate
-                    if (endDate.after(afterDate) || endDate.equals(afterDate)) {
-                      endOk = true
-                    }
-                  })
-                }
-              case None =>
-                // None is allowed
-                endOk = true
-            }
-
-            beginOk shouldBe true
-            endOk shouldBe true
-          })
-        })
-      }
-    }
+    haveDatesInRange(queryAfter, queryBefore, "sourceResource.temporal")
   }
 
   "Spatial Search, state" should {
@@ -823,43 +760,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return docs with date ranges that come before the given date" in {
-      val queryDate = new SimpleDateFormat("yyyy").parse(queryBefore)
-
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        // iterate through the docs
-        readObjectArray(entity, "docs").map(doc => {
-          // will be made true if at least 1 of the dates in this array fits
-          var isOk = false
-
-          readObjectArray(doc, "sourceResource.temporal").map(date => {
-            readString(date, "begin").map(begin => {
-              // null is allowed, move on
-              if (begin != null) {
-                // parse the date
-                dateFormats.flatMap(format => {
-                  Try {
-                    new SimpleDateFormat(format).parse(begin)
-                  }.toOption
-                })
-                  // get the first successfully parsed date (there should be only one)
-                  .headOption.map(beginDate => {
-                  // beginDate should be greater than or equal to query date
-                  if (beginDate.before(queryDate) || beginDate.equals(queryDate)) {
-                    isOk = true
-                  }
-                })
-              }
-            })
-          })
-
-          isOk shouldBe true
-        })
-      }
-    }
+    haveDateRangesBefore("1980", "sourceResource.temporal")
   }
 
   "Facet, date with year modifier" should {
