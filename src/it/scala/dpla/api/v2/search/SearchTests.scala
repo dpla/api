@@ -65,6 +65,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   val routes: Route =
     new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
 
+  /** Helper methods */
+
   private def returnStatusCode(code: Int)(implicit request: HttpRequest): Unit =
     "return status code 200" in {
       request ~> routes ~> check {
@@ -80,22 +82,38 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       }
     }
 
+  private def returnCount(expected: Int)(implicit request: HttpRequest): Unit =
+    s"return count $expected" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val count: Option[Int] = readInt(entity, "count")
+        count should === (Some(expected))
+      }
+    }
+
+  private def returnLimit(expected: Int)(implicit request: HttpRequest): Unit =
+    s"return limit $expected" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val limit: Option[Int] = readInt(entity, "limit")
+        limit should === (Some(expected))
+      }
+    }
+
+//  private def returnDocWith(expected: String)(implicit request: HttpRequest): Unit =
+//    s"return doc with '$expected''" in {
+//
+//    }
+
+  /** Tests */
+
   "Filter by provider" should {
     val providerId = "http://dp.la/api/contributor/esdn"
-    val expectedCount = 443200
     implicit val request = Get(s"/v2/items?api_key=$fakeApiKey&filter=provider.%40id:$providerId")
 
     returnStatusCode(200)
     returnJSON
-
-    "return the correct doc count" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val count: Option[Int] = readInt(entity, "count")
-        count should === (Some(expectedCount))
-      }
-    }
+    returnCount(443200)
   }
 
   "Search for phrase" should {
@@ -169,15 +187,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return a count of one" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val count: Option[Int] = readInt(entity, "count")
-        count should === (Some(1))
-      }
-    }
+    returnCount(1)
 
     "return an array with a single doc" in {
       request ~> routes ~> check {
@@ -306,15 +316,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    s"have limit of $expectedSize" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val limit: Option[Int] = readInt(entity, "limit")
-        limit should === (Some(expectedSize))
-      }
-    }
+    returnLimit(500)
 
     s"return $expectedSize docs" in {
       request ~> routes ~> check {
@@ -514,15 +516,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    s"have limit of $expectedSize" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val limit: Option[Int] = readInt(entity, "limit")
-        limit should === (Some(expectedSize))
-      }
-    }
+    returnLimit(2)
 
     s"return $expectedSize docs" in {
       request ~> routes ~> check {
@@ -610,15 +604,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-
-    "return a count of two" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val count: Option[Int] = readInt(entity, "count")
-        count should === (Some(2))
-      }
-    }
+    returnCount(2)
 
     "return an array with two docs" in {
       request ~> routes ~> check {
@@ -877,6 +863,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
+    returnLimit(10)
 
     "return 10 docs" in {
       request ~> routes ~> check {
@@ -891,14 +878,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val count = readInt(entity, "count").get
         count should be > 10
-      }
-    }
-
-    "have a limit of 10" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val limit = readInt(entity, "limit")
-        limit shouldBe Some(10)
       }
     }
 
