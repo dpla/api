@@ -2,12 +2,12 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing}
 import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ITUtils.fakeApiKey
-import dpla.api.v2.analytics.{AnalyticsClient, ITMockAnalyticsClient}
+import dpla.api.v2.analytics.ITMockAnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
@@ -77,8 +77,10 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   private def returnJSON(implicit request: HttpRequest): Unit =
     "return JSON" in {
       request ~> routes ~> check {
-        val parsed = Try { entityAs[String].parseJson }.toOption
-        parsed shouldNot be (None)
+        val parsed = Try {
+          entityAs[String].parseJson
+        }.toOption
+        parsed shouldNot be(None)
       }
     }
 
@@ -87,7 +89,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val count: Option[Int] = readInt(entity, "count")
-        count should === (Some(expected))
+        count should ===(Some(expected))
       }
     }
 
@@ -96,7 +98,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
         val limit: Option[Int] = readInt(entity, "limit")
-        limit should === (Some(expected))
+        limit should ===(Some(expected))
       }
     }
 
@@ -106,7 +108,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
         val entity: JsObject = entityAs[String].parseJson.asJsObject
 
         val docs = readObjectArray(entity, "docs")
-        docs.size should === (expected)
+        docs.size should ===(expected)
       }
     }
 
@@ -128,7 +130,9 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
               if (end != null) {
                 // parse the date
                 dateFormats.flatMap(format => {
-                  Try { new SimpleDateFormat(format).parse(end) }.toOption
+                  Try {
+                    new SimpleDateFormat(format).parse(end)
+                  }.toOption
                 })
                   // get the first successfully parsed date (there should be only one)
                   .headOption.map(endDate => {
