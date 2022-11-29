@@ -57,7 +57,7 @@ object DPLAMAPMapper {
         case SearchQueryResponse(params, body, replyTo) =>
           mapDPLADocList(params, body) match {
             case Success(dplaDocList) =>
-              replyTo ! DPLAMAPSearchResult(dplaDocList)
+              replyTo ! MappedSearchResult(dplaDocList)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse DPLADocList from ElasticSearch response:", e
@@ -69,7 +69,7 @@ object DPLAMAPMapper {
         case FetchQueryResponse(params, body, replyTo) =>
           mapSingleDPLADoc(body) match {
             case Success(singleDPLADoc) =>
-              replyTo ! DPLAMAPFetchResult(singleDPLADoc)
+              replyTo ! MappedFetchResult(singleDPLADoc)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse SingleDPLADoc from ElasticSearch response:", e
@@ -81,7 +81,7 @@ object DPLAMAPMapper {
         case MultiFetchQueryResponse(body, replyTo) =>
           mapMultiFetch(body) match {
             case Success(multiDPLADoc) =>
-              replyTo ! DPLAMAPMultiFetchResult(multiDPLADoc)
+              replyTo ! MappedMultiFetchResult(multiDPLADoc)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse DPLADocList from ElasticSearch response:", e
@@ -93,7 +93,7 @@ object DPLAMAPMapper {
         case RandomQueryResponse(_, body, replyTo) =>
           mapRandom(body) match {
             case Success(dplaDocList) =>
-              replyTo ! DPLAMAPRandomResult(dplaDocList)
+              replyTo ! MappedRandomResult(dplaDocList)
             case Failure(e) =>
               context.log.error(
                 "Failed to parse DPLADocList from ElasticSearch response:", e

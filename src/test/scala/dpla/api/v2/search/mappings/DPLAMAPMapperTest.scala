@@ -48,7 +48,7 @@ class DPLAMAPMapperTest
   "search response mapper" should {
     "return success for mappable response" in {
       itemMapper ! SearchQueryResponse(params, minEsEbookList, probe.ref)
-      probe.expectMessageType[DPLAMAPSearchResult]
+      probe.expectMessageType[MappedSearchResult]
     }
 
     "return failure for unmappable response" in {
@@ -61,7 +61,7 @@ class DPLAMAPMapperTest
       val expected = Some("California Digital Library")
       val fieldsParams = params.copy(fields = Some(Seq("provider.name")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
-      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val msg = probe.expectMessageType[MappedSearchResult]
       val firstEntry = msg.dplaDocList.docs.head
       val traversed = readString(firstEntry.asJsObject, "provider.name")
       assert(traversed == expected)
@@ -75,7 +75,7 @@ class DPLAMAPMapperTest
       )
       val fieldsParams = params.copy(fields = Some(Seq("sourceResource.subject.name")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
-      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val msg = probe.expectMessageType[MappedSearchResult]
       val firstEntry = msg.dplaDocList.docs.head
       val traversed = readStringArray(firstEntry.asJsObject, "sourceResource.subject.name")
       traversed should contain allElementsOf expected
@@ -85,7 +85,7 @@ class DPLAMAPMapperTest
       val expected = Some("circa 1996")
       val fieldsParams = params.copy(fields = Some(Seq("sourceResource.temporal")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
-      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val msg = probe.expectMessageType[MappedSearchResult]
       val firstEntry = msg.dplaDocList.docs.head
       val firstTemporal =
         readObject(firstEntry.asJsObject, "sourceResource.temporal").get
@@ -97,7 +97,7 @@ class DPLAMAPMapperTest
       val expected = Some("Children play with hamsters, Saint Vincent Center, Los Angeles, 1996")
       val fieldsParams = params.copy(fields = Some(Seq("sourceResource.title")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
-      val msg = probe.expectMessageType[DPLAMAPSearchResult]
+      val msg = probe.expectMessageType[MappedSearchResult]
       val firstEntry = msg.dplaDocList.docs.head
       val traversed = readString(firstEntry.asJsObject, "sourceResource.title")
       assert(traversed == expected)
@@ -107,7 +107,7 @@ class DPLAMAPMapperTest
   "fetch response mapper" should {
     "return success for mappable response" in {
       itemMapper ! FetchQueryResponse(None, esItem, probe.ref)
-      probe.expectMessageType[DPLAMAPFetchResult]
+      probe.expectMessageType[MappedFetchResult]
     }
 
     "return failure for unmappable response" in {
@@ -120,7 +120,7 @@ class DPLAMAPMapperTest
   "multi-fetch response mapper" should {
     "return success for mappable response" in {
       itemMapper ! MultiFetchQueryResponse(minEsEbookList, probe.ref)
-      probe.expectMessageType[DPLAMAPMultiFetchResult]
+      probe.expectMessageType[MappedMultiFetchResult]
     }
 
     "return failure for unmappable response" in {
@@ -133,7 +133,7 @@ class DPLAMAPMapperTest
   "random response mapper" should {
     "return success for mappable response" in {
       itemMapper ! RandomQueryResponse(RandomParams(), itemList, probe.ref)
-      probe.expectMessageType[DPLAMAPRandomResult]
+      probe.expectMessageType[MappedRandomResult]
     }
 
     "return failure for unmappable response" in {

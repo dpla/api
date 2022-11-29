@@ -7,7 +7,7 @@ import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch
 import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Random, Search, SearchCommand, SearchFailure}
+import dpla.api.v2.search.SearchProtocol.{MappedFetchResult, MappedMultiFetchResult, MappedRandomResult, MappedSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Random, Search, SearchCommand, SearchFailure}
 import dpla.api.v2.search._
 import dpla.api.v2.search.mappings.{DPLADocList, SingleDPLADoc}
 
@@ -178,7 +178,7 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case DPLAMAPSearchResult(dplaDocList) =>
+        case MappedSearchResult(dplaDocList) =>
           searchResult = Some(dplaDocList)
           searchResponse = Some(SearchResult(dplaDocList))
           possibleSessionResolution
@@ -292,12 +292,12 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case DPLAMAPFetchResult(singleDPLADoc) =>
+        case MappedFetchResult(singleDPLADoc) =>
           fetchResult = Some(Left(singleDPLADoc))
           fetchResponse = Some(FetchResult(singleDPLADoc))
           possibleSessionResolution
 
-        case DPLAMAPMultiFetchResult(dplaDocList) =>
+        case MappedMultiFetchResult(dplaDocList) =>
           fetchResult = Some(Right(dplaDocList))
           fetchResponse = Some(MultiFetchResult(dplaDocList))
           possibleSessionResolution
@@ -388,7 +388,7 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case DPLAMAPRandomResult(dplaDocList) =>
+        case MappedRandomResult(dplaDocList) =>
           randomResult = Some(Right(dplaDocList))
           randomResponse = Some(RandomResult(dplaDocList))
           possibleSessionResolution

@@ -29,21 +29,21 @@ object SearchProtocol {
   /** Public response protocol */
   sealed trait SearchResponse
 
-  final case class DPLAMAPSearchResult(
-                                        dplaDocList: DPLADocList
-                                      ) extends SearchResponse
-
-  final case class DPLAMAPFetchResult(
-                                       singleDPLADoc: SingleDPLADoc
+  final case class MappedSearchResult(
+                                       dplaDocList: DPLADocList
                                      ) extends SearchResponse
 
-  final case class DPLAMAPMultiFetchResult(
-                                            dplaDocList: DPLADocList
-                                          ) extends SearchResponse
+  final case class MappedFetchResult(
+                                      singleDPLADoc: SingleDPLADoc
+                                    ) extends SearchResponse
 
-  final case class DPLAMAPRandomResult(
-                                        dplaDocList: DPLADocList
-                                      ) extends SearchResponse
+  final case class MappedMultiFetchResult(
+                                            dplaDocList: DPLADocList
+                                         ) extends SearchResponse
+
+  final case class MappedRandomResult(
+                                       dplaDocList: DPLADocList
+                                     ) extends SearchResponse
 
   final case class InvalidSearchParams(
                                         message: String
