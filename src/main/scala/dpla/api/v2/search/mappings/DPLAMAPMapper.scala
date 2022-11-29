@@ -1,13 +1,10 @@
 package dpla.api.v2.search.mappings
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
-import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 import dpla.api.v2.search.paramValidators.SearchParams
 import spray.json._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
  * Maps Elastic Search responses to case classes,
@@ -17,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 /** Case classes for reading ElasticSearch responses **/
 case class SingleDPLADoc(
                           docs: Seq[JsValue]
-                        )
+                        ) extends SingleMappedDoc
 
 case class DPLADocList(
                         count: Option[Int],
@@ -25,7 +22,7 @@ case class DPLADocList(
                         start: Option[Int],
                         docs: Seq[JsValue],
                         facets: Option[FacetList]
-                      )
+                      ) extends MappedDocList
 
 case class FacetList(
                       facets: Seq[Facet]
@@ -46,69 +43,9 @@ case class Bucket(
                    to: Option[Int] = None
                  )
 
-object DPLAMAPMapper {
+object DPLAMAPMapper extends Mapper {
 
-  def apply(): Behavior[IntermediateSearchResult] = {
-
-    Behaviors.setup[IntermediateSearchResult] { context =>
-
-      Behaviors.receiveMessage[IntermediateSearchResult] {
-
-        case SearchQueryResponse(params, body, replyTo) =>
-          mapDPLADocList(params, body) match {
-            case Success(dplaDocList) =>
-              replyTo ! MappedSearchResult(dplaDocList)
-            case Failure(e) =>
-              context.log.error(
-                "Failed to parse DPLADocList from ElasticSearch response:", e
-              )
-              replyTo ! SearchFailure
-          }
-          Behaviors.same
-
-        case FetchQueryResponse(params, body, replyTo) =>
-          mapSingleDPLADoc(body) match {
-            case Success(singleDPLADoc) =>
-              replyTo ! MappedFetchResult(singleDPLADoc)
-            case Failure(e) =>
-              context.log.error(
-                "Failed to parse SingleDPLADoc from ElasticSearch response:", e
-              )
-              replyTo ! SearchFailure
-          }
-          Behaviors.same
-
-        case MultiFetchQueryResponse(body, replyTo) =>
-          mapMultiFetch(body) match {
-            case Success(multiDPLADoc) =>
-              replyTo ! MappedMultiFetchResult(multiDPLADoc)
-            case Failure(e) =>
-              context.log.error(
-                "Failed to parse DPLADocList from ElasticSearch response:", e
-              )
-              replyTo ! SearchFailure
-          }
-          Behaviors.same
-
-        case RandomQueryResponse(_, body, replyTo) =>
-          mapRandom(body) match {
-            case Success(dplaDocList) =>
-              replyTo ! MappedRandomResult(dplaDocList)
-            case Failure(e) =>
-              context.log.error(
-                "Failed to parse DPLADocList from ElasticSearch response:", e
-              )
-              replyTo ! SearchFailure
-          }
-          Behaviors.same
-
-        case _ =>
-          Behaviors.unhandled
-      }
-    }
-  }
-
-  private def mapDPLADocList(params: SearchParams, body: String): Try[DPLADocList] =
+  override protected def mapDocList(params: SearchParams, body: String): Try[MappedDocList] =
     Try {
       val start = getStart(params.page, params.pageSize)
       val mapped = body.parseJson.convertTo[DPLADocList]
@@ -119,17 +56,17 @@ object DPLAMAPMapper {
       }
     }
 
-  private def mapSingleDPLADoc(body: String): Try[SingleDPLADoc] =
+  override protected def mapSingleDoc(body: String): Try[SingleMappedDoc] =
     Try {
       body.parseJson.convertTo[SingleDPLADoc]
     }
 
-  private def mapMultiFetch(body: String): Try[DPLADocList] =
+  override protected def mapMultiFetch(body: String): Try[MappedDocList] =
     Try{
       body.parseJson.convertTo[DPLADocList]
     }
 
-  private def mapRandom(body: String): Try[DPLADocList] =
+  override protected def mapRandom(body: String): Try[MappedDocList] =
     Try{
       body.parseJson.convertTo[DPLADocList]
     }

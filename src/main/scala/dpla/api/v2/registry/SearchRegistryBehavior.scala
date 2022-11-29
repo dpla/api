@@ -7,15 +7,16 @@ import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch
 import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{MappedFetchResult, MappedMultiFetchResult, MappedRandomResult, MappedSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Random, Search, SearchCommand, SearchFailure}
+import dpla.api.v2.search.SearchProtocol.{Fetch, FetchNotFound, InvalidSearchParams, MappedFetchResult, MappedMultiFetchResult, MappedRandomResult, MappedSearchResult, Random, Search, SearchCommand, SearchFailure}
 import dpla.api.v2.search._
-import dpla.api.v2.search.mappings.{DPLADocList, SingleDPLADoc}
+import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, SingleDPLADoc, SingleMappedDoc}
+import spray.json.JsValue
 
 
-final case class SearchResult(result: DPLADocList) extends RegistryResponse
-final case class FetchResult(result: SingleDPLADoc) extends RegistryResponse
-final case class MultiFetchResult(result: DPLADocList) extends RegistryResponse
-final case class RandomResult(result: DPLADocList) extends RegistryResponse
+final case class SearchResult(result: MappedDocList) extends RegistryResponse
+final case class FetchResult(result: SingleMappedDoc) extends RegistryResponse
+final case class MultiFetchResult(result: MappedDocList) extends RegistryResponse
+final case class RandomResult(result: MappedDocList) extends RegistryResponse
 
 sealed trait SearchRegistryCommand
 
@@ -109,7 +110,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var searchResult: Option[DPLADocList] = None
+      var searchResult: Option[MappedDocList] = None
       var searchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -123,12 +124,17 @@ trait SearchRegistryBehavior {
 
             // If the search was successful...
             searchResult match {
-              case Some(dplaDocList) =>
+              case Some(mappedDocList) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit
+                  val dplaDocList: Seq[JsValue] =
+                    mappedDocList match {
+                      case list: DPLADocList => list.docs
+                      case _ => Seq()
+                    }
                   analyticsClient ! TrackSearch(rawParams, host, path,
-                    dplaDocList.docs, searchType)
+                    dplaDocList, searchType)
                 }
               case None => // no-op
             }
@@ -178,9 +184,9 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case MappedSearchResult(dplaDocList) =>
-          searchResult = Some(dplaDocList)
-          searchResponse = Some(SearchResult(dplaDocList))
+        case MappedSearchResult(mappedDocList) =>
+          searchResult = Some(mappedDocList)
+          searchResponse = Some(SearchResult(mappedDocList))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
@@ -217,7 +223,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var fetchResult: Option[Either[SingleDPLADoc, DPLADocList]] = None
+      var fetchResult: Option[Either[SingleMappedDoc, MappedDocList]] = None
       var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -236,12 +242,22 @@ trait SearchRegistryBehavior {
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit.
                   either match {
-                    case Left(singleDPLADoc) =>
-                      analyticsClient ! TrackFetch(host, path,
-                        singleDPLADoc.docs.headOption, searchType)
-                    case Right(dplaDocList) =>
+                    case Left(singleMappedDoc) =>
+                      val dplaDoc: Option[JsValue] = singleMappedDoc match {
+                        case doc: SingleDPLADoc => doc.docs.headOption
+                        case _ => None
+                      }
+                      analyticsClient ! TrackFetch(host, path, dplaDoc,
+                        searchType)
+
+                    case Right(mappedDocList) =>
+                      val dplaDocList: Seq[JsValue] =
+                        mappedDocList match {
+                          case list: DPLADocList => list.docs
+                          case _ => Seq()
+                        }
                       analyticsClient ! TrackSearch(rawParams, host, path,
-                        dplaDocList.docs, searchType)
+                        dplaDocList, searchType)
                   }
                 }
               case None => // no-op
@@ -292,14 +308,14 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case MappedFetchResult(singleDPLADoc) =>
-          fetchResult = Some(Left(singleDPLADoc))
-          fetchResponse = Some(FetchResult(singleDPLADoc))
+        case MappedFetchResult(singleMappedDoc) =>
+          fetchResult = Some(Left(singleMappedDoc))
+          fetchResponse = Some(FetchResult(singleMappedDoc))
           possibleSessionResolution
 
-        case MappedMultiFetchResult(dplaDocList) =>
-          fetchResult = Some(Right(dplaDocList))
-          fetchResponse = Some(MultiFetchResult(dplaDocList))
+        case MappedMultiFetchResult(mappedDocList) =>
+          fetchResult = Some(Right(mappedDocList))
+          fetchResponse = Some(MultiFetchResult(mappedDocList))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
@@ -331,7 +347,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var randomResult: Option[Either[SingleDPLADoc, DPLADocList]] = None
+      var randomResult: Option[Either[SingleMappedDoc, MappedDocList]] = None
       var randomResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -388,9 +404,9 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case MappedRandomResult(dplaDocList) =>
-          randomResult = Some(Right(dplaDocList))
-          randomResponse = Some(RandomResult(dplaDocList))
+        case MappedRandomResult(mappedDocList) =>
+          randomResult = Some(Right(mappedDocList))
+          randomResponse = Some(RandomResult(mappedDocList))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>

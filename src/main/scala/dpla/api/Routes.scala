@@ -17,6 +17,7 @@ import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
+import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, SingleDPLADoc, SingleMappedDoc}
 import org.slf4j.{Logger, LoggerFactory}
 import spray.json.enrichAny
 
@@ -176,7 +177,7 @@ class Routes(
                         case Success(response) =>
                           response match {
                             case SearchResult(ebookList) =>
-                              complete(ebookList)
+                              renderMappedList(ebookList)
                             case ForbiddenFailure =>
                               complete(forbiddenResponse)
                             case ValidationFailure(message) =>
@@ -218,9 +219,9 @@ class Routes(
                         case Success(response) =>
                           response match {
                             case FetchResult(singleEbook) =>
-                              complete(singleEbook)
+                              renderMappedDoc(singleEbook)
                             case MultiFetchResult(ebookList) =>
-                              complete(ebookList)
+                              renderMappedList(ebookList)
                             case ForbiddenFailure =>
                               complete(forbiddenResponse)
                             case ValidationFailure(message) =>
@@ -269,7 +270,7 @@ class Routes(
                         case Success(response) =>
                           response match {
                             case SearchResult(itemList) =>
-                              complete(itemList)
+                              renderMappedList(itemList)
                             case ForbiddenFailure =>
                               complete(forbiddenResponse)
                             case ValidationFailure(message) =>
@@ -311,9 +312,9 @@ class Routes(
                         case Success(response) =>
                           response match {
                             case FetchResult(singleItem) =>
-                              complete(singleItem)
+                              renderMappedDoc(singleItem)
                             case MultiFetchResult(itemList) =>
-                              complete(itemList)
+                              renderMappedList(itemList)
                             case ForbiddenFailure =>
                               complete(forbiddenResponse)
                             case ValidationFailure(message) =>
@@ -388,8 +389,8 @@ class Routes(
               onComplete(randomItem(auth, params)) {
                 case Success(response) =>
                   response match {
-                    case RandomResult(singleItem) =>
-                      complete(singleItem)
+                    case RandomResult(itemList) =>
+                      renderMappedList(itemList)
                     case ForbiddenFailure =>
                       complete(forbiddenResponse)
                     case ValidationFailure(message) =>
@@ -419,6 +420,36 @@ class Routes(
     get {
       complete(OK)
     }
+
+  /**
+   * Helper methods for rendering mapped objects.
+   *  Mapped objects must be correctly cast.
+   */
+  private def renderMappedList(list: MappedDocList): Route = {
+    list match {
+      case dplaList: DPLADocList => complete(dplaList)
+      case _ =>
+        val objType = list.getClass.getName
+        log.error(
+          "There was an error casting {} to a MappedDocList type.",
+          objType
+        )
+        complete(internalErrorResponse)
+    }
+  }
+
+  private def renderMappedDoc(doc: SingleMappedDoc): Route = {
+    doc match {
+      case dplaDoc: SingleDPLADoc => complete(dplaDoc)
+      case _ =>
+        val objType = doc.getClass.getName
+        log.error(
+          "There was an error casting {} to a SingleMappedDoc type.",
+          objType
+        )
+        complete(internalErrorResponse)
+    }
+  }
 
   // @see https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
   // @see https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
