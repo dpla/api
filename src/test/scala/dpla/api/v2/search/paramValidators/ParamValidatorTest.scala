@@ -1,8 +1,8 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.paramValidators
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawRandomParams, RawSearchParams, SearchResponse, ValidFetchIds, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol._
 import org.scalactic.TimesOnInt.convertIntToRepeater
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -64,7 +64,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
     "accept valid ID" in {
       val id = "ufwPJ34Bj-MaVWqX9KZL"
       ebookParamValidator ! RawFetchParams(id, Map(), replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidFetchIds]
+      val msg = interProbe.expectMessageType[ValidFetchParams]
       msg.ids should contain only id
     }
 
@@ -72,7 +72,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       val ids = "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5"
       val expected = Seq("b70107e4fe29fe4a247ae46e118ce192", "17b0da7b05805d78daf8753a6641b3f5")
       ebookParamValidator ! RawFetchParams(ids, Map(), replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidFetchIds]
+      val msg = interProbe.expectMessageType[ValidFetchParams]
       msg.ids should contain allElementsOf expected
     }
 

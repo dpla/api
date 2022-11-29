@@ -1,8 +1,8 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.paramValidators
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawSearchParams, SearchResponse, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

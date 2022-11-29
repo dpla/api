@@ -4,7 +4,9 @@ import spray.json._
 import JsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchIds, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchParams, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.models.DPLAMAPFields
+import dpla.api.v2.search.paramValidators.{FieldQuery, Filter, RandomParams, SearchParams}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -24,9 +26,9 @@ object QueryBuilder extends DPLAMAPFields {
           composeSearchQuery(searchParams), replyTo)
         Behaviors.same
 
-      case ValidFetchIds(ids, replyTo) =>
+      case ValidFetchParams(ids, params, replyTo) =>
         if (ids.size == 1) {
-          nextPhase ! FetchQuery(ids.head, replyTo)
+          nextPhase ! FetchQuery(ids.head, params, None, replyTo)
         }
         else {
           nextPhase ! MultiFetchQuery(composeMultiFetchQuery(ids), replyTo)

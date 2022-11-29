@@ -19,7 +19,7 @@ final case class RandomResult(result: DPLADocList) extends RegistryResponse
 sealed trait SearchRegistryCommand
 
 final case class RegisterSearch(
-                                 apiKey: Option[String],
+                                 apiKey: Option[String] = None,
                                  rawParams: Map[String, String],
                                  host: String,
                                  path: String,
@@ -27,7 +27,7 @@ final case class RegisterSearch(
                                ) extends SearchRegistryCommand
 
 final case class RegisterFetch(
-                                apiKey: Option[String],
+                                apiKey: Option[String] = None,
                                 id: String,
                                 rawParams: Map[String, String],
                                 host: String,
@@ -36,7 +36,7 @@ final case class RegisterFetch(
                               ) extends SearchRegistryCommand
 
 final case class RegisterRandom(
-                                 apiKey: Option[String],
+                                 apiKey: Option[String] = None,
                                  rawParams: Map[String, String],
                                  replyTo: ActorRef[RegistryResponse]
                                ) extends SearchRegistryCommand

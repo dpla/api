@@ -1,5 +1,6 @@
 package dpla.api.v2.search
 
+import dpla.api.v2.search.models.DPLAMAPFields
 import spray.json.{DefaultJsonProtocol, _}
 
 /**

@@ -4,6 +4,7 @@ import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.helpers.FileReader
 import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, RandomQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
+import dpla.api.v2.search.paramValidators.{RandomParams, SearchParams}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -105,13 +106,13 @@ class DPLAMAPMapperTest
 
   "fetch response mapper" should {
     "return success for mappable response" in {
-      itemMapper ! FetchQueryResponse(esItem, probe.ref)
+      itemMapper ! FetchQueryResponse(None, esItem, probe.ref)
       probe.expectMessageType[DPLAMAPFetchResult]
     }
 
     "return failure for unmappable response" in {
       val unmappable: String = ""
-      itemMapper ! FetchQueryResponse(unmappable, probe.ref)
+      itemMapper ! FetchQueryResponse(None, unmappable, probe.ref)
       probe.expectMessage(SearchFailure)
     }
   }

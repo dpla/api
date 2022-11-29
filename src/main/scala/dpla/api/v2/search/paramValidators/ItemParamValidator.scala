@@ -1,10 +1,12 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.paramValidators
+
+import dpla.api.v2.search.models.DPLAMAPFields
 
 object ItemParamValidator extends ParamValidator with DPLAMAPFields {
 
-  // A user can give any of the following parameters in a search request.
+  // These parameters are valid for a search request.
   override protected val acceptedSearchParams: Seq[String] =
-    searchableDplaFields ++ Seq(
+    searchableDataFields ++ Seq(
       "exact_field_match",
       "facets",
       "facet_size",
@@ -19,8 +21,10 @@ object ItemParamValidator extends ParamValidator with DPLAMAPFields {
       "sort_order"
     )
 
-  // These fields are valid for DPLA ebook search, sort, filter, & facets,
-  // but not for items.
+  // These parameters are valid for a fetch request.
+  override protected val acceptedFetchParams: Seq[String] = Seq()
+
+  // These fields are not valid for search, sort, filter, & facets.
   // Rather than returning an error, they should be ignored.
   override protected val ignoredFields: Seq[String] = Seq(
     "sourceResource.subtitle"

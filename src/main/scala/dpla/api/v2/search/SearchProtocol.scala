@@ -1,6 +1,7 @@
 package dpla.api.v2.search
 
 import akka.actor.typed.ActorRef
+import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 
 object SearchProtocol {
@@ -77,10 +78,11 @@ object SearchProtocol {
                                                       replyTo: ActorRef[SearchResponse]
                                                     ) extends IntermediateSearchResult
 
-  private[search] final case class ValidFetchIds(
-                                                  ids: Seq[String],
-                                                  replyTo: ActorRef[SearchResponse]
-                                                ) extends IntermediateSearchResult
+  private[search] final case class ValidFetchParams(
+                                                     ids: Seq[String],
+                                                     params: Option[FetchParams] = None,
+                                                     replyTo: ActorRef[SearchResponse]
+                                                   ) extends IntermediateSearchResult
 
   private[search] final case class ValidRandomParams(
                                                       params: RandomParams,
@@ -95,6 +97,8 @@ object SearchProtocol {
 
   private[search] final case class FetchQuery(
                                                id: String,
+                                               params: Option[FetchParams] = None,
+                                               query: Option[JsValue] = None,
                                                replyTo: ActorRef[SearchResponse]
                                              ) extends IntermediateSearchResult
 
@@ -116,6 +120,7 @@ object SearchProtocol {
                                                       ) extends IntermediateSearchResult
 
   private[search] final case class FetchQueryResponse(
+                                                       params: Option[FetchParams],
                                                        esResponseBody: String,
                                                        replyTo: ActorRef[SearchResponse]
                                                      ) extends IntermediateSearchResult

@@ -4,6 +4,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.api.v2.search.JsonFormats._
 import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, RandomQueryResponse, SearchFailure, SearchQueryResponse}
+import dpla.api.v2.search.paramValidators.SearchParams
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -65,7 +66,7 @@ object DPLAMAPMapper {
           }
           Behaviors.same
 
-        case FetchQueryResponse(body, replyTo) =>
+        case FetchQueryResponse(params, body, replyTo) =>
           mapSingleDPLADoc(body) match {
             case Success(singleDPLADoc) =>
               replyTo ! DPLAMAPFetchResult(singleDPLADoc)

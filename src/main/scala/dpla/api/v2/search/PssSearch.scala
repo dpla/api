@@ -2,18 +2,20 @@ package dpla.api.v2.search
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
-import dpla.api.v2.search.paramValidators.EbookParamValidator
+import dpla.api.v2.search.paramValidators.PssParamValidator
 
 /**
- * Handles control flow for conducting ebook searches and fetches.
+ * Handles control flow for conducting primary source set searches and fetches.
  * Public interface for the package.
  */
-object EbookSearch extends SearchBehavior {
+object PssSearch extends SearchBehavior {
 
   override def spawnMapper(
                             context: ActorContext[SearchCommand]
-                          ): ActorRef[IntermediateSearchResult] =
-    context.spawn(DPLAMAPMapper(), "EbookMapper")
+                          ): ActorRef[IntermediateSearchResult] = {
+    // TODO change mapper
+    context.spawn(DPLAMAPMapper(), "PssMapper")
+  }
 
   override def spawnElasticSearchClient(
                                          context: ActorContext[SearchCommand],
@@ -21,11 +23,11 @@ object EbookSearch extends SearchBehavior {
                                        ): ActorRef[IntermediateSearchResult] = {
 
     val endpoint: String = context.system.settings.config
-      .getString("elasticSearch.ebooksUrl")
+      .getString("elasticSearch.pssUrl")
       .stripSuffix("/")
 
     context.spawn(
-      ElasticSearchClient(endpoint, mapper), "EbookElasticSearchClient"
+      ElasticSearchClient(endpoint, mapper), "PssElasticSearchClient"
     )
   }
 
@@ -34,7 +36,7 @@ object EbookSearch extends SearchBehavior {
                                   elasticSearchClient: ActorRef[IntermediateSearchResult]
                                 ): ActorRef[IntermediateSearchResult] =
     context.spawn(
-      QueryBuilder(elasticSearchClient), "EbookQueryBuilder"
+      QueryBuilder(elasticSearchClient), "PssQueryBuilder"
     )
 
   override def spawnSearchParamValidator(
@@ -42,6 +44,6 @@ object EbookSearch extends SearchBehavior {
                                           queryBuilder: ActorRef[IntermediateSearchResult]
                                         ): ActorRef[IntermediateSearchResult] =
     context.spawn(
-      EbookParamValidator(queryBuilder), "EbookParamValidator"
+      PssParamValidator(queryBuilder), "PssParamValidator"
     )
 }

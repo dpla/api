@@ -13,7 +13,7 @@ object MockMapperFailure {
         replyTo ! SearchFailure
         Behaviors.same
 
-      case FetchQueryResponse(_, replyTo) =>
+      case FetchQueryResponse(_, _, replyTo) =>
         replyTo ! SearchFailure
         Behaviors.same
 

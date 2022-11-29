@@ -2,7 +2,8 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, SearchResponse, ValidFetchIds, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, SearchResponse, ValidFetchParams, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.paramValidators.{FieldQuery, Filter, RandomParams, SearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
@@ -30,7 +31,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   }
 
   def getJsFetchQuery(ids: Seq[String]): JsObject = {
-    queryBuilder ! ValidFetchIds(ids, replyProbe.ref)
+    queryBuilder ! ValidFetchParams(ids, None, replyProbe.ref)
     val msg: MultiFetchQuery = interProbe.expectMessageType[MultiFetchQuery]
     msg.query.asJsObject
   }
@@ -41,7 +42,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     msg.query.asJsObject
   }
 
-  val minSearchParams: SearchParams = SearchParams(
+  val minSearchParams: SearchParams = paramValidators.SearchParams(
     exactFieldMatch = false,
     facets = None,
     facetSize = 100,
@@ -83,7 +84,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val detailQuery: JsObject = getJsSearchQuery(detailSearchParams)
 
-  val geoSortSearchParams: SearchParams = SearchParams(
+  val geoSortSearchParams: SearchParams = paramValidators.SearchParams(
     exactFieldMatch = false,
     facets = None,
     facetSize = 100,
@@ -101,7 +102,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val geoSortQuery: JsObject = getJsSearchQuery(geoSortSearchParams)
 
-  val geoFacetSearchParams: SearchParams = SearchParams(
+  val geoFacetSearchParams: SearchParams = paramValidators.SearchParams(
     exactFieldMatch = false,
     facets = Some(Seq("sourceResource.spatial.coordinates:42:-70")),
     facetSize = 100,
@@ -119,7 +120,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val geoFacetQuery: JsObject = getJsSearchQuery(geoFacetSearchParams)
 
-  val dateFacetSearchParams: SearchParams = SearchParams(
+  val dateFacetSearchParams: SearchParams = paramValidators.SearchParams(
     exactFieldMatch = false,
     facets = Some(Seq("sourceResource.date.begin")),
     facetSize = 100,
@@ -137,7 +138,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   val dateFacetQuery: JsObject = getJsSearchQuery(dateFacetSearchParams)
 
-  val filterParams: SearchParams = SearchParams(
+  val filterParams: SearchParams = paramValidators.SearchParams(
     exactFieldMatch = false,
     facets = None,
     facetSize = 100,
@@ -177,7 +178,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   "fetch query builder" should {
     "specify id" in {
       val id = "b70107e4fe29fe4a247ae46e118ce192"
-      queryBuilder ! ValidFetchIds(Seq(id), replyProbe.ref)
+      queryBuilder ! ValidFetchParams(Seq(id), None, replyProbe.ref)
       val msg = interProbe.expectMessageType[FetchQuery]
       assert(msg.id == id)
     }

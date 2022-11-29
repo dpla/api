@@ -21,8 +21,8 @@ object MockItemEsClientSuccess extends FileReader {
         nextPhase ! SearchQueryResponse(params, searchBody, replyTo)
         Behaviors.same
 
-      case FetchQuery(_, replyTo) =>
-        nextPhase ! FetchQueryResponse(fetchBody, replyTo)
+      case FetchQuery(_, _, _, replyTo) =>
+        nextPhase ! FetchQueryResponse(None, fetchBody, replyTo)
         Behaviors.same
 
       case MultiFetchQuery(_, replyTo) =>

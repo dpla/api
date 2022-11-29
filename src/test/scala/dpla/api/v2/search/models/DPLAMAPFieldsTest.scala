@@ -1,4 +1,4 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.models
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -10,9 +10,9 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
 
   "DplaMapFieldsTest" should {
     "map DPLA MAP fields to ElasticSearch fields" in {
-      val dplaFields = tester.allDplaFields
+      val dataFields = tester.allDataFields
       val expected = tester.fields.map(_.elasticSearchDefault)
-      val mapped = dplaFields.flatMap(tester.getElasticSearchField)
+      val mapped = dataFields.flatMap(tester.getElasticSearchField)
       mapped should contain allElementsOf expected
     }
 

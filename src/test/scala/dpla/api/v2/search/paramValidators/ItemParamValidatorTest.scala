@@ -1,4 +1,4 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.paramValidators
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef

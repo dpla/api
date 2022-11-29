@@ -1,12 +1,13 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.paramValidators
 
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, InvalidSearchParams, RawFetchParams, RawRandomParams, RawSearchParams, ValidFetchIds, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol._
+import dpla.api.v2.search.models.FieldDefinitions
 
 import java.net.URL
-import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 /**
  * Validates user-submitted search and fetch parameters.
@@ -32,6 +33,10 @@ private[search] case class SearchParams(
                                          sortByPin: Option[String],
                                          sortOrder: String
                                        )
+
+private[search] case class FetchParams(
+                                        fields: Option[Seq[String]] = None
+                                      )
 
 private[search] case class RandomParams(
                                         filter: Option[Filter] = None
@@ -74,7 +79,7 @@ trait ParamValidator extends FieldDefinitions {
         case RawFetchParams(id, rawParams, replyTo) =>
           getFetchIds(id, rawParams) match {
             case Success(validIds) =>
-              nextPhase ! ValidFetchIds(validIds, replyTo)
+              nextPhase ! ValidFetchParams(validIds, None, replyTo)
             case Failure(e) =>
               context.log.warn2(
                 "Invalid fetch params: '{}' for params '{}'",
@@ -122,11 +127,15 @@ trait ParamValidator extends FieldDefinitions {
   protected val defaultSortOrder: String = "asc"
 
   // Abstract.
-  // A user can give any of the following parameters in a search request.
+  // These parameters are valid for a search request.
   protected val acceptedSearchParams: Seq[String]
 
   // Abstract.
-  // These fields are valid for DPLA item search & facets, but not for ebooks.
+  // These parameters are valid for a fetch request.
+  protected val acceptedFetchParams: Seq[String]
+
+  // Abstract.
+  // These fields are not valid for search, sort, filter, & facets.
   // Rather than returning an error, they should be ignored.
   protected val ignoredFields: Seq[String]
 
@@ -174,7 +183,7 @@ trait ParamValidator extends FieldDefinitions {
         // Check for valid search params
         // Collect all the user-submitted field queries.
         val fieldQueries: Seq[FieldQuery] =
-          searchableDplaFields.flatMap(getValidFieldQuery(rawParams, _))
+          searchableDataFields.flatMap(getValidFieldQuery(rawParams, _))
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -234,7 +243,7 @@ trait ParamValidator extends FieldDefinitions {
   // Look up the parameter's field type.
   // Use this to determine the appropriate validation method.
   def getValidationMethod(paramName: String): (String, String) => String =
-    getDplaFieldType(paramName) match {
+    getDataFieldType(paramName) match {
       case Some(fieldType) =>
         fieldType match {
           case TextField => validText
@@ -285,7 +294,7 @@ trait ParamValidator extends FieldDefinitions {
       val value = filter.split(":", 2).lastOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
 
-      if (searchableDplaFields.contains(fieldName)) {
+      if (searchableDataFields.contains(fieldName)) {
         val validationMethod = getValidationMethod(fieldName)
         val params = Map(fieldName -> value)
 
@@ -305,7 +314,7 @@ trait ParamValidator extends FieldDefinitions {
   private def getValidSortField(rawParams: Map[String, String]): Option[String] =
     rawParams.get("sort_by").map{ sortField =>
       // Check if field is sortable according to the field definition
-      if (sortableDplaFields.contains(sortField)) {
+      if (sortableDataFields.contains(sortField)) {
         // Check if field represents coordinates
         if (coordinatesField.map(_.name).contains(sortField))
           // Check if sort_by_pin is an accepted search param for this validator
@@ -374,8 +383,8 @@ trait ParamValidator extends FieldDefinitions {
   // Must be in the list of accepted fields for the given param.
   private def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
-      case "facets" => facetableDplaFields
-      case "fields" => allDplaFields
+      case "facets" => facetableDataFields
+      case "fields" => allDataFields
       case _ => Seq[String]()
     }
 

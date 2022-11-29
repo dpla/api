@@ -1,10 +1,11 @@
 package dpla.api.v2.search
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dpla.api.v2.search.SearchProtocol.{SearchCommand, IntermediateSearchResult}
+import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
+import dpla.api.v2.search.paramValidators.ItemParamValidator
 
 /**
- * Handles control flow for conducting ebook searches and fetches.
+ * Handles control flow for conducting item searches and fetches.
  * Public interface for the package.
  */
 object ItemSearch extends SearchBehavior {
