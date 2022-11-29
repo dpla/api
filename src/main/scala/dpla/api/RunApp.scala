@@ -8,7 +8,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.Authenticator
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, PssRegistry, SearchRegistryCommand}
 
 import scala.util.{Failure, Success}
 
@@ -58,15 +58,22 @@ object RunApp {
           ItemRegistry(authenticator, analyticsClient), "ItemRegistry"
         )
 
+      val pssRegistry: ActorRef[SearchRegistryCommand] =
+        context.spawn(
+          PssRegistry(authenticator, analyticsClient), name = "PssRegsitry"
+        )
+
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         context.spawn(ApiKeyRegistry(authenticator), "ApiKeyRegistry")
 
       context.watch(ebookRegistry)
+      context.watch(itemRegistry)
+      context.watch(pssRegistry)
       context.watch(apiKeyRegistry)
 
       // Start the HTTP server.
       val routes =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry)(context.system)
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
 

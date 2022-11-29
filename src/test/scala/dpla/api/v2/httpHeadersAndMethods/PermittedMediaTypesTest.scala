@@ -12,7 +12,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
@@ -49,8 +49,12 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, analyticsClient)
 
+  val pssRegistry: ActorRef[SearchRegistryCommand] =
+    MockPssRegistry(testKit, authenticator, analyticsClient)
+
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+      .applicationRoutes
 
   "/v2/ebooks route" should {
     "reject invalid media types" in {

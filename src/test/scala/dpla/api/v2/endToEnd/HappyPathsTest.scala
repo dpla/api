@@ -12,7 +12,7 @@ import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.email.{EmailClient, MockEmailClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.{DPLAMAPMapper, JsonFieldReader, MockEbookSearch, MockEboookEsClientSuccess, MockItemEsClientSuccess, MockItemSearch}
 import org.scalatest.matchers.should.Matchers
@@ -56,8 +56,12 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, analyticsClient, Some(itemSearch))
 
+  val pssRegistry: ActorRef[SearchRegistryCommand] =
+    MockPssRegistry(testKit, authenticator, analyticsClient)
+
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+      .applicationRoutes
 
   "/v2/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {

@@ -12,7 +12,7 @@ import dpla.api.v2.analytics.AnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.{MockEbookSearch, MockItemSearch, MockMapperFailure}
 import org.scalatest.matchers.should.Matchers
@@ -41,6 +41,9 @@ class MapperFailureTest extends AnyWordSpec with Matchers
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, analyticsClient)
 
+  val pssRegistry: ActorRef[SearchRegistryCommand] =
+    MockPssRegistry(testKit, authenticator, analyticsClient)
+
   "/v2/ebooks route" should {
 
     "return InternalServerError if ElasticSearch response cannot be mapped" in {
@@ -53,7 +56,7 @@ class MapperFailureTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
@@ -77,7 +80,7 @@ class MapperFailureTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))

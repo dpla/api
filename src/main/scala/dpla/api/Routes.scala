@@ -24,6 +24,7 @@ import spray.json.enrichAny
 class Routes(
               ebookRegistry: ActorRef[SearchRegistryCommand],
               itemRegistry: ActorRef[SearchRegistryCommand],
+              pssRegistry: ActorRef[SearchRegistryCommand],
               apiKeyRegistry: ActorRef[ApiKeyRegistryCommand]
             )(implicit val system: ActorSystem[_]) {
 
@@ -98,6 +99,31 @@ class Routes(
     val apiKey: Option[String] = getApiKey(params, auth)
     val cleanParams = getCleanParams(params)
     itemRegistry.ask(RegisterRandom(apiKey, cleanParams, _))
+  }
+
+  def searchPss(
+                 auth: Option[String],
+                 params: Map[String, String],
+                 host: String,
+                 path: String
+               ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params)
+    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+  }
+
+  def fetchPss(
+                auth: Option[String],
+                id: String,
+                params: Map[String, String],
+                host: String,
+                path: String
+              ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params)
+    pssRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
   }
 
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
