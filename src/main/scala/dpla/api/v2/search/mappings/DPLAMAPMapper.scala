@@ -1,9 +1,9 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.mappings
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import dpla.api.v2.search.JsonFormats._
-import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, RandomQueryResponse, SearchFailure, SearchQueryResponse}
+import dpla.api.v2.search.SearchProtocol._
+import dpla.api.v2.search.mappings.JsonFormats._
 import dpla.api.v2.search.paramValidators.SearchParams
 import spray.json._
 

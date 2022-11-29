@@ -1,6 +1,7 @@
 package dpla.api.v2.search
 
 import akka.actor.typed.ActorRef
+import dpla.api.v2.search.mappings.{DPLADocList, SingleDPLADoc}
 import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 

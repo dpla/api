@@ -3,6 +3,7 @@ package dpla.api.v2.search
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, SearchResponse, ValidFetchParams, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.mappings.JsonFieldReader
 import dpla.api.v2.search.paramValidators.{FieldQuery, Filter, RandomParams, SearchParams}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

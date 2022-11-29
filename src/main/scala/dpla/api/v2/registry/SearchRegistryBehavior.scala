@@ -9,6 +9,7 @@ import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Random, Search, SearchCommand, SearchFailure}
 import dpla.api.v2.search._
+import dpla.api.v2.search.mappings.{DPLADocList, SingleDPLADoc}
 
 
 final case class SearchResult(result: DPLADocList) extends RegistryResponse

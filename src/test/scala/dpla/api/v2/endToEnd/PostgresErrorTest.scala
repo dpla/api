@@ -15,7 +15,8 @@ import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientError, M
 import dpla.api.v2.email.MockEmailClientSuccess
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.mappings.DPLAMAPMapper
+import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess, MockItemSearch}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

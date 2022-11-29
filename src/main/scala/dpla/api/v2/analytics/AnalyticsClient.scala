@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.api.v2.search.JsonFieldReader
+import dpla.api.v2.search.mappings.JsonFieldReader
 import spray.json.JsValue
 
 /**
