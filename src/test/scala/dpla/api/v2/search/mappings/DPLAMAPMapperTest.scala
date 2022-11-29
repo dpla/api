@@ -4,6 +4,7 @@ import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.helpers.FileReader
 import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, FetchQueryResponse, IntermediateSearchResult, MultiFetchQueryResponse, RandomQueryResponse, SearchFailure, SearchQueryResponse, SearchResponse}
+import dpla.api.v2.search.mappings.{DPLAMAPMapper, JsonFieldReader}
 import dpla.api.v2.search.paramValidators.{RandomParams, SearchParams}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers

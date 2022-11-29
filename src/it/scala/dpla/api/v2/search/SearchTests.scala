@@ -11,7 +11,8 @@ import dpla.api.v2.analytics.ITMockAnalyticsClient
 import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, PssRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.mappings.JsonFieldReader
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
@@ -62,8 +63,11 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     testKit.spawn(ItemRegistry(authenticator, analyticsClient))
 
+  val pssRegistry: ActorRef[SearchRegistryCommand] =
+    testKit.spawn(PssRegistry(authenticator, analyticsClient))
+
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
 
   /** Helper methods */
 

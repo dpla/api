@@ -1,7 +1,8 @@
 package dpla.api.v2.search
 
 import dpla.api.helpers.FileReader
-import dpla.api.v2.search.JsonFormats._
+import dpla.api.v2.search.mappings.JsonFormats._
+import dpla.api.v2.search.mappings.{JsonFieldReader, SingleDPLADoc}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
