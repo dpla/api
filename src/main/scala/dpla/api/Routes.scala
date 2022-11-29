@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, Respons
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
-import dpla.api.v2.search.mappings.JsonFormats._
+import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}

@@ -1,7 +1,7 @@
 //package dpla.api.v2.search.mappings
 //
 //import dpla.api.v2.search.models.PssFields
-//import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsValue, RootJsonFormat}
+//import spray.json._
 //
 ///**
 // * These formats are used for parsing ElasticSearch responses and mapping them

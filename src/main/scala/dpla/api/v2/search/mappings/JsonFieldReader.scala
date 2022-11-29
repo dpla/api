@@ -1,7 +1,7 @@
 package dpla.api.v2.search.mappings
 
 import spray.json._
-import JsonFormats._
+import DPLAMAPJsonFormats._
 import scala.annotation.tailrec
 
 /**

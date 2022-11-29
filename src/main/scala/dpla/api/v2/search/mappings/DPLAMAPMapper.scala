@@ -3,7 +3,7 @@ package dpla.api.v2.search.mappings
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.api.v2.search.SearchProtocol._
-import dpla.api.v2.search.mappings.JsonFormats._
+import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 import dpla.api.v2.search.paramValidators.SearchParams
 import spray.json._
 
