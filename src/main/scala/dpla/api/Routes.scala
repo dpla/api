@@ -175,22 +175,7 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(searchEbooks(auth, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case SearchResult(ebookList) =>
-                              renderMappedList(ebookList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /ebooks received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderSearchResponse(response, path.toString)
                         case Failure(e) =>
                           log.error(
                             "Routes /ebooks failed to get response from Registry:", e
@@ -217,26 +202,7 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case FetchResult(singleEbook) =>
-                              renderMappedDoc(singleEbook)
-                            case MultiFetchResult(ebookList) =>
-                              renderMappedList(ebookList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case NotFoundFailure =>
-                              complete(notFoundResponse)
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderSearchResponse(response, path.toString)
                         case Failure(e) =>
                           log.error(
                             "Routes /ebooks/[ID] failed to get response from Registry:",
@@ -268,22 +234,7 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(searchItems(auth, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case SearchResult(itemList) =>
-                              renderMappedList(itemList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /items received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderSearchResponse(response, path.toString)
                         case Failure(e) =>
                           log.error(
                             "Routes /items failed to get response from Registry:", e
@@ -310,26 +261,7 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(fetchItems(auth, id, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case FetchResult(singleItem) =>
-                              renderMappedDoc(singleItem)
-                            case MultiFetchResult(itemList) =>
-                              renderMappedList(itemList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case NotFoundFailure =>
-                              complete(notFoundResponse)
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /items/[ID] received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderSearchResponse(response, path.toString)
                         case Failure(e) =>
                           log.error(
                             "Routes /items/[ID] failed to get response from Registry:",
@@ -388,22 +320,7 @@ class Routes(
             respondWithHeaders(securityResponseHeaders) {
               onComplete(randomItem(auth, params)) {
                 case Success(response) =>
-                  response match {
-                    case RandomResult(itemList) =>
-                      renderMappedList(itemList)
-                    case ForbiddenFailure =>
-                      complete(forbiddenResponse)
-                    case ValidationFailure(message) =>
-                      complete(badRequestResponse(message))
-                    case InternalFailure =>
-                      complete(internalErrorResponse)
-                    case _ =>
-                      log.error(
-                        "Routes /random received unexpected RegistryResponse {}",
-                        response.getClass.getName
-                      )
-                      complete(internalErrorResponse)
-                  }
+                  renderSearchResponse(response, "/random")
                 case Failure(e) =>
                   log.error(
                     "Routes /random failed to get response from Registry:", e
@@ -419,6 +336,33 @@ class Routes(
   lazy val healthCheckRoute: Route =
     get {
       complete(OK)
+    }
+
+  private def renderSearchResponse(response: RegistryResponse, path: String): Route =
+    response match {
+      case SearchResult(result) =>
+        renderMappedList(result)
+      case FetchResult(result) =>
+        renderMappedDoc(result)
+      case MultiFetchResult(result) =>
+        renderMappedList(result)
+      case RandomResult(result) =>
+        renderMappedList(result)
+      case ForbiddenFailure =>
+        complete(forbiddenResponse)
+      case ValidationFailure(message) =>
+        complete(badRequestResponse(message))
+      case NotFoundFailure =>
+        complete(notFoundResponse)
+      case InternalFailure =>
+        complete(internalErrorResponse)
+      case _ =>
+        log.error(
+          "Routes {} received unexpected RegistryResponse {}",
+          path,
+          response.getClass.getName
+        )
+        complete(internalErrorResponse)
     }
 
   /**
