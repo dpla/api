@@ -17,10 +17,8 @@ trait MappedDocList
 trait Mapper {
 
   /** Abstract methods */
-  protected def mapDocList(params: SearchParams, body: String): Try[MappedDocList]
+  protected def mapDocList(body: String, searchParams: Option[SearchParams] = None): Try[MappedDocList]
   protected def mapSingleDoc(body: String): Try[SingleMappedDoc]
-  protected def mapMultiFetch(body: String): Try[MappedDocList]
-  protected def mapRandom(body: String): Try[MappedDocList]
 
   def apply(): Behavior[IntermediateSearchResult] = {
 
@@ -29,7 +27,7 @@ trait Mapper {
       Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case SearchQueryResponse(params, body, replyTo) =>
-          mapDocList(params, body) match {
+          mapDocList(body, Some(params)) match {
             case Success(mappedDocList) =>
               replyTo ! MappedSearchResult(mappedDocList)
             case Failure(e) =>
@@ -53,7 +51,7 @@ trait Mapper {
           Behaviors.same
 
         case MultiFetchQueryResponse(body, replyTo) =>
-          mapMultiFetch(body) match {
+          mapDocList(body) match {
             case Success(multiDoc) =>
               replyTo ! MappedMultiFetchResult(multiDoc)
             case Failure(e) =>
@@ -65,7 +63,7 @@ trait Mapper {
           Behaviors.same
 
         case RandomQueryResponse(_, body, replyTo) =>
-          mapRandom(body) match {
+          mapDocList(body) match {
             case Success(randomDoc) =>
               replyTo ! MappedRandomResult(randomDoc)
             case Failure(e) =>

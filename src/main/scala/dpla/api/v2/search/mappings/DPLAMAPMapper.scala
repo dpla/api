@@ -45,31 +45,59 @@ case class Bucket(
 
 object DPLAMAPMapper extends Mapper {
 
-  override protected def mapDocList(params: SearchParams, body: String): Try[MappedDocList] =
+  /**
+   * If SearchParams is included in the parameters, then pagination data will
+   * be added and selected fields will be un-nested.
+   *
+   * SearchParams should be absent for multi-fetch and random queries.
+   */
+  override protected def mapDocList(
+                                     body: String,
+                                     searchParams: Option[SearchParams] = None
+                                   ): Try[MappedDocList] =
     Try {
-      val start = getStart(params.page, params.pageSize)
-      val mapped = body.parseJson.convertTo[DPLADocList]
-        .copy(limit=Some(params.pageSize), start=Some(start))
-      params.fields match {
-        case Some(f) => mapped.copy(docs = unNestFields(mapped.docs, f))
-        case None => mapped
+      searchParams match {
+        case None =>
+          body.parseJson.convertTo[DPLADocList]
+
+        case Some(params) =>
+          val start = getStart(params.page, params.pageSize)
+          val mapped = body.parseJson.convertTo[DPLADocList]
+            .copy(limit=Some(params.pageSize), start=Some(start))
+          params.fields match {
+            case Some(f) => mapped.copy(docs = unNestFields(mapped.docs, f))
+            case None => mapped
+          }
       }
     }
+
+
+
+//  override protected def mapDocList(params: SearchParams, body: String): Try[MappedDocList] =
+//    Try {
+//      val start = getStart(params.page, params.pageSize)
+//      val mapped = body.parseJson.convertTo[DPLADocList]
+//        .copy(limit=Some(params.pageSize), start=Some(start))
+//      params.fields match {
+//        case Some(f) => mapped.copy(docs = unNestFields(mapped.docs, f))
+//        case None => mapped
+//      }
+//    }
 
   override protected def mapSingleDoc(body: String): Try[SingleMappedDoc] =
     Try {
       body.parseJson.convertTo[SingleDPLADoc]
     }
 
-  override protected def mapMultiFetch(body: String): Try[MappedDocList] =
-    Try{
-      body.parseJson.convertTo[DPLADocList]
-    }
-
-  override protected def mapRandom(body: String): Try[MappedDocList] =
-    Try{
-      body.parseJson.convertTo[DPLADocList]
-    }
+//  protected def mapMultiFetch(body: String): Try[MappedDocList] =
+//    Try{
+//      body.parseJson.convertTo[DPLADocList]
+//    }
+//
+//  protected def mapRandom(body: String): Try[MappedDocList] =
+//    Try{
+//      body.parseJson.convertTo[DPLADocList]
+//    }
 
   /**
    * DPLA MAP field that gives the index of the first result on the page
