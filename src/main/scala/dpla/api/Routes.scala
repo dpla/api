@@ -175,12 +175,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(searchEbooks(auth, params, host, path.toString)) {
                         case Success(response) =>
-                          renderSearchResponse(response, path.toString)
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /ebooks failed to get response from Registry:", e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -202,13 +199,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
                         case Success(response) =>
-                          renderSearchResponse(response, path.toString)
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /ebooks/[ID] failed to get response from Registry:",
-                            e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -234,12 +227,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(searchItems(auth, params, host, path.toString)) {
                         case Success(response) =>
-                          renderSearchResponse(response, path.toString)
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /items failed to get response from Registry:", e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -261,13 +251,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(fetchItems(auth, id, params, host, path.toString)) {
                         case Success(response) =>
-                          renderSearchResponse(response, path.toString)
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /items/[ID] failed to get response from Registry:",
-                            e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -287,23 +273,9 @@ class Routes(
           respondWithHeaders(securityResponseHeaders) {
             onComplete(createApiKey(email)) {
               case Success(response) =>
-                response match {
-                  case NewApiKey(email) =>
-                    complete(newKeyMessage(email))
-                  case ExistingApiKey(email) =>
-                    complete(existingKeyResponse(email))
-                  case DisabledApiKey(email) =>
-                    complete(disabledKeyResponse(email))
-                  case ValidationFailure(message) =>
-                    complete(badRequestResponse(message))
-                  case InternalFailure =>
-                    complete(internalErrorResponse)
-                }
+                renderRegistryResponse(response, "/api_key")
               case Failure(e) =>
-                log.error(
-                  "Routes /api_key failed to get response from Registry:", e
-                )
-                complete(internalErrorResponse)
+                renderRegistryFailure(e, "/api_key")
             }
           }
         }
@@ -320,12 +292,9 @@ class Routes(
             respondWithHeaders(securityResponseHeaders) {
               onComplete(randomItem(auth, params)) {
                 case Success(response) =>
-                  renderSearchResponse(response, "/random")
+                  renderRegistryResponse(response, "/random")
                 case Failure(e) =>
-                  log.error(
-                    "Routes /random failed to get response from Registry:", e
-                  )
-                  complete(internalErrorResponse)
+                  renderRegistryFailure(e, "/random")
               }
             }
           }
@@ -338,7 +307,14 @@ class Routes(
       complete(OK)
     }
 
-  private def renderSearchResponse(response: RegistryResponse, path: String): Route =
+  private def renderRegistryFailure(error: Throwable, path: String): Route = {
+    log.error(
+      "Routes {} failed to get response from Registry:", path, error
+    )
+    complete(internalErrorResponse)
+  }
+
+  private def renderRegistryResponse(response: RegistryResponse, path: String): Route =
     response match {
       case SearchResult(result) =>
         renderMappedList(result)
@@ -348,12 +324,18 @@ class Routes(
         renderMappedList(result)
       case RandomResult(result) =>
         renderMappedList(result)
+      case NewApiKey(email) =>
+        complete(newKeyMessage(email))
+      case ExistingApiKey(email) =>
+        complete(existingKeyResponse(email))
+      case DisabledApiKey(email) =>
+        complete(disabledKeyResponse(email))
+      case NotFoundFailure =>
+        complete(notFoundResponse)
       case ForbiddenFailure =>
         complete(forbiddenResponse)
       case ValidationFailure(message) =>
         complete(badRequestResponse(message))
-      case NotFoundFailure =>
-        complete(notFoundResponse)
       case InternalFailure =>
         complete(internalErrorResponse)
       case _ =>
