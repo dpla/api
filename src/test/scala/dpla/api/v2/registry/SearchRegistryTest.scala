@@ -4,7 +4,7 @@ import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.helpers.FileReader
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
+import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackFetch, TrackSearch}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientStaff, MockPostgresClientSuccess}
 import dpla.api.v2.registry.RegistryProtocol.RegistryResponse

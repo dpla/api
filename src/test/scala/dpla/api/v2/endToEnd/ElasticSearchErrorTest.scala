@@ -7,9 +7,8 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
+import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
@@ -19,7 +18,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class ElasticSearchErrorTest extends AnyWordSpec with Matchers
-  with ScalatestRouteTest {
+  with ScalatestRouteTest with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit
@@ -28,10 +27,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
-
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
+  val postgresClient =
+    testKit.spawn(MockPostgresClientSuccess())
 
   val authenticator: ActorRef[AuthenticationCommand] =
     MockAuthenticator(testKit, Some(postgresClient))
@@ -40,10 +37,10 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
     MockApiKeyRegistry(testKit, authenticator)
 
   val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, analyticsClient)
+    MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
 
   val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, analyticsClient)
+    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   "/v2/ebooks route" should {
     "return InternalServerError if ElasticSearch entity cannot be parsed" in {
@@ -53,7 +50,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
@@ -73,7 +70,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
@@ -96,7 +93,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
@@ -116,7 +113,7 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookSearch(testKit, Some(elasticSearchClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes

@@ -7,14 +7,14 @@ import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.api.helpers.ActorHelper
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.MockAuthenticator
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 
 
-class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
+class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
+  with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -23,23 +23,20 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
-
   val authenticator: ActorRef[AuthenticationCommand] =
     MockAuthenticator(testKit)
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, analyticsClient)
+    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
 
   val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, analyticsClient)
+    MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
 
   val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, analyticsClient)
+    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)

@@ -4,8 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.api.v2.search.mappings.JsonFieldReader
-import spray.json.JsValue
+import dpla.api.v2.search.mappings.{JsonFieldReader, MappedDocList, SingleMappedDoc}
 
 /**
  * Tracks use via Google Analytics Measurement Protocol
@@ -15,121 +14,78 @@ import spray.json.JsValue
  * Google Analytics Measurement Protocol does not return HTTP codes, so the
  * success or failure of a request cannot be ascertained.
  */
-object AnalyticsClient extends JsonFieldReader {
 
-  sealed trait AnalyticsClientCommand
+sealed trait AnalyticsClientCommand
 
-  case class TrackSearch(
-                          rawParams: Map[String, String],
-                          host: String,
-                          path: String,
-                          dplaDocList: Seq[JsValue],
-                          searchType: String
-                        ) extends AnalyticsClientCommand
+final case class TrackSearch(
+                              rawParams: Map[String, String],
+                              host: String,
+                              path: String,
+                              mappedDocList: MappedDocList,
+                            ) extends AnalyticsClientCommand
 
-  case class TrackFetch(
-                         host: String,
-                         path: String,
-                         dplaDoc: Option[JsValue],
-                         searchType: String
-                       ) extends AnalyticsClientCommand
+final case class TrackFetch(
+                             host: String,
+                             path: String,
+                             singleMappedDoc: SingleMappedDoc
+                           ) extends AnalyticsClientCommand
+
+trait AnalyticsClient extends JsonFieldReader {
 
   val collectUrl = "https://www.google-analytics.com/collect"
   val batchUrl = "http://www.google-analytics.com/batch"
+
+
+  /** Abstract methods */
+  protected def trackSearch(rawParams: Map[String, String],
+                            host: String,
+                            path: String,
+                            mappedDocList: MappedDocList,
+                            system: ActorSystem[Nothing]): Unit
+
+  protected def trackFetch(host: String,
+                           path: String,
+                           singleMappedDoc: SingleMappedDoc,
+                           system: ActorSystem[Nothing]): Unit
+
 
   def apply(): Behavior[AnalyticsClientCommand] = {
     Behaviors.setup { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
 
-      val trackingId: String = system.settings.config
-        .getString("googleAnalytics.trackingId")
-
-      val clientId: String = system.settings.config
-        .getString("googleAnalytics.clientId")
-
       Behaviors.receiveMessage[AnalyticsClientCommand] {
 
-        case TrackSearch(rawParams, host, path, dplaDocList, searchType) =>
-
-          // Track pageview
+        case TrackSearch(rawParams, host, path, mappedDocList) =>
           // Strip the API key out of the page path
           val cleanParams = rawParams.filterNot(_._1 == "api_key")
-          val query: String = paramString(cleanParams)
-          val pathWithQuery: String = Seq(path, query).mkString("?")
-
-          val pageViewParams: String = trackPageViewParams(
-            trackingId,
-            clientId,
-            host,
-            pathWithQuery,
-            s"$searchType search results"
-          )
-          postHit(system, pageViewParams)
-
-          // Track events
-          if (dplaDocList.nonEmpty) {
-            val eventParams: Seq[String] = dplaDocList.map(doc =>
-              trackEventParams(
-                trackingId,
-                clientId,
-                host,
-                path,
-                eventCategory(doc, searchType),
-                eventAction(doc),
-                eventLabel(doc)
-              )
-            )
-            postBatch(system, eventParams)
-          }
-
+          trackSearch(cleanParams, host, path, mappedDocList, system)
           Behaviors.same
 
-        case TrackFetch(host, path, dplaDoc, searchType) =>
-
-          // Track pageview
-          val pageViewParams: String = trackPageViewParams(
-            trackingId,
-            clientId,
-            host,
-            path,
-            s"Fetch $searchType"
-          )
-          postHit(system, pageViewParams)
-
-          // Track event
-          dplaDoc match {
-            case Some(doc) =>
-              val eventParams: String = trackEventParams(
-                trackingId,
-                clientId,
-                host,
-                path,
-                eventCategory(doc, searchType),
-                eventAction(doc),
-                eventLabel(doc)
-              )
-              postHit(system, eventParams)
-            case None => // no-op
-          }
-
+        case TrackFetch(host, path, singleMappedDoc) =>
+          trackFetch(host, path, singleMappedDoc, system)
           Behaviors.same
       }
     }
   }
 
-  private def trackPageViewParams(
-                                   trackingId: String,
-                                   clientId: String,
+  protected def getTrackingId(system: ActorSystem[Nothing]): String =
+    system.settings.config.getString("googleAnalytics.trackingId")
+
+  protected def getClientId(system: ActorSystem[Nothing]): String =
+    system.settings.config.getString("googleAnalytics.clientId")
+
+  protected def getPageViewParams(
                                    host: String,
-                                   path: String,
-                                   title: String
-                                 ): String = {
+                                    path: String,
+                                    title: String,
+                                    system: ActorSystem[Nothing]
+                                  ): String = {
     val params = Map(
       "v" -> "1",
       "t" -> "pageview",
-      "tid" -> trackingId,
-      "cid" -> clientId,
+      "tid" -> getTrackingId(system),
+      "cid" -> getClientId(system),
       "dh" -> host,
       "dp" -> path,
       "dt" -> title
@@ -137,20 +93,19 @@ object AnalyticsClient extends JsonFieldReader {
     paramString(params)
   }
 
-  private def trackEventParams(
-                                trackingId: String,
-                                clientId: String,
+  protected def getEventParams(
                                 host: String,
                                 path: String,
                                 category: String,
                                 action: String,
-                                label: String
+                                label: String,
+                                system: ActorSystem[Nothing]
                               ): String = {
     val params = Map(
       "v" -> "1",
       "t" -> "event",
-      "tid" -> trackingId,
-      "cid" -> clientId,
+      "tid" -> getTrackingId(system),
+      "cid" -> getClientId(system),
       "dh" -> host,
       "dp" -> path,
       "ec" -> category,
@@ -160,28 +115,10 @@ object AnalyticsClient extends JsonFieldReader {
     paramString(params)
   }
 
-  private def eventCategory(doc: JsValue, searchType: String): String = {
-    val root = doc.asJsObject
-    val provider = readString(root, "provider", "name").getOrElse("")
-    s"View API $searchType : $provider"
-  }
-
-  private def eventAction(doc: JsValue): String = {
-    val root = doc.asJsObject
-    readString(root, "dataProvider", "name").getOrElse("")
-  }
-
-  private def eventLabel(doc: JsValue): String = {
-    val root = doc.asJsObject
-    val docId = readString(root, "id").getOrElse("")
-    val title = readStringArray(root, "sourceResource", "title").mkString(", ")
-    s"$docId : $title"
-  }
-
-  private def postHit(
-                       implicit system: ActorSystem[Nothing],
-                       data: String
-                     ): Unit = {
+  protected def postHit(
+                         implicit system: ActorSystem[Nothing],
+                         data: String
+                       ): Unit = {
 
     val request: HttpRequest = HttpRequest(
       method = HttpMethods.POST,
@@ -191,10 +128,10 @@ object AnalyticsClient extends JsonFieldReader {
     Http().singleRequest(request)
   }
 
-  private def postBatch(
-                         implicit system: ActorSystem[Nothing],
-                         data: Seq[String]
-                       ): Unit = {
+  protected def postBatch(
+                           implicit system: ActorSystem[Nothing],
+                           data: Seq[String]
+                         ): Unit = {
 
     // Can only send up to 20 hits per batch
     val batches: Iterator[Seq[String]] = data.grouped(20)
@@ -211,6 +148,6 @@ object AnalyticsClient extends JsonFieldReader {
   }
 
   // Turn a param map into a string that can be used in an HTTP request
-  private def paramString(params: Map[String, String]): String =
+  protected def paramString(params: Map[String, String]): String =
     params.map { case (key, value) => s"$key=$value" }.mkString("&")
 }

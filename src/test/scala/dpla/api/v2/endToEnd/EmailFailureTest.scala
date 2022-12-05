@@ -6,8 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.api.helpers.ActorHelper
 import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
@@ -16,7 +15,8 @@ import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEboo
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
+class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
+  with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
 
@@ -27,9 +27,6 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
-
   val postgresClient = testKit.spawn(MockPostgresClientSuccess())
   val emailClient: ActorRef[EmailClientCommand] =
     testKit.spawn(MockEmailClientFailure())
@@ -38,16 +35,16 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, analyticsClient)
+    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
   val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, analyticsClient)
+    MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
 
   val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, analyticsClient)
+    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)

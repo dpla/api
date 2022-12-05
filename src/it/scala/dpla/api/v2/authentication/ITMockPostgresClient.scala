@@ -4,7 +4,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import dpla.api.helpers.ITUtils.fakeApiKey
 import dpla.api.v2.authentication
-import dpla.api.v2.authentication.AuthProtocol.{AccountCreated, AccountFound, IntermediateAuthResult, ValidApiKey, ValidEmail}
+import dpla.api.v2.authentication.AuthProtocol._
 
 object ITMockPostgresClient {
 

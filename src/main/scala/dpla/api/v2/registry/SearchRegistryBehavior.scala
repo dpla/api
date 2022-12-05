@@ -3,14 +3,13 @@ package dpla.api.v2.registry
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
-import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
+import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackFetch, TrackSearch}
+import dpla.api.v2.authentication.AuthProtocol._
 import dpla.api.v2.authentication._
-import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{Fetch, FetchNotFound, InvalidSearchParams, MappedFetchResult, MappedMultiFetchResult, MappedRandomResult, MappedSearchResult, Random, Search, SearchCommand, SearchFailure}
+import dpla.api.v2.registry.RegistryProtocol._
+import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search._
-import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, SingleDPLADoc, SingleMappedDoc}
-import spray.json.JsValue
+import dpla.api.v2.search.mappings.{MappedDocList, SingleMappedDoc}
 
 
 final case class SearchResult(result: MappedDocList) extends RegistryResponse
@@ -47,9 +46,6 @@ trait SearchRegistryBehavior {
 
   def spawnSearchActor(context: ActorContext[SearchRegistryCommand]):
     ActorRef[SearchCommand]
-
-  // Used in analytics tracking
-  def searchType: String
 
   def apply(
              authenticator: ActorRef[AuthenticationCommand],
@@ -128,13 +124,7 @@ trait SearchRegistryBehavior {
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit
-                  val dplaDocList: Seq[JsValue] =
-                    mappedDocList match {
-                      case list: DPLADocList => list.docs
-                      case _ => Seq()
-                    }
-                  analyticsClient ! TrackSearch(rawParams, host, path,
-                    dplaDocList, searchType)
+                  analyticsClient ! TrackSearch(rawParams, host, path, mappedDocList)
                 }
               case None => // no-op
             }
@@ -243,21 +233,9 @@ trait SearchRegistryBehavior {
                   // ...track analytics hit.
                   either match {
                     case Left(singleMappedDoc) =>
-                      val dplaDoc: Option[JsValue] = singleMappedDoc match {
-                        case doc: SingleDPLADoc => doc.docs.headOption
-                        case _ => None
-                      }
-                      analyticsClient ! TrackFetch(host, path, dplaDoc,
-                        searchType)
-
+                      analyticsClient ! TrackFetch(host, path, singleMappedDoc)
                     case Right(mappedDocList) =>
-                      val dplaDocList: Seq[JsValue] =
-                        mappedDocList match {
-                          case list: DPLADocList => list.docs
-                          case _ => Seq()
-                        }
-                      analyticsClient ! TrackSearch(rawParams, host, path,
-                        dplaDocList, searchType)
+                      analyticsClient ! TrackSearch(rawParams, host, path, mappedDocList)
                   }
                 }
               case None => // no-op

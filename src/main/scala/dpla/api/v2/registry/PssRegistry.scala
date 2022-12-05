@@ -15,6 +15,4 @@ object PssRegistry extends SearchRegistryBehavior {
                                  context: ActorContext[SearchRegistryCommand]
                                ): ActorRef[SearchCommand] =
     context.spawn(PssSearch(), "PssSearch")
-
-  override val searchType: String = "Primary Source Set"
 }

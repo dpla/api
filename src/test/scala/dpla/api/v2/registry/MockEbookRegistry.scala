@@ -3,7 +3,7 @@ package dpla.api.v2.registry
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.api.v2.analytics.AnalyticsClientCommand
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.search.EbookSearch
 import dpla.api.v2.search.SearchProtocol.SearchCommand
@@ -18,8 +18,6 @@ object MockEbookRegistry {
            ): ActorRef[SearchRegistryCommand] = {
 
     object Mock extends SearchRegistryBehavior {
-
-      override val searchType: String = "Ebook"
 
       override def spawnSearchActor(
                                      context: ActorContext[SearchRegistryCommand]
