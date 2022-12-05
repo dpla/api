@@ -24,9 +24,6 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
 
-  val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
-
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 

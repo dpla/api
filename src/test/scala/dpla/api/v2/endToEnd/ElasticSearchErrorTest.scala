@@ -9,7 +9,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry.{MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{MockEbookRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.MockEbookSearch
 import org.scalatest.matchers.should.Matchers
@@ -24,9 +24,6 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
-
-  val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
 
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     MockPssRegistry(testKit, authenticator, pssAnalyticsClient)

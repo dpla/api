@@ -40,14 +40,14 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val apiKeyRegistryWithEmailSuccess: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
-  val itemRegistry: ActorRef[SearchRegistryCommand] =
+  val itemRegistryEsSuccess: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, itemAnalyticsClient, Some(itemSearch))
 
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryWithEmailSuccess)
+    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry, apiKeyRegistryWithEmailSuccess)
       .applicationRoutes
 
   "/v2/ebooks route" should {

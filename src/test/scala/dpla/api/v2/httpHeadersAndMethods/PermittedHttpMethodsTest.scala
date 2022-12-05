@@ -30,9 +30,6 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
-  val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
-
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
