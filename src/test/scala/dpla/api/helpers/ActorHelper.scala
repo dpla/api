@@ -12,7 +12,7 @@ import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.email.{MockEmailClientFailure, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess, SearchProtocol}
+import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess, MockEsClientFailure, MockEsClientNotFound, SearchProtocol}
 import dpla.api.v2.search.mappings.{DPLAMAPMapper, MockMapperFailure}
 
 trait ActorHelper {
@@ -63,9 +63,10 @@ trait ActorHelper {
 
   val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
 
-//  val ebookSearch: ActorRef[SearchCommand] =
-//    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
-  //
+  val elasticSearchClientFailure = testKit.spawn(MockEsClientFailure())
+
+  val elasticSearchClientNotFound = testKit.spawn(MockEsClientNotFound())
+
 ////  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
 ////  override def createActorSystem(): akka.actor.ActorSystem =
 ////    testKit.system.classicSystem
