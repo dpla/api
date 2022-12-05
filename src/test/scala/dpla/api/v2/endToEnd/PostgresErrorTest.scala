@@ -134,8 +134,6 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   "/api_key/[email] route" should {
     "return Conflict if email has existing api key" in {
       val postgresClient = testKit.spawn(MockPostgresClientExistingKey())
-      val emailClient: ActorRef[EmailClientCommand] =
-        testKit.spawn(MockEmailClientSuccess())
 
       val authenticator: ActorRef[AuthenticationCommand] =
         MockAuthenticator(testKit, Some(postgresClient))

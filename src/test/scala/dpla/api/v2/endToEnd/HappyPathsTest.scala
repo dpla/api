@@ -30,8 +30,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     testKit.system.classicSystem
 
   val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-  val emailClient: ActorRef[EmailClient.EmailClientCommand] =
-    testKit.spawn(MockEmailClientSuccess())
+
   val mapper = testKit.spawn(DPLAMAPMapper())
   val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
   val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(mapper))

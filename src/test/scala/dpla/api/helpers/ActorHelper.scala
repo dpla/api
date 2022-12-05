@@ -19,16 +19,22 @@ trait ActorHelper {
 
 
   val ebookAnalyticsClient: ActorRef[AnalyticsClientCommand] =
-  testKit.spawn(EbookAnalyticsClient())
+    testKit.spawn(EbookAnalyticsClient())
 
   val itemAnalyticsClient: ActorRef[AnalyticsClientCommand] =
-  testKit.spawn(ItemAnalyticsClient())
+    testKit.spawn(ItemAnalyticsClient())
 
   val pssAnalyticsClient: ActorRef[AnalyticsClientCommand] =
-  testKit.spawn(PssAnalyticsClient())
-//
+    testKit.spawn(PssAnalyticsClient())
 
-//
+  val emailClient: ActorRef[EmailClientCommand] =
+    testKit.spawn(MockEmailClientSuccess())
+
+  val emailClientFailure: ActorRef[EmailClientCommand] =
+    testKit.spawn(MockEmailClientFailure())
+  
+
+  //
 ////  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
 ////  override def createActorSystem(): akka.actor.ActorSystem =
 ////    testKit.system.classicSystem
