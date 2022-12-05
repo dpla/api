@@ -51,6 +51,9 @@ trait ActorHelper {
   val authenticatorStaff: ActorRef[AuthenticationCommand] =
     MockAuthenticatorStaff(testKit)
 
+  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+    MockApiKeyRegistry(testKit, authenticator)
+
   //
 ////  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
 ////  override def createActorSystem(): akka.actor.ActorSystem =

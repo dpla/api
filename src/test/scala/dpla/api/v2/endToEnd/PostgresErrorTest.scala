@@ -11,7 +11,7 @@ import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.DPLAMAPMapper
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -28,6 +28,12 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   val mapper = testKit.spawn(DPLAMAPMapper())
   val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
 
+  val apiKeyRegistryAuthError: ActorRef[ApiKeyRegistryCommand] =
+    MockApiKeyRegistry(testKit, authenticatorError)
+
+  val apiKeyRegistryExistingKey: ActorRef[ApiKeyRegistryCommand] =
+    MockApiKeyRegistry(testKit, authenticatorExistingKey, Some(emailClient))
+
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
 
@@ -36,9 +42,6 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient, Some(ebookSearch))
-
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticatorError)
 
       val itemRegistry: ActorRef[SearchRegistryCommand] =
         MockItemRegistry(testKit, authenticatorError, itemAnalyticsClient)
@@ -65,9 +68,6 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient, Some(ebookSearch))
 
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticatorError)
-
       val itemRegistry: ActorRef[SearchRegistryCommand] =
         MockItemRegistry(testKit, authenticatorError, itemAnalyticsClient)
 
@@ -75,7 +75,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockPssRegistry(testKit, authenticatorError, pssAnalyticsClient)
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryAuthError)
           .applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
@@ -93,9 +93,6 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient)
 
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticatorError)
-
       val itemRegistry: ActorRef[SearchRegistryCommand] =
         MockItemRegistry(testKit, authenticatorError, itemAnalyticsClient)
 
@@ -103,7 +100,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockPssRegistry(testKit, authenticatorError, pssAnalyticsClient)
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryAuthError)
           .applicationRoutes
 
       val request = Post(s"/v2/api_key/email@example.com")
@@ -121,9 +118,6 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
         MockEbookRegistry(testKit, authenticatorExistingKey, ebookAnalyticsClient)
 
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticatorExistingKey, Some(emailClient))
-
       val itemRegistry: ActorRef[SearchRegistryCommand] =
         MockItemRegistry(testKit, authenticatorExistingKey, itemAnalyticsClient)
 
@@ -131,7 +125,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockPssRegistry(testKit, authenticatorExistingKey, pssAnalyticsClient)
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryExistingKey)
           .applicationRoutes
 
       val request = Post("/v2/api_key/email@example.com")

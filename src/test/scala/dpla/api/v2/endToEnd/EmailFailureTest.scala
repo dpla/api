@@ -26,7 +26,7 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
 
-  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+  val apiKeyRegistryWithEmailFailure: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClientFailure))
 
   val itemRegistry: ActorRef[SearchRegistryCommand] =
@@ -36,7 +36,7 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryWithEmailFailure)
       .applicationRoutes
 
   "/api_key/[email]" should {

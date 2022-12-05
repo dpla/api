@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
@@ -23,9 +23,6 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
-
-  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    MockApiKeyRegistry(testKit, authenticator)
 
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
