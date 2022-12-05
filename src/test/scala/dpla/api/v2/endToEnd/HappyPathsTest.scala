@@ -11,7 +11,7 @@ import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.JsonFieldReader
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess, MockItemEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.{MockEbookSearch, MockItemEsClientSuccess, MockItemSearch}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
@@ -26,7 +26,6 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
   val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(dplaMapMapper))
 
   val ebookSearch: ActorRef[SearchCommand] =

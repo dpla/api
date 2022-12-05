@@ -35,7 +35,6 @@ class MapperFailureTest extends AnyWordSpec with Matchers
 
     "return InternalServerError if ElasticSearch response cannot be mapped" in {
 
-
       val ebookSearch: ActorRef[SearchCommand] =
         MockEbookSearch(testKit, None, Some(mapperFailure))
 

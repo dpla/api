@@ -10,7 +10,7 @@ import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess}
+import dpla.api.v2.search.MockEbookSearch
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -24,8 +24,6 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
-
   val apiKeyRegistryAuthError: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticatorError)
 
@@ -33,7 +31,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     MockApiKeyRegistry(testKit, authenticatorExistingKey, Some(emailClient))
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   "/v2/ebooks route" should {
     "return InternalServerError if Postgres errors" in {

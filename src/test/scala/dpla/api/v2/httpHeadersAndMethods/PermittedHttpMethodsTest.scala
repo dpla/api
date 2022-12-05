@@ -8,7 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.v2.registry.{MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess}
+import dpla.api.v2.search.MockEbookSearch
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -24,10 +24,8 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
-
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))

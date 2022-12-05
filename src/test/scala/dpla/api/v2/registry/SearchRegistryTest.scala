@@ -7,7 +7,7 @@ import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackFetch, TrackSearch}
 import dpla.api.v2.registry.RegistryProtocol.RegistryResponse
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess}
+import dpla.api.v2.search.MockEbookSearch
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -19,13 +19,11 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
-
   val analyticsProbe: TestProbe[AnalyticsClientCommand] =
     testKit.createTestProbe[AnalyticsClientCommand]
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   val replyProbe: TestProbe[RegistryResponse] =
     testKit.createTestProbe[RegistryResponse]
