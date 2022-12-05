@@ -25,10 +25,10 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))

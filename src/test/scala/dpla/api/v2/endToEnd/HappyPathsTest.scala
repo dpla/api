@@ -26,14 +26,14 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
-  val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(mapper))
+  val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
+  val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(dplaMapMapper))
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   val itemSearch: ActorRef[SearchCommand] =
-    MockItemSearch(testKit, Some(itemElasticSearchClient), Some(mapper))
+    MockItemSearch(testKit, Some(itemElasticSearchClient), Some(dplaMapMapper))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))

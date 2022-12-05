@@ -24,7 +24,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
 
   val apiKeyRegistryAuthError: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticatorError)
@@ -33,7 +33,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
     MockApiKeyRegistry(testKit, authenticatorExistingKey, Some(emailClient))
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
 
   "/v2/ebooks route" should {
     "return InternalServerError if Postgres errors" in {

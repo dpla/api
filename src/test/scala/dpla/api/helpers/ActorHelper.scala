@@ -55,7 +55,7 @@ trait ActorHelper {
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
 
-  val mapper = testKit.spawn(DPLAMAPMapper())
+  val dplaMapMapper = testKit.spawn(DPLAMAPMapper())
 
   val mapperFailure = testKit.spawn(MockMapperFailure())
 

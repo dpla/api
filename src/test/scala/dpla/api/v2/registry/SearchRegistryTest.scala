@@ -19,13 +19,13 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
 
   val analyticsProbe: TestProbe[AnalyticsClientCommand] =
     testKit.createTestProbe[AnalyticsClientCommand]
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
 
   val replyProbe: TestProbe[RegistryResponse] =
     testKit.createTestProbe[RegistryResponse]

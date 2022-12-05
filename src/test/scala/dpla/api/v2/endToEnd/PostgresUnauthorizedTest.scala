@@ -24,7 +24,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
 
   val apiKeyRegistryKeyNotFound: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticatorKeyNotFound)
@@ -33,7 +33,7 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     MockApiKeyRegistry(testKit, authenticatorDisabled)
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(elasticSearchClient), Some(dplaMapMapper))
 
   "/v2/ebooks route" should {
     "return Forbidden if API key not found" in {
