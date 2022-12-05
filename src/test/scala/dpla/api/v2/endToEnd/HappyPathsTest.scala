@@ -8,9 +8,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.email.{EmailClient, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.{DPLAMAPMapper, JsonFieldReader}
@@ -29,14 +26,9 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-
   val mapper = testKit.spawn(DPLAMAPMapper())
   val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
   val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(mapper))
-
-  val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(mapper))

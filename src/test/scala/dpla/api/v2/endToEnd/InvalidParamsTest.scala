@@ -8,8 +8,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.MockEbookSearch
 import dpla.api.v2.search.SearchProtocol.SearchCommand
@@ -26,11 +24,6 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
-
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-
-  val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit)

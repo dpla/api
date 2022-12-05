@@ -7,7 +7,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.v2.analytics.{AnalyticsClientCommand, EbookAnalyticsClient, ItemAnalyticsClient, PssAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
+import dpla.api.v2.authentication._
 import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.email.{MockEmailClientFailure, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
@@ -32,7 +32,24 @@ trait ActorHelper {
 
   val emailClientFailure: ActorRef[EmailClientCommand] =
     testKit.spawn(MockEmailClientFailure())
-  
+
+  val authenticator: ActorRef[AuthenticationCommand] =
+    MockAuthenticatorSuccess(testKit)
+
+  val authenticatorDisabled: ActorRef[AuthenticationCommand] =
+    MockAuthenticatorDisabled(testKit)
+
+  val authenticatorError: ActorRef[AuthenticationCommand] =
+    MockAuthenticatorError(testKit)
+
+  val authenticatorExistingKey: ActorRef[AuthenticationCommand] =
+    MockAuthenticatorExistingKey(testKit)
+
+  val authenticatorKeyNotFound: ActorRef[AuthenticationCommand] =
+    MockAuthenticatorKeyNotFound(testKit)
+
+  val authenticatorStaff: ActorRef[AuthenticationCommand] =
+    MockAuthenticatorStaff(testKit)
 
   //
 ////  implicit def typedSystem: ActorSystem[Nothing] = testKit.system

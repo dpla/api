@@ -8,10 +8,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.email.EmailClient.EmailClientCommand
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientError, MockPostgresClientExistingKey}
-import dpla.api.v2.email.MockEmailClientSuccess
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.DPLAMAPMapper
@@ -37,22 +33,18 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/v2/ebooks route" should {
     "return InternalServerError if Postgres errors" in {
-      val postgresClient = testKit.spawn(MockPostgresClientError())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
+        MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient, Some(ebookSearch))
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
+        MockApiKeyRegistry(testKit, authenticatorError)
 
       val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
+        MockItemRegistry(testKit, authenticatorError, itemAnalyticsClient)
 
       val pssRegistry: ActorRef[SearchRegistryCommand] =
-        MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
+        MockPssRegistry(testKit, authenticatorError, pssAnalyticsClient)
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
@@ -69,22 +61,18 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/v2/ebooks[id] route" should {
     "return InternalServerError if Postgres errors" in {
-      val postgresClient = testKit.spawn(MockPostgresClientError())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
+        MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient, Some(ebookSearch))
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
+        MockApiKeyRegistry(testKit, authenticatorError)
 
       val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
+        MockItemRegistry(testKit, authenticatorError, itemAnalyticsClient)
 
       val pssRegistry: ActorRef[SearchRegistryCommand] =
-        MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
+        MockPssRegistry(testKit, authenticatorError, pssAnalyticsClient)
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
@@ -101,22 +89,18 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/api_key/[email]" should {
     "return InternalServerError if Postgres errors" in {
-      val postgresClient = testKit.spawn(MockPostgresClientError())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
+        MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient)
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
+        MockApiKeyRegistry(testKit, authenticatorError)
 
       val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
+        MockItemRegistry(testKit, authenticatorError, itemAnalyticsClient)
 
       val pssRegistry: ActorRef[SearchRegistryCommand] =
-        MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
+        MockPssRegistry(testKit, authenticatorError, pssAnalyticsClient)
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
@@ -133,22 +117,18 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
 
   "/api_key/[email] route" should {
     "return Conflict if email has existing api key" in {
-      val postgresClient = testKit.spawn(MockPostgresClientExistingKey())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
+        MockEbookRegistry(testKit, authenticatorExistingKey, ebookAnalyticsClient)
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
+        MockApiKeyRegistry(testKit, authenticatorExistingKey, Some(emailClient))
 
       val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
+        MockItemRegistry(testKit, authenticatorExistingKey, itemAnalyticsClient)
 
       val pssRegistry: ActorRef[SearchRegistryCommand] =
-        MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
+        MockPssRegistry(testKit, authenticatorExistingKey, pssAnalyticsClient)
 
       lazy val routes: Route =
         new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)

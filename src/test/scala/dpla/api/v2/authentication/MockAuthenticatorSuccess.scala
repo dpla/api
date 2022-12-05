@@ -5,11 +5,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.authentication.AuthProtocol.{AuthenticationCommand, IntermediateAuthResult}
 
-object MockAuthenticator {
+object MockAuthenticatorSuccess {
 
   def apply(
-             testKit: ActorTestKit,
-             postgresClient: Option[ActorRef[IntermediateAuthResult]] = None
+             testKit: ActorTestKit
            ): ActorRef[AuthenticationCommand] = {
 
     object Mock extends AuthenticatorBehavior {
@@ -17,7 +16,7 @@ object MockAuthenticator {
       override def spawnPostgresClient(
                                         context: ActorContext[AuthenticationCommand]
                                       ): ActorRef[IntermediateAuthResult] =
-        postgresClient.getOrElse(context.spawnAnonymous(PostgresClient()))
+        testKit.spawn(MockPostgresClientSuccess())
     }
 
     testKit.spawn(Mock())

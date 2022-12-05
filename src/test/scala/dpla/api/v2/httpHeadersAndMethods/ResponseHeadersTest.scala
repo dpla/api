@@ -8,8 +8,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.{ActorHelper, FileReader}
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
@@ -28,15 +26,11 @@ class ResponseHeadersTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
   val mapper = testKit.spawn(DPLAMAPMapper())
   val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
 
   val ebookSearch: ActorRef[SearchCommand] =
     MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
-
-  val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))

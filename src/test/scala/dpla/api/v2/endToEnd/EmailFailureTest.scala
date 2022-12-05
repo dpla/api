@@ -7,10 +7,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.email.EmailClient.EmailClientCommand
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.email.MockEmailClientFailure
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -26,11 +22,6 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
-
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-
-  val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit, Some(postgresClient))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
