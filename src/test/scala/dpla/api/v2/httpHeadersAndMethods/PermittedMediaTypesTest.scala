@@ -12,7 +12,6 @@ import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.registry.{MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.mappings.DPLAMAPMapper
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -26,7 +25,6 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val mapper = testKit.spawn(DPLAMAPMapper())
   val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
 
   val ebookSearch: ActorRef[SearchCommand] =

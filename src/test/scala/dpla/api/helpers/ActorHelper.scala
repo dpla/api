@@ -11,6 +11,7 @@ import dpla.api.v2.authentication._
 import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.email.{MockEmailClientFailure, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.mappings.{DPLAMAPMapper, MockMapperFailure}
 
 trait ActorHelper {
 
@@ -53,6 +54,10 @@ trait ActorHelper {
 
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator)
+
+  val mapper = testKit.spawn(DPLAMAPMapper())
+
+  val mapperFailure = testKit.spawn(MockMapperFailure())
 
   //
 ////  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
