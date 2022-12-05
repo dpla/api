@@ -60,6 +60,9 @@ trait ActorHelper {
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, itemAnalyticsClient)
 
+  val pssRegistry: ActorRef[SearchRegistryCommand] =
+    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
+
   val dplaMapMapper = testKit.spawn(DPLAMAPMapper())
 
   val mapperFailure = testKit.spawn(MockMapperFailure())

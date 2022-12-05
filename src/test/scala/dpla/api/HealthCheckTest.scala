@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.registry.{MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{MockEbookRegistry, SearchRegistryCommand}
 
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
@@ -23,9 +23,6 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
-
-  val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)

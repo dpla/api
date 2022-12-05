@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.registry.{MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{MockEbookRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.MockEbookSearch
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
@@ -29,9 +29,6 @@ class PermittedHttpMethodsTest extends AnyWordSpec with Matchers
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
-
-  val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)

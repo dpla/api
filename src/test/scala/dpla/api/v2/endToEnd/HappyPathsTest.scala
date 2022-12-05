@@ -8,7 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.JsonFieldReader
 import dpla.api.v2.search.{MockEbookSearch, MockItemEsClientSuccess, MockItemSearch}
@@ -42,9 +42,6 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   val itemRegistryEsSuccess: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, itemAnalyticsClient, Some(itemSearch))
-
-  val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry, apiKeyRegistryWithEmailSuccess)

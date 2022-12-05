@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, SearchRegistryCommand}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -28,9 +28,6 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   val apiKeyRegistryWithEmailFailure: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClientFailure))
-
-  val pssRegistry: ActorRef[SearchRegistryCommand] =
-    MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
   lazy val routes: Route =
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryWithEmailFailure)
