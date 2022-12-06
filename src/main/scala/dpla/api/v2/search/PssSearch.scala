@@ -2,7 +2,7 @@ package dpla.api.v2.search
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
-import dpla.api.v2.search.mappings.DPLAMAPMapper
+import dpla.api.v2.search.mappings.PssMapper
 import dpla.api.v2.search.paramValidators.PssParamValidator
 
 /**
@@ -14,8 +14,7 @@ object PssSearch extends SearchBehavior {
   override def spawnMapper(
                             context: ActorContext[SearchCommand]
                           ): ActorRef[IntermediateSearchResult] = {
-    // TODO change mapper
-    context.spawn(DPLAMAPMapper(), "PssMapper")
+    context.spawn(PssMapper(), "PssMapper")
   }
 
   override def spawnElasticSearchClient(
