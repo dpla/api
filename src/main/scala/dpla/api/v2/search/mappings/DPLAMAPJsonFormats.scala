@@ -29,8 +29,7 @@ object DPLAMAPJsonFormats extends DefaultJsonProtocol with JsonFieldReader
       else bucket
     }
 
-    def write(bucket: Bucket): JsValue = {
-
+    def write(bucket: Bucket): JsValue =
       filterIfEmpty(JsObject(
         "term" -> bucket.key.toJson,
         "time" -> bucket.keyAsString.toJson,
@@ -38,7 +37,6 @@ object DPLAMAPJsonFormats extends DefaultJsonProtocol with JsonFieldReader
         "to" -> bucket.to.toJson,
         "from" -> bucket.from.toJson
       )).toJson
-    }
   }
 
   /**

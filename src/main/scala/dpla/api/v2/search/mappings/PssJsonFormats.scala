@@ -39,7 +39,7 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
       )
     }
 
-    def write(pssDocList: PssDocList): JsValue = {
+    def write(pssDocList: PssDocList): JsValue =
       JsObject(
         "@context" -> pssDocList.`@context`.toJson,
         "@type" -> "ItemList".toJson,
@@ -47,7 +47,6 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
         "numberOfItems" -> pssDocList.numberOfItems.toJson,
         "hasPart" -> pssDocList.hasPart.toJson,
         "itemListElement" -> pssDocList.itemListElement.toJson
-      )
-    }
+      ).toJson
   }
 }

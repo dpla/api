@@ -9,7 +9,7 @@ import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.registry.{MockEbookRegistry, SearchRegistryCommand}
-import dpla.api.v2.search.MockEbookSearch
+import dpla.api.v2.search.{MockEbookSearch, MockPssSearch}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

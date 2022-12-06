@@ -14,11 +14,13 @@ import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
 import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
+import dpla.api.v2.search.mappings.PssJsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
-import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, SingleDPLADoc, SingleMappedDoc}
+import dpla.api.v2.registry.RegistryProtocol._
+import dpla.api.v2.registry._
+import dpla.api.v2.search.mappings._
 import org.slf4j.{Logger, LoggerFactory}
+
 import spray.json.enrichAny
 
 
@@ -28,6 +30,8 @@ class Routes(
               pssRegistry: ActorRef[SearchRegistryCommand],
               apiKeyRegistry: ActorRef[ApiKeyRegistryCommand]
             )(implicit val system: ActorSystem[_]) {
+
+  import spray.json.DefaultJsonProtocol._
 
   // If ask takes more time than this to complete the request is failed
   private implicit val timeout: Timeout = Timeout.create(
@@ -148,12 +152,14 @@ class Routes(
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("items")(itemsRoutes),
+      pathPrefix("pss")(pssRoutes),
       pathPrefix("api_key")(apiKeyRoute),
       pathPrefix("random")(randomRoute),
       pathPrefix("v2") {
         concat(
           pathPrefix("ebooks")(ebooksRoutes),
           pathPrefix("items")(itemsRoutes),
+          pathPrefix("pss")(pssRoutes),
           pathPrefix("api_key")(apiKeyRoute),
           pathPrefix("random")(randomRoute)
         )
@@ -265,6 +271,58 @@ class Routes(
       }
     )
 
+  lazy val pssRoutes: Route =
+    concat(
+      pathEnd {
+        extractUri { uri =>
+          logURL(uri)
+          get {
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(searchPss(auth, params, host, path.toString)) {
+                        case Success(response) =>
+                          renderRegistryResponse(response, path.toString)
+                        case Failure(e) =>
+                          renderRegistryFailure(e, path.toString)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      path(Segment) { id =>
+        get {
+          extractUri { uri =>
+            logURL(uri)
+            extractHost { host =>
+              extractMatchedPath { path =>
+                parameterMap { params =>
+                  // Get the API key from Authorization header if it exists.
+                  optionalHeaderValueByName("Authorization") { auth =>
+                    respondWithHeaders(securityResponseHeaders) {
+                      onComplete(fetchPss(auth, id, params, host, path.toString)) {
+                        case Success(response) =>
+                          renderRegistryResponse(response, path.toString)
+                        case Failure(e) =>
+                          renderRegistryFailure(e, path.toString)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    )
+
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
@@ -354,6 +412,7 @@ class Routes(
   private def renderMappedList(list: MappedDocList): Route = {
     list match {
       case dplaList: DPLADocList => complete(dplaList)
+      case pssList: PssDocList => complete(pssList)
       case _ =>
         val objType = list.getClass.getName
         log.error(
