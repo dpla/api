@@ -1,18 +1,14 @@
 package dpla.api.helpers
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import dpla.api.Routes
+import akka.actor.typed.ActorRef
 import dpla.api.v2.analytics.{AnalyticsClientCommand, EbookAnalyticsClient, ItemAnalyticsClient, PssAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication._
 import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.email.{MockEmailClientFailure, MockEmailClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
-import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{MockEbookSearch, MockEboookEsClientSuccess, MockEsClientFailure, MockEsClientNotFound, MockItemEsClientSuccess, SearchProtocol}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.{MockEboookEsClientSuccess, MockEsClientFailure, MockEsClientNotFound, MockItemEsClientSuccess}
 import dpla.api.v2.search.mappings.{DPLAMAPMapper, MockMapperFailure}
 
 trait ActorHelper {
