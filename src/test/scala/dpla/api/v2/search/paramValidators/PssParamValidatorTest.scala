@@ -32,4 +32,12 @@ class PssParamValidatorTest extends AnyWordSpec with Matchers
       msg.params.pageSize shouldEqual expected
     }
   }
+
+  "fields validator" should {
+    "set default search fields" in {
+      pssParamValidator ! RawSearchParams(Map(), replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      msg.params.fields should not be empty
+    }
+  }
 }
