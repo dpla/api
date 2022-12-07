@@ -11,7 +11,13 @@ import scala.util.Try
  */
 
 case class SinglePssDoc(
-                         // TODO
+//                         `@id`: Option[String],
+//                         `@type`: Option[String],
+//                         thumbnailUrl: Option[String],
+//                         repImageUrl: Option[String],
+//                         name: Option[String],
+//                         numberOfItems: Option[String],
+//                         about: Seq[JsObject]
                        ) extends SingleMappedDoc
 
 case class PssDocList(

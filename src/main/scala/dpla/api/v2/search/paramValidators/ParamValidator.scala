@@ -125,6 +125,7 @@ trait ParamValidator extends FieldDefinitions {
   protected val minPageSize: Int = 0
   protected val maxPageSize: Int = 500
   protected val defaultSortOrder: String = "asc"
+  protected val defaultFields: Option[Seq[String]] = None
 
   // Abstract.
   // These parameters are valid for a search request.
@@ -181,9 +182,16 @@ trait ParamValidator extends FieldDefinitions {
         )
       else {
         // Check for valid search params
+
         // Collect all the user-submitted field queries.
         val fieldQueries: Seq[FieldQuery] =
           searchableDataFields.flatMap(getValidFieldQuery(rawParams, _))
+
+        val fields: Option[Seq[String]] =
+          getValid(rawParams, "fields", validFields) match {
+            case Some(f) => Some(f)
+            case None => defaultFields
+          }
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -196,7 +204,7 @@ trait ParamValidator extends FieldDefinitions {
             getValid(rawParams, "facet_size", validInt)
               .getOrElse(defaultFacetSize),
           fields =
-            getValid(rawParams, "fields", validFields),
+            fields,
           fieldQueries =
             fieldQueries,
           filter =

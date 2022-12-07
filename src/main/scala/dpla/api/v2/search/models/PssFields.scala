@@ -12,14 +12,69 @@ trait PssFields extends FieldDefinitions {
 
   override val fields = Seq(
     DataField(
-      name = "hasPart.@id",
+      name = "@context",
+      fieldType = WildcardField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "@context.*",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
+      name = "@id",
       fieldType = TextField,
       searchable = true,
       facetable = false,
       sortable = false,
-      elasticSearchDefault = "hasPart.@id",
+      elasticSearchDefault = "@id",
       elasticSearchNotAnalyzed = None
-    )
+    ),
+    DataField(
+      name = "@type",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "@type",
+      elasticSearchNotAnalyzed = None
+    ),
+//    DataField(
+//      name = "about",
+//      fieldType = WildcardField,
+//      searchable = false,
+//      facetable = false,
+//      sortable = false,
+//      elasticSearchDefault = "about.*",
+//      elasticSearchNotAnalyzed = None
+//    ),
+    // about.@type, about.disambiguationDescription, about.name, about.sameAs
+    DataField(
+      name = "name",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "name",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
+      name = "repImageUrl",
+      fieldType = URLField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "repImageUrl",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
+      name = "thumbnailUrl",
+      fieldType = URLField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "thumbnailUrl",
+      elasticSearchNotAnalyzed = None
+    ),
   )
 
   override val coordinatesField: Option[DataField] = None

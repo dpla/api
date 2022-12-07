@@ -17,4 +17,12 @@ object PssParamValidator extends ParamValidator with PssFields {
 
   // Return all primary source sets by default.
   override protected val defaultPageSize: Int = 200
+
+  override protected val defaultFields: Option[Seq[String]] = Some(Seq(
+    "@context",
+    "@id",
+    "name",
+    "repImageUrl",
+    "thumbnailUrl"
+  ))
 }
