@@ -38,15 +38,15 @@ trait PssFields extends FieldDefinitions {
       elasticSearchDefault = "@type",
       elasticSearchNotAnalyzed = None
     ),
-//    DataField(
-//      name = "about",
-//      fieldType = WildcardField,
-//      searchable = false,
-//      facetable = false,
-//      sortable = false,
-//      elasticSearchDefault = "about.*",
-//      elasticSearchNotAnalyzed = None
-//    ),
+    DataField(
+      name = "about",
+      fieldType = WildcardField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "about.*",
+      elasticSearchNotAnalyzed = None
+    ),
     // about.@type, about.disambiguationDescription, about.name, about.sameAs
     DataField(
       name = "name",

@@ -21,6 +21,8 @@ object PssParamValidator extends ParamValidator with PssFields {
   override protected val defaultFields: Option[Seq[String]] = Some(Seq(
     "@context",
     "@id",
+    "@type",
+    "about",
     "name",
     "repImageUrl",
     "thumbnailUrl"
