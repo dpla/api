@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
 import dpla.api.v2.search.mappings.PssMapper
 import dpla.api.v2.search.paramValidators.PssParamValidator
-import dpla.api.v2.search.queryBuilders.QueryBuilder
+import dpla.api.v2.search.queryBuilders.PssQueryBuilder
 
 /**
  * Handles control flow for conducting primary source set searches and fetches.
@@ -37,7 +37,7 @@ object PssSearch extends SearchBehavior {
                                   elasticSearchClient: ActorRef[IntermediateSearchResult]
                                 ): ActorRef[IntermediateSearchResult] =
     context.spawn(
-      QueryBuilder(elasticSearchClient), "PssQueryBuilder"
+      PssQueryBuilder(elasticSearchClient), "PssQueryBuilder"
     )
 
   override def spawnSearchParamValidator(

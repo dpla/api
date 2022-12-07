@@ -4,9 +4,9 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
-import dpla.api.v2.search.mappings.DPLAMAPMapper
+import dpla.api.v2.search.mappings.PssMapper
 import dpla.api.v2.search.paramValidators.PssParamValidator
-import dpla.api.v2.search.queryBuilders.QueryBuilder
+import dpla.api.v2.search.queryBuilders.PssQueryBuilder
 
 object MockPssSearch {
 
@@ -22,8 +22,7 @@ object MockPssSearch {
                                 context: ActorContext[SearchCommand]
                               ): ActorRef[IntermediateSearchResult] = {
         mapper.getOrElse(
-          // TODO change mapepr
-          context.spawnAnonymous(DPLAMAPMapper())
+          context.spawnAnonymous(PssMapper())
         )
       }
 
@@ -41,7 +40,7 @@ object MockPssSearch {
                                       elasticSearchClient: ActorRef[IntermediateSearchResult]
                                     ): ActorRef[IntermediateSearchResult] =
         context.spawnAnonymous(
-          QueryBuilder(elasticSearchClient)
+          PssQueryBuilder(elasticSearchClient)
         )
 
       override def spawnSearchParamValidator(

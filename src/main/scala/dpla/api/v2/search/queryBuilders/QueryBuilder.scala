@@ -3,17 +3,16 @@ package dpla.api.v2.search.queryBuilders
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import dpla.api.v2.search.SearchProtocol._
-import dpla.api.v2.search.models.DPLAMAPFields
+import dpla.api.v2.search.models.FieldDefinitions
 import dpla.api.v2.search.paramValidators._
 import spray.json._
-import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
  * Composes ElasticSearch queries from user-submitted parameters.
  */
-object QueryBuilder extends DPLAMAPFields {
+trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
 
   def apply(nextPhase: ActorRef[IntermediateSearchResult]): Behavior[IntermediateSearchResult] = {
 

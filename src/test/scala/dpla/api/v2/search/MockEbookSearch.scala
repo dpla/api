@@ -6,7 +6,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
 import dpla.api.v2.search.mappings.DPLAMAPMapper
 import dpla.api.v2.search.paramValidators.EbookParamValidator
-import dpla.api.v2.search.queryBuilders.QueryBuilder
+import dpla.api.v2.search.queryBuilders.DPLAMAPQueryBuilder
 
 object MockEbookSearch {
 
@@ -40,7 +40,7 @@ object MockEbookSearch {
                                       elasticSearchClient: ActorRef[IntermediateSearchResult]
                                     ): ActorRef[IntermediateSearchResult] =
         context.spawnAnonymous(
-          QueryBuilder(elasticSearchClient)
+          DPLAMAPQueryBuilder(elasticSearchClient)
         )
 
       override def spawnSearchParamValidator(

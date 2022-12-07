@@ -24,7 +24,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     testKit.createTestProbe[SearchResponse]
 
   val queryBuilder: ActorRef[IntermediateSearchResult] =
-    testKit.spawn(QueryBuilder(interProbe.ref))
+    testKit.spawn(DPLAMAPQueryBuilder(interProbe.ref))
 
   def getJsSearchQuery(params: SearchParams): JsObject = {
     queryBuilder ! ValidSearchParams(params, replyProbe.ref)
