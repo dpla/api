@@ -1,16 +1,14 @@
-package dpla.api.v2.search
+package dpla.api.v2.search.queryBuilders
 
-import spray.json._
-import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.search.SearchProtocol.{FetchQuery, IntermediateSearchResult, MultiFetchQuery, RandomQuery, SearchQuery, ValidFetchParams, ValidRandomParams, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search.models.DPLAMAPFields
-import dpla.api.v2.search.paramValidators.{FieldQuery, Filter, RandomParams, SearchParams}
+import dpla.api.v2.search.paramValidators._
+import spray.json._
+import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 
 import scala.collection.mutable.ArrayBuffer
-
-
 
 /**
  * Composes ElasticSearch queries from user-submitted parameters.
@@ -91,7 +89,7 @@ object QueryBuilder extends DPLAMAPFields {
   }
 
   def composeSearchQuery(params: SearchParams): JsValue =
-   JsObject(
+    JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
       "query" -> query(params.q, params.filter, params.fieldQueries, params.exactFieldMatch, params.op),
@@ -130,7 +128,7 @@ object QueryBuilder extends DPLAMAPFields {
   )
 
   // ElasticSearch param that defines the number of hits to skip
-  private def from(page: Int, pageSize: Int): Int = (page-1)*pageSize
+  private def from(page: Int, pageSize: Int): Int = (page - 1) * pageSize
 
   private def query(q: Option[String],
                     filter: Option[Filter],
@@ -168,8 +166,8 @@ object QueryBuilder extends DPLAMAPFields {
 
   /**
    * A general keyword query on the given fields.
-   *   "query_string" does a keyword search within the given fields.
-   *   It is case-insensitive and analyzes the search term.
+   * "query_string" does a keyword search within the given fields.
+   * It is case-insensitive and analyzes the search term.
    */
   private def keywordQuery(q: String, fields: Seq[String]): JsObject =
     JsObject(
@@ -388,9 +386,9 @@ object QueryBuilder extends DPLAMAPFields {
     // This is the fastest way to sort documents but is meaningless.
     // It is the order in which they are saved to disk.
     val diskSort: JsArray =
-      JsArray(
-        "_doc".toJson
-      )
+    JsArray(
+      "_doc".toJson
+    )
 
     params.sortBy match {
       case Some(field) =>

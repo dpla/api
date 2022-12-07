@@ -6,6 +6,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
 import dpla.api.v2.search.mappings.DPLAMAPMapper
 import dpla.api.v2.search.paramValidators.ItemParamValidator
+import dpla.api.v2.search.queryBuilders.QueryBuilder
 
 object MockItemSearch {
 

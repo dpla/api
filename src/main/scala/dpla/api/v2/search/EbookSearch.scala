@@ -4,6 +4,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
 import dpla.api.v2.search.mappings.DPLAMAPMapper
 import dpla.api.v2.search.paramValidators.EbookParamValidator
+import dpla.api.v2.search.queryBuilders.QueryBuilder
 
 /**
  * Handles control flow for conducting ebook searches and fetches.
