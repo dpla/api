@@ -1,7 +1,7 @@
 package dpla.api.v2.search
 
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, SingleDPLADoc, SingleMappedDoc}
+import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, MappedResponse, SingleDPLADoc, SingleMappedDoc}
 import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 
@@ -30,7 +30,7 @@ object SearchProtocol {
   sealed trait SearchResponse
 
   final case class MappedSearchResult(
-                                       mappedDocList: MappedDocList
+                                       mappedResponse: MappedResponse
                                      ) extends SearchResponse
 
   final case class MappedFetchResult(

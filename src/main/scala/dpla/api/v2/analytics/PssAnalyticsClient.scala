@@ -1,8 +1,7 @@
 package dpla.api.v2.analytics
 
 import akka.actor.typed.ActorSystem
-
-import dpla.api.v2.search.mappings.{MappedDocList, SingleMappedDoc}
+import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedDoc}
 
 /**
  * Tracks pageviews and events for items for primary source sets
@@ -13,7 +12,7 @@ object PssAnalyticsClient extends AnalyticsClient {
                                       cleanParams: Map[String, String],
                                       host: String,
                                       path: String,
-                                      mappedDocList: MappedDocList,
+                                      mappedResponse: MappedResponse,
                                       system: ActorSystem[Nothing]): Unit = {
 
     // Track pageview

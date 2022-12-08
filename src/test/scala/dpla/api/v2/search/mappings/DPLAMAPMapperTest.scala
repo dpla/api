@@ -62,7 +62,7 @@ class DPLAMAPMapperTest
       val fieldsParams = params.copy(fields = Some(Seq("provider.name")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
       val msg = probe.expectMessageType[MappedSearchResult]
-      val firstEntry = msg.mappedDocList.asInstanceOf[DPLADocList].docs.head
+      val firstEntry = msg.mappedResponse.asInstanceOf[DPLADocList].docs.head
       val traversed = readString(firstEntry.asJsObject, "provider.name")
       assert(traversed == expected)
     }
@@ -76,7 +76,7 @@ class DPLAMAPMapperTest
       val fieldsParams = params.copy(fields = Some(Seq("sourceResource.subject.name")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
       val msg = probe.expectMessageType[MappedSearchResult]
-      val firstEntry = msg.mappedDocList.asInstanceOf[DPLADocList].docs.head
+      val firstEntry = msg.mappedResponse.asInstanceOf[DPLADocList].docs.head
       val traversed = readStringArray(firstEntry.asJsObject, "sourceResource.subject.name")
       traversed should contain allElementsOf expected
     }
@@ -86,7 +86,7 @@ class DPLAMAPMapperTest
       val fieldsParams = params.copy(fields = Some(Seq("sourceResource.temporal")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
       val msg = probe.expectMessageType[MappedSearchResult]
-      val firstEntry = msg.mappedDocList.asInstanceOf[DPLADocList].docs.head
+      val firstEntry = msg.mappedResponse.asInstanceOf[DPLADocList].docs.head
       val firstTemporal =
         readObject(firstEntry.asJsObject, "sourceResource.temporal").get
       val traversed = readString(firstTemporal, "displayDate")
@@ -98,7 +98,7 @@ class DPLAMAPMapperTest
       val fieldsParams = params.copy(fields = Some(Seq("sourceResource.title")))
       itemMapper ! SearchQueryResponse(fieldsParams, itemList, probe.ref)
       val msg = probe.expectMessageType[MappedSearchResult]
-      val firstEntry = msg.mappedDocList.asInstanceOf[DPLADocList].docs.head
+      val firstEntry = msg.mappedResponse.asInstanceOf[DPLADocList].docs.head
       val traversed = readString(firstEntry.asJsObject, "sourceResource.title")
       assert(traversed == expected)
     }

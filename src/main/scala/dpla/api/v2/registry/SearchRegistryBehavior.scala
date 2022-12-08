@@ -9,10 +9,10 @@ import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol._
 import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search._
-import dpla.api.v2.search.mappings.{MappedDocList, SingleMappedDoc}
+import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedDoc}
 
 
-final case class SearchResult(result: MappedDocList) extends RegistryResponse
+final case class SearchResult(result: MappedResponse) extends RegistryResponse
 final case class FetchResult(result: SingleMappedDoc) extends RegistryResponse
 final case class MultiFetchResult(result: MappedDocList) extends RegistryResponse
 final case class RandomResult(result: MappedDocList) extends RegistryResponse
@@ -106,7 +106,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var searchResult: Option[MappedDocList] = None
+      var searchResult: Option[MappedResponse] = None
       var searchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -120,11 +120,11 @@ trait SearchRegistryBehavior {
 
             // If the search was successful...
             searchResult match {
-              case Some(mappedDocList) =>
+              case Some(mappedResponse) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit
-                  analyticsClient ! TrackSearch(rawParams, host, path, mappedDocList)
+                  analyticsClient ! TrackSearch(rawParams, host, path, mappedResponse)
                 }
               case None => // no-op
             }
@@ -174,9 +174,9 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case MappedSearchResult(mappedDocList) =>
-          searchResult = Some(mappedDocList)
-          searchResponse = Some(SearchResult(mappedDocList))
+        case MappedSearchResult(mappedResponse) =>
+          searchResult = Some(mappedResponse)
+          searchResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>

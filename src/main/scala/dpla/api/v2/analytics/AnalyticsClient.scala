@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
-import dpla.api.v2.search.mappings.{JsonFieldReader, MappedDocList, SingleMappedDoc}
+import dpla.api.v2.search.mappings.{JsonFieldReader, MappedDocList, MappedResponse, SingleMappedDoc}
 
 /**
  * Tracks use via Google Analytics Measurement Protocol
@@ -21,7 +21,7 @@ final case class TrackSearch(
                               rawParams: Map[String, String],
                               host: String,
                               path: String,
-                              mappedDocList: MappedDocList,
+                              mappedResponse: MappedResponse,
                             ) extends AnalyticsClientCommand
 
 final case class TrackFetch(
@@ -40,7 +40,7 @@ trait AnalyticsClient extends JsonFieldReader {
   protected def trackSearch(rawParams: Map[String, String],
                             host: String,
                             path: String,
-                            mappedDocList: MappedDocList,
+                            mappedResponse: MappedResponse,
                             system: ActorSystem[Nothing]): Unit
 
   protected def trackFetch(host: String,
@@ -56,10 +56,10 @@ trait AnalyticsClient extends JsonFieldReader {
 
       Behaviors.receiveMessage[AnalyticsClientCommand] {
 
-        case TrackSearch(rawParams, host, path, mappedDocList) =>
+        case TrackSearch(rawParams, host, path, mappedResponse) =>
           // Strip the API key out of the page path
           val cleanParams = rawParams.filterNot(_._1 == "api_key")
-          trackSearch(cleanParams, host, path, mappedDocList, system)
+          trackSearch(cleanParams, host, path, mappedResponse, system)
           Behaviors.same
 
         case TrackFetch(host, path, singleMappedDoc) =>

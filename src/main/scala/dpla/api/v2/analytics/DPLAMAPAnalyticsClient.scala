@@ -1,8 +1,7 @@
 package dpla.api.v2.analytics
 
 import akka.actor.typed.ActorSystem
-
-import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, SingleDPLADoc, SingleMappedDoc}
+import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, MappedResponse, SingleDPLADoc, SingleMappedDoc}
 import spray.json.JsValue
 
 /**
@@ -17,7 +16,7 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
                                       cleanParams: Map[String, String],
                                       host: String,
                                       path: String,
-                                      mappedDocList: MappedDocList,
+                                      mappedResponse: MappedResponse,
                                       system: ActorSystem[Nothing]): Unit = {
 
     // Track pageview
@@ -29,7 +28,7 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
 
     // Track events
     val dplaDocList: Seq[JsValue] =
-      mappedDocList match {
+      mappedResponse match {
         case list: DPLADocList => list.docs
         case _ => Seq()
       }
