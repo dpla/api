@@ -14,7 +14,7 @@ import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedD
 
 final case class SearchResult(result: MappedResponse) extends RegistryResponse
 final case class FetchResult(result: SingleMappedDoc) extends RegistryResponse
-final case class MultiFetchResult(result: MappedDocList) extends RegistryResponse
+final case class MultiFetchResult(result: MappedResponse) extends RegistryResponse
 final case class RandomResult(result: MappedResponse) extends RegistryResponse
 
 sealed trait SearchRegistryCommand
@@ -213,7 +213,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var fetchResult: Option[Either[SingleMappedDoc, MappedDocList]] = None
+      var fetchResult: Option[MappedResponse] = None
       var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -227,14 +227,14 @@ trait SearchRegistryBehavior {
 
             // If the fetch was successful...
             fetchResult match {
-              case Some(either) =>
+              case Some(mapped) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit.
-                  either match {
-                    case Left(singleMappedDoc) =>
+                  mapped match {
+                    case singleMappedDoc: SingleMappedDoc =>
                       analyticsClient ! TrackFetch(host, path, singleMappedDoc)
-                    case Right(mappedDocList) =>
+                    case mappedDocList: MappedDocList =>
                       analyticsClient ! TrackSearch(rawParams, host, path, mappedDocList)
                   }
                 }
@@ -287,13 +287,13 @@ trait SearchRegistryBehavior {
          */
 
         case MappedFetchResult(singleMappedDoc) =>
-          fetchResult = Some(Left(singleMappedDoc))
+          fetchResult = Some(singleMappedDoc)
           fetchResponse = Some(FetchResult(singleMappedDoc))
           possibleSessionResolution
 
-        case MappedMultiFetchResult(mappedDocList) =>
-          fetchResult = Some(Right(mappedDocList))
-          fetchResponse = Some(MultiFetchResult(mappedDocList))
+        case MappedMultiFetchResult(mappedResponse) =>
+          fetchResult = Some(mappedResponse)
+          fetchResponse = Some(MultiFetchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
