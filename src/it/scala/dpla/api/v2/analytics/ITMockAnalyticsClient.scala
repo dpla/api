@@ -11,9 +11,6 @@ object ITMockAnalyticsClient {
       case TrackSearch(_, _, _, _) =>
         Behaviors.same
 
-      case TrackFetch(_, _, _) =>
-        Behaviors.same
-
       case _ =>
         Behaviors.unhandled
     }

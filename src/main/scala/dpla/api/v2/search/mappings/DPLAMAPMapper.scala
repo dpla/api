@@ -14,7 +14,7 @@ import scala.util.Try
 /** Case classes for reading ElasticSearch responses **/
 case class SingleDPLADoc(
                           docs: Seq[JsValue]
-                        ) extends SingleMappedDoc
+                        ) extends MappedResponse
 
 case class DPLADocList(
                         count: Option[Int],
@@ -22,7 +22,7 @@ case class DPLADocList(
                         start: Option[Int],
                         docs: Seq[JsValue],
                         facets: Option[FacetList]
-                      ) extends MappedDocList
+                      ) extends MappedResponse
 
 case class FacetList(
                       facets: Seq[Facet]
@@ -54,7 +54,7 @@ object DPLAMAPMapper extends Mapper {
   override protected def mapDocList(
                                      body: String,
                                      searchParams: Option[SearchParams] = None
-                                   ): Try[MappedDocList] =
+                                   ): Try[MappedResponse] =
     Try {
       searchParams match {
         case None =>
@@ -84,7 +84,7 @@ object DPLAMAPMapper extends Mapper {
 //      }
 //    }
 
-  override protected def mapSingleDoc(body: String): Try[SingleMappedDoc] =
+  override protected def mapSingleDoc(body: String): Try[MappedResponse] =
     Try {
       body.parseJson.convertTo[SingleDPLADoc]
     }

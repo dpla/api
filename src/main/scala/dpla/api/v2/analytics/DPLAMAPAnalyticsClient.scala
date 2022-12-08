@@ -1,7 +1,7 @@
 package dpla.api.v2.analytics
 
 import akka.actor.typed.ActorSystem
-import dpla.api.v2.search.mappings.{DPLADocList, MappedDocList, MappedResponse, SingleDPLADoc, SingleMappedDoc}
+import dpla.api.v2.search.mappings.{DPLADocList, MappedResponse, SingleDPLADoc}
 import spray.json.JsValue
 
 /**
@@ -19,6 +19,22 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
                                       mappedResponse: MappedResponse,
                                       system: ActorSystem[Nothing]): Unit = {
 
+    mappedResponse match {
+      case dplaDocList: DPLADocList =>
+        trackMultiDoc(cleanParams, host, path, dplaDocList, system)
+      case singleDPLADoc: SingleDPLADoc =>
+        trackSingleDoc(host, path, singleDPLADoc, system)
+      case _ => // no-op
+    }
+  }
+
+  private def trackMultiDoc(
+                     cleanParams: Map[String, String],
+                     host: String,
+                     path: String,
+                     dplaDocList: DPLADocList,
+                     system: ActorSystem[Nothing]): Unit = {
+
     // Track pageview
     val query: String = paramString(cleanParams)
     val pathWithQuery: String = Seq(path, query).mkString("?")
@@ -27,14 +43,9 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
     postHit(system, pageViewParams)
 
     // Track events
-    val dplaDocList: Seq[JsValue] =
-      mappedResponse match {
-        case list: DPLADocList => list.docs
-        case _ => Seq()
-      }
+    if (dplaDocList.docs.nonEmpty) {
 
-    if (dplaDocList.nonEmpty) {
-      val eventParams: Seq[String] = dplaDocList.map(doc =>
+      val eventParams: Seq[String] = dplaDocList.docs.map(doc =>
         getEventParams(
           host,
           path,
@@ -48,11 +59,11 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
     }
   }
 
-  override protected def trackFetch(
-                                     host: String,
-                                     path: String,
-                                     mappedResponse: MappedResponse,
-                                     system: ActorSystem[Nothing]): Unit = {
+  private def trackSingleDoc(
+                      host: String,
+                      path: String,
+                      singleDPLADoc: SingleDPLADoc,
+                      system: ActorSystem[Nothing]): Unit = {
 
     // Track pageview
     val title = s"Fetch $docType"
@@ -60,10 +71,7 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
     postHit(system, pageViewParams)
 
     // Track event
-    val dplaDoc: Option[JsValue] = mappedResponse match {
-      case doc: SingleDPLADoc => doc.docs.headOption
-      case _ => None
-    }
+    val dplaDoc: Option[JsValue] = singleDPLADoc.docs.headOption
 
     dplaDoc match {
       case Some(doc) =>

@@ -4,7 +4,7 @@ import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import dpla.api.helpers.{ActorHelper, FileReader}
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackFetch, TrackSearch}
+import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackSearch}
 import dpla.api.v2.registry.RegistryProtocol.RegistryResponse
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.MockEbookSearch
@@ -63,7 +63,7 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
       ebookRegistry ! RegisterFetch(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
-      analyticsProbe.expectMessageType[TrackFetch]
+      analyticsProbe.expectMessageType[TrackSearch]
     }
 
     "not send analytics message if account is staff" in {

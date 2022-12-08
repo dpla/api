@@ -18,27 +18,27 @@ case class SinglePssDoc(
 //                         name: Option[String],
 //                         numberOfItems: Option[String],
 //                         about: Seq[JsObject]
-                       ) extends SingleMappedDoc
+                       ) extends MappedResponse
 
 case class PssDocList(
                        `@context`: Option[JsValue],
                        numberOfItems: Option[Int],
                        hasPart: Seq[JsValue],
                        itemListElement: Seq[JsValue]
-                     ) extends MappedDocList
+                     ) extends MappedResponse
 
 object PssMapper extends Mapper {
 
   override protected def mapDocList(
                                      body: String,
                                      searchParams: Option[SearchParams] = None
-                                   ): Try[MappedDocList] =
+                                   ): Try[MappedResponse] =
     Try {
       println(body)
       body.parseJson.convertTo[PssDocList]
     }
 
-  override protected def mapSingleDoc(body: String): Try[SingleMappedDoc] =
+  override protected def mapSingleDoc(body: String): Try[MappedResponse] =
     Try {
       body.parseJson.convertTo[SinglePssDoc]
     }

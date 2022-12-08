@@ -12,14 +12,12 @@ import scala.util.{Failure, Success, Try}
  */
 
 trait MappedResponse
-trait SingleMappedDoc extends MappedResponse
-trait MappedDocList extends MappedResponse
 
 trait Mapper {
 
   /** Abstract methods */
-  protected def mapDocList(body: String, searchParams: Option[SearchParams] = None): Try[MappedDocList]
-  protected def mapSingleDoc(body: String): Try[SingleMappedDoc]
+  protected def mapDocList(body: String, searchParams: Option[SearchParams] = None): Try[MappedResponse]
+  protected def mapSingleDoc(body: String): Try[MappedResponse]
 
   def apply(): Behavior[IntermediateSearchResult] = {
 

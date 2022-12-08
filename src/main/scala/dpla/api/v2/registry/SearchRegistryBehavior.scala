@@ -3,12 +3,12 @@ package dpla.api.v2.registry
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackFetch, TrackSearch}
+import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackSearch}
 import dpla.api.v2.authentication.AuthProtocol._
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol._
 import dpla.api.v2.search.SearchProtocol._
-import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedDoc}
+import dpla.api.v2.search.mappings.MappedResponse
 
 
 final case class SearchResult(result: MappedResponse) extends RegistryResponse
@@ -225,15 +225,9 @@ trait SearchRegistryBehavior {
             fetchResult match {
               case Some(mapped) =>
                 // ...and if account is not staff/internal...
-                if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
+                if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la"))
                   // ...track analytics hit.
-                  mapped match {
-                    case singleMappedDoc: SingleMappedDoc =>
-                      analyticsClient ! TrackFetch(host, path, singleMappedDoc)
-                    case mappedDocList: MappedDocList =>
-                      analyticsClient ! TrackSearch(rawParams, host, path, mappedDocList)
-                  }
-                }
+                  analyticsClient ! TrackSearch(rawParams, host, path, mapped)
               case None => // no-op
             }
             Behaviors.stopped
