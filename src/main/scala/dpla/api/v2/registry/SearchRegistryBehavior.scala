@@ -13,7 +13,7 @@ import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedD
 
 
 final case class SearchResult(result: MappedResponse) extends RegistryResponse
-final case class FetchResult(result: SingleMappedDoc) extends RegistryResponse
+final case class FetchResult(result: MappedResponse) extends RegistryResponse
 final case class MultiFetchResult(result: MappedResponse) extends RegistryResponse
 final case class RandomResult(result: MappedResponse) extends RegistryResponse
 
@@ -286,9 +286,9 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case MappedFetchResult(singleMappedDoc) =>
-          fetchResult = Some(singleMappedDoc)
-          fetchResponse = Some(FetchResult(singleMappedDoc))
+        case MappedFetchResult(mappedResponse) =>
+          fetchResult = Some(mappedResponse)
+          fetchResponse = Some(FetchResult(mappedResponse))
           possibleSessionResolution
 
         case MappedMultiFetchResult(mappedResponse) =>

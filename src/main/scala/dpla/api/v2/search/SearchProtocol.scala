@@ -34,7 +34,7 @@ object SearchProtocol {
                                      ) extends SearchResponse
 
   final case class MappedFetchResult(
-                                      singleMappedDoc: SingleMappedDoc
+                                      mappedResponse: MappedResponse
                                     ) extends SearchResponse
 
   final case class MappedMultiFetchResult(
