@@ -34,6 +34,7 @@ object PssMapper extends Mapper {
                                      searchParams: Option[SearchParams] = None
                                    ): Try[MappedDocList] =
     Try {
+      println(body)
       body.parseJson.convertTo[PssDocList]
     }
 

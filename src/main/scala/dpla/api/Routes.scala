@@ -127,7 +127,7 @@ class Routes(
                  ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params + ("set_slug" -> id))
+    val cleanParams = getCleanParams(params + ("@id" -> id))
     pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
   }
 
