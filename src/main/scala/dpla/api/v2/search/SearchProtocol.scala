@@ -42,7 +42,7 @@ object SearchProtocol {
                                          ) extends SearchResponse
 
   final case class MappedRandomResult(
-                                       mappedDocList: MappedDocList
+                                       mappedResponse: MappedResponse
                                      ) extends SearchResponse
 
   final case class InvalidSearchParams(

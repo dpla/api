@@ -15,7 +15,7 @@ import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedD
 final case class SearchResult(result: MappedResponse) extends RegistryResponse
 final case class FetchResult(result: SingleMappedDoc) extends RegistryResponse
 final case class MultiFetchResult(result: MappedDocList) extends RegistryResponse
-final case class RandomResult(result: MappedDocList) extends RegistryResponse
+final case class RandomResult(result: MappedResponse) extends RegistryResponse
 
 sealed trait SearchRegistryCommand
 
@@ -325,7 +325,6 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var randomResult: Option[Either[SingleMappedDoc, MappedDocList]] = None
       var randomResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -382,9 +381,8 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case MappedRandomResult(mappedDocList) =>
-          randomResult = Some(Right(mappedDocList))
-          randomResponse = Some(RandomResult(mappedDocList))
+        case MappedRandomResult(mappedResponse) =>
+          randomResponse = Some(RandomResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
