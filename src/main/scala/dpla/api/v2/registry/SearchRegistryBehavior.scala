@@ -8,14 +8,10 @@ import dpla.api.v2.authentication.AuthProtocol._
 import dpla.api.v2.authentication._
 import dpla.api.v2.registry.RegistryProtocol._
 import dpla.api.v2.search.SearchProtocol._
-import dpla.api.v2.search._
 import dpla.api.v2.search.mappings.{MappedDocList, MappedResponse, SingleMappedDoc}
 
 
 final case class SearchResult(result: MappedResponse) extends RegistryResponse
-final case class FetchResult(result: MappedResponse) extends RegistryResponse
-final case class MultiFetchResult(result: MappedResponse) extends RegistryResponse
-final case class RandomResult(result: MappedResponse) extends RegistryResponse
 
 sealed trait SearchRegistryCommand
 
@@ -288,12 +284,12 @@ trait SearchRegistryBehavior {
 
         case MappedFetchResult(mappedResponse) =>
           fetchResult = Some(mappedResponse)
-          fetchResponse = Some(FetchResult(mappedResponse))
+          fetchResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case MappedMultiFetchResult(mappedResponse) =>
           fetchResult = Some(mappedResponse)
-          fetchResponse = Some(MultiFetchResult(mappedResponse))
+          fetchResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
@@ -317,9 +313,9 @@ trait SearchRegistryBehavior {
   private def processRandom(
                              apiKey: Option[String],
                              rawParams: Map[String, String],
-                             replyTo: ActorRef[RegistryProtocol.RegistryResponse],
-                             authenticator: ActorRef[AuthProtocol.AuthenticationCommand],
-                             searchActor: ActorRef[SearchProtocol.SearchCommand],
+                             replyTo: ActorRef[RegistryResponse],
+                             authenticator: ActorRef[AuthenticationCommand],
+                             searchActor: ActorRef[SearchCommand],
                            ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
@@ -382,7 +378,7 @@ trait SearchRegistryBehavior {
          */
 
         case MappedRandomResult(mappedResponse) =>
-          randomResponse = Some(RandomResult(mappedResponse))
+          randomResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>

@@ -45,7 +45,7 @@ trait AnalyticsClient extends JsonFieldReader {
 
   protected def trackFetch(host: String,
                            path: String,
-                           singleMappedDoc: SingleMappedDoc,
+                           mappedResponse: MappedResponse,
                            system: ActorSystem[Nothing]): Unit
 
 

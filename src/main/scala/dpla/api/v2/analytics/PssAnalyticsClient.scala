@@ -26,7 +26,7 @@ object PssAnalyticsClient extends AnalyticsClient {
   override protected def trackFetch(
                                      host: String,
                                      path: String,
-                                     singleMappedDoc: SingleMappedDoc,
+                                     mappedResponse: MappedResponse,
                                      system: ActorSystem[Nothing]): Unit = {
 
     // Track pageview

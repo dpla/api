@@ -51,7 +51,7 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
   override protected def trackFetch(
                                      host: String,
                                      path: String,
-                                     singleMappedDoc: SingleMappedDoc,
+                                     mappedResponse: MappedResponse,
                                      system: ActorSystem[Nothing]): Unit = {
 
     // Track pageview
@@ -60,7 +60,7 @@ trait DPLAMAPAnalyticsClient extends AnalyticsClient {
     postHit(system, pageViewParams)
 
     // Track event
-    val dplaDoc: Option[JsValue] = singleMappedDoc match {
+    val dplaDoc: Option[JsValue] = mappedResponse match {
       case doc: SingleDPLADoc => doc.docs.headOption
       case _ => None
     }
