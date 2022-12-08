@@ -379,13 +379,13 @@ class Routes(
   private def renderRegistryResponse(response: RegistryResponse, path: String): Route =
     response match {
       case SearchResult(result) =>
-        renderMappedList(result)
+        renderMappedResponse(result)
       case FetchResult(result) =>
-        renderMappedDoc(result)
+        renderMappedResponse(result)
       case MultiFetchResult(result) =>
-        renderMappedList(result)
+        renderMappedResponse(result)
       case RandomResult(result) =>
-        renderMappedList(result)
+        renderMappedResponse(result)
       case NewApiKey(email) =>
         complete(newKeyMessage(email))
       case ExistingApiKey(email) =>
@@ -411,34 +411,54 @@ class Routes(
 
   /**
    * Helper methods for rendering mapped objects.
-   *  Mapped objects must be correctly cast.
+   * Mapped objects must be correctly cast.
    */
-  private def renderMappedList(list: MappedDocList): Route = {
-    list match {
+  private def renderMappedResponse(mapped: MappedResponse): Route = {
+    mapped match {
       case dplaList: DPLADocList => complete(dplaList)
+      case dplaDoc: SingleDPLADoc => complete(dplaDoc)
       case pssList: PssDocList => complete(pssList)
+      case pssDoc: SinglePssDoc => complete(pssDoc)
       case _ =>
-        val objType = list.getClass.getName
+        val objType = mapped.getClass.getName
         log.error(
-          "There was an error casting {} to a MappedDocList type.",
+          "There was an error casting {} to a MappedResponse type.",
           objType
         )
         complete(internalErrorResponse)
     }
   }
 
-  private def renderMappedDoc(doc: SingleMappedDoc): Route = {
-    doc match {
-      case dplaDoc: SingleDPLADoc => complete(dplaDoc)
-      case _ =>
-        val objType = doc.getClass.getName
-        log.error(
-          "There was an error casting {} to a SingleMappedDoc type.",
-          objType
-        )
-        complete(internalErrorResponse)
-    }
-  }
+//  /**
+//   * Helper methods for rendering mapped objects.
+//   *  Mapped objects must be correctly cast.
+//   */
+//  private def renderMappedList(list: MappedDocList): Route = {
+//    list match {
+//      case dplaList: DPLADocList => complete(dplaList)
+//      case pssList: PssDocList => complete(pssList)
+//      case _ =>
+//        val objType = list.getClass.getName
+//        log.error(
+//          "There was an error casting {} to a MappedDocList type.",
+//          objType
+//        )
+//        complete(internalErrorResponse)
+//    }
+//  }
+//
+//  private def renderMappedDoc(doc: SingleMappedDoc): Route = {
+//    doc match {
+//      case dplaDoc: SingleDPLADoc => complete(dplaDoc)
+//      case _ =>
+//        val objType = doc.getClass.getName
+//        log.error(
+//          "There was an error casting {} to a SingleMappedDoc type.",
+//          objType
+//        )
+//        complete(internalErrorResponse)
+//    }
+//  }
 
   // @see https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
   // @see https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html

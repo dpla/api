@@ -11,8 +11,9 @@ import scala.util.{Failure, Success, Try}
  * Maps responses to case classes.
  */
 
-trait SingleMappedDoc
-trait MappedDocList
+trait MappedResponse
+trait SingleMappedDoc extends MappedResponse
+trait MappedDocList extends MappedResponse
 
 trait Mapper {
 
