@@ -26,4 +26,8 @@ object EbookParamValidator extends ParamValidator with DPLAMAPFields {
   // These fields are not valid for search, sort, filter, & facets.
   // Rather than returning an error, they should be ignored.
   override protected val ignoredFields: Seq[String] = Seq()
+
+  // No pre-processing necessary.
+  override protected def preProcess(unprocessed: Map[String, String]): Map[String, String] =
+    unprocessed
 }

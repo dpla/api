@@ -29,4 +29,8 @@ object ItemParamValidator extends ParamValidator with DPLAMAPFields {
   override protected val ignoredFields: Seq[String] = Seq(
     "sourceResource.subtitle"
   )
+
+  // No pre-processing necessary.
+  override protected def preProcess(unprocessed: Map[String, String]): Map[String, String] =
+    unprocessed
 }

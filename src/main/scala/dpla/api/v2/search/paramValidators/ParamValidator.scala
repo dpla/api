@@ -63,7 +63,8 @@ trait ParamValidator extends FieldDefinitions {
       Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case RawSearchParams(rawParams, replyTo) =>
-          getSearchParams(rawParams) match {
+          val preProcessed = preProcess(rawParams)
+          getSearchParams(preProcessed) match {
             case Success(searchParams) =>
               nextPhase ! ValidSearchParams(searchParams, replyTo)
             case Failure(e) =>
@@ -113,6 +114,10 @@ trait ParamValidator extends FieldDefinitions {
     }
   }
 
+  /** Abstract Methods */
+
+  protected def preProcess(value: Map[String, String]): Map[String, String]
+
   protected val defaultExactFieldMatch: Boolean = false
   protected val defaultFacetSize: Int = 50
   protected val minFacetSize: Int = 0
@@ -125,7 +130,6 @@ trait ParamValidator extends FieldDefinitions {
   protected val minPageSize: Int = 0
   protected val maxPageSize: Int = 500
   protected val defaultSortOrder: String = "asc"
-  protected val defaultFields: Option[Seq[String]] = None
 
   // Abstract.
   // These parameters are valid for a search request.
@@ -187,11 +191,11 @@ trait ParamValidator extends FieldDefinitions {
         val fieldQueries: Seq[FieldQuery] =
           searchableDataFields.flatMap(getValidFieldQuery(rawParams, _))
 
-        val fields: Option[Seq[String]] =
-          getValid(rawParams, "fields", validFields) match {
-            case Some(f) => Some(f)
-            case None => defaultFields
-          }
+//        val fields: Option[Seq[String]] =
+//          getValid(rawParams, "fields", validFields) match {
+//            case Some(f) => Some(f)
+//            case None => defaultFields
+//          }
 
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
@@ -204,7 +208,7 @@ trait ParamValidator extends FieldDefinitions {
             getValid(rawParams, "facet_size", validInt)
               .getOrElse(defaultFacetSize),
           fields =
-            fields,
+            getValid(rawParams, "fields", validFields),
           fieldQueries =
             fieldQueries,
           filter =
@@ -389,7 +393,7 @@ trait ParamValidator extends FieldDefinitions {
 
   // One or more fields.
   // Must be in the list of accepted fields for the given param.
-  private def validFields(fieldString: String, param: String): Seq[String] = {
+  protected def validFields(fieldString: String, param: String): Seq[String] = {
     val acceptedFields = param match {
       case "facets" => facetableDataFields
       case "fields" => allDataFields

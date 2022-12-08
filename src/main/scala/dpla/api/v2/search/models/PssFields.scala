@@ -47,7 +47,6 @@ trait PssFields extends FieldDefinitions {
       elasticSearchDefault = "about.*",
       elasticSearchNotAnalyzed = None
     ),
-    // about.@type, about.disambiguationDescription, about.name, about.sameAs
     DataField(
       name = "name",
       fieldType = TextField,

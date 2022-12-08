@@ -6,7 +6,7 @@ object PssParamValidator extends ParamValidator with PssFields {
 
   // These parameters are valid for a search request.
   override protected val acceptedSearchParams: Seq[String] =
-    searchableDataFields
+    searchableDataFields ++ Seq("fields", "set_slug", "source_slug")
 
   // These parameters are valid for a fetch request.
   override protected val acceptedFetchParams: Seq[String] = Seq()
@@ -18,7 +18,21 @@ object PssParamValidator extends ParamValidator with PssFields {
   // Return all primary source sets by default.
   override protected val defaultPageSize: Int = 200
 
-  override protected val defaultFields: Option[Seq[String]] = Some(Seq(
+  override protected def preProcess(unprocessed: Map[String, String]): Map[String, String] = {
+    if (unprocessed.keys.toSet.contains("set_slug")) {
+      // Get a set
+      val set_slug = unprocessed.getOrElse("set_slug", "")
+      unprocessed + ("@id" -> s"*$set_slug")
+    } else if (unprocessed.keys.toSet.contains("source_slug")) {
+      // Get a source
+      unprocessed
+    } else {
+      // Get all sets
+      unprocessed + ("fields" -> allSetsFields.mkString(","))
+    }
+  }
+
+  val allSetsFields: Seq[String] = Seq(
     "@context",
     "@id",
     "@type",
@@ -26,5 +40,5 @@ object PssParamValidator extends ParamValidator with PssFields {
     "name",
     "repImageUrl",
     "thumbnailUrl"
-  ))
+  )
 }

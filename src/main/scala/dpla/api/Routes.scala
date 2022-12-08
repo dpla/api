@@ -118,17 +118,17 @@ class Routes(
     pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
   }
 
-  def fetchPss(
-                auth: Option[String],
-                id: String,
-                params: Map[String, String],
-                host: String,
-                path: String
-              ): Future[RegistryResponse] = {
+  def fetchPssSet(
+                   auth: Option[String],
+                   id: String,
+                   params: Map[String, String],
+                   host: String,
+                   path: String
+                 ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    pssRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
+    val cleanParams = getCleanParams(params + ("set_slug" -> id))
+    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
   }
 
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
@@ -273,21 +273,49 @@ class Routes(
 
   lazy val pssRoutes: Route =
     concat(
-      pathEnd {
-        extractUri { uri =>
-          logURL(uri)
-          get {
-            extractHost { host =>
-              extractMatchedPath { path =>
-                parameterMap { params =>
-                  // Get the API key from Authorization header if it exists.
-                  optionalHeaderValueByName("Authorization") { auth =>
-                    respondWithHeaders(securityResponseHeaders) {
-                      onComplete(searchPss(auth, params, host, path.toString)) {
-                        case Success(response) =>
-                          renderRegistryResponse(response, path.toString)
-                        case Failure(e) =>
-                          renderRegistryFailure(e, path.toString)
+      pathPrefix("sets")(
+        concat(
+          pathEnd {
+            extractUri { uri =>
+              logURL(uri)
+              get {
+                extractHost { host =>
+                  extractMatchedPath { path =>
+                    parameterMap { params =>
+                      // Get the API key from Authorization header if it exists.
+                      optionalHeaderValueByName("Authorization") { auth =>
+                        respondWithHeaders(securityResponseHeaders) {
+                          onComplete(searchPss(auth, params, host, path.toString)) {
+                            case Success(response) =>
+                              renderRegistryResponse(response, path.toString)
+                            case Failure(e) =>
+                              renderRegistryFailure(e, path.toString)
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          path(Segment) { id =>
+            get {
+              extractUri { uri =>
+                logURL(uri)
+                extractHost { host =>
+                  extractMatchedPath { path =>
+                    parameterMap { params =>
+                      // Get the API key from Authorization header if it exists.
+                      optionalHeaderValueByName("Authorization") { auth =>
+                        respondWithHeaders(securityResponseHeaders) {
+                          onComplete(fetchPssSet(auth, id, params, host, path.toString)) {
+                            case Success(response) =>
+                              renderRegistryResponse(response, path.toString)
+                            case Failure(e) =>
+                              renderRegistryFailure(e, path.toString)
+                          }
+                        }
                       }
                     }
                   }
@@ -295,32 +323,8 @@ class Routes(
               }
             }
           }
-        }
-      },
-      path(Segment) { id =>
-        get {
-          extractUri { uri =>
-            logURL(uri)
-            extractHost { host =>
-              extractMatchedPath { path =>
-                parameterMap { params =>
-                  // Get the API key from Authorization header if it exists.
-                  optionalHeaderValueByName("Authorization") { auth =>
-                    respondWithHeaders(securityResponseHeaders) {
-                      onComplete(fetchPss(auth, id, params, host, path.toString)) {
-                        case Success(response) =>
-                          renderRegistryResponse(response, path.toString)
-                        case Failure(e) =>
-                          renderRegistryFailure(e, path.toString)
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+        )
+      )
     )
 
   lazy val apiKeyRoute: Route =
