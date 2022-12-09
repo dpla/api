@@ -18,13 +18,31 @@ case class PssSetList(
                      ) extends MappedResponse
 
 case class PssSet(
-                   //                         `@id`: Option[String],
-                   //                         `@type`: Option[String],
-                   //                         thumbnailUrl: Option[String],
-                   //                         repImageUrl: Option[String],
-                   //                         name: Option[String],
-                   //                         numberOfItems: Option[String],
-                   //                         about: Seq[JsObject]
+                    `@context`: Option[JsValue],
+                    `@id`: Option[String],
+                    `@type`: Option[String],
+                    `dct:created`: Option[String],
+                    `dct:modified`: Option[String],
+                    `dct:type`: Option[String],
+                    about: Seq[JsValue],
+                    accessibilityControl: Seq[String],
+                    accessibilityFeature: Seq[String],
+                    accessibilityHazard: Seq[String],
+                    author: Seq[JsValue],
+                    dateCreated: Option[String],
+                    dateModified: Option[String],
+                    description: Option[String],
+                    educationalAlignment: Seq[JsValue],
+                    hasPart: Seq[JsValue],
+                    inLanguage: Seq[JsValue],
+                    isRelatedTo: Seq[JsValue],
+                    learningResourceType: Option[String],
+                    license: Option[String],
+                    name: Option[String],
+                    publisher: Option[JsValue],
+                    repImageUrl: Option[String],
+                    thumbnailUrl: Option[String],
+                    typicalAgeRange: Option[String]
                  ) extends MappedResponse
 
 case class PssSource()
@@ -34,11 +52,19 @@ object PssMapper extends Mapper {
   override protected def mapDocList(
                                      body: String,
                                      searchParams: Option[SearchParams] = None
-                                   ): Try[MappedResponse] =
-    Try {
-      println(body)
-      body.parseJson.convertTo[PssSetList]
+                                   ): Try[MappedResponse] = {
+
+    val mappedSetList = Try { body.parseJson.convertTo[PssSetList] }
+    val mappedSet = Try { body.parseJson.convertTo[PssSet] }
+
+    searchParams match {
+      case Some(params) =>
+        val queryFields = params.fieldQueries.map(_.fieldName)
+        if (queryFields.contains("@id")) mappedSet
+        else mappedSetList
+      case None => mappedSetList
     }
+  }
 
   override protected def mapSingleDoc(body: String): Try[MappedResponse] =
     Try {
