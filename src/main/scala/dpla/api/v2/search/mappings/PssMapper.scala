@@ -10,22 +10,24 @@ import scala.util.Try
  * Maps PSS responses to case classes.
  */
 
-case class SinglePssDoc(
-//                         `@id`: Option[String],
-//                         `@type`: Option[String],
-//                         thumbnailUrl: Option[String],
-//                         repImageUrl: Option[String],
-//                         name: Option[String],
-//                         numberOfItems: Option[String],
-//                         about: Seq[JsObject]
-                       ) extends MappedResponse
-
-case class PssDocList(
+case class PssSetList(
                        `@context`: Option[JsValue],
                        numberOfItems: Option[Int],
                        hasPart: Seq[JsValue],
                        itemListElement: Seq[JsValue]
                      ) extends MappedResponse
+
+case class PssSet(
+                   //                         `@id`: Option[String],
+                   //                         `@type`: Option[String],
+                   //                         thumbnailUrl: Option[String],
+                   //                         repImageUrl: Option[String],
+                   //                         name: Option[String],
+                   //                         numberOfItems: Option[String],
+                   //                         about: Seq[JsObject]
+                 ) extends MappedResponse
+
+case class PssSource()
 
 object PssMapper extends Mapper {
 
@@ -35,11 +37,11 @@ object PssMapper extends Mapper {
                                    ): Try[MappedResponse] =
     Try {
       println(body)
-      body.parseJson.convertTo[PssDocList]
+      body.parseJson.convertTo[PssSetList]
     }
 
   override protected def mapSingleDoc(body: String): Try[MappedResponse] =
     Try {
-      body.parseJson.convertTo[SinglePssDoc]
+      body.parseJson.convertTo[PssSet]
     }
 }

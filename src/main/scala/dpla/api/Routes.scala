@@ -411,8 +411,8 @@ class Routes(
     mapped match {
       case dplaList: DPLADocList => complete(dplaList)
       case dplaDoc: SingleDPLADoc => complete(dplaDoc)
-      case pssList: PssDocList => complete(pssList)
-      case pssDoc: SinglePssDoc => complete(pssDoc)
+      case pssList: PssSetList => complete(pssList)
+      case pssDoc: PssSet => complete(pssDoc)
       case _ =>
         val objType = mapped.getClass.getName
         log.error(

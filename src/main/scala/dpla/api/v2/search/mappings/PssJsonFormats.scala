@@ -10,24 +10,24 @@ import spray.json._
 object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
   with PssFields {
 
-  implicit object SinglePssDocFormat extends RootJsonFormat[SinglePssDoc] {
-    def read(json: JsValue): SinglePssDoc = {
+  implicit object SinglePssDocFormat extends RootJsonFormat[PssSet] {
+    def read(json: JsValue): PssSet = {
       val root = json.asJsObject
 
-      SinglePssDoc()
+      PssSet()
     }
 
-    def write(singlePssDoc: SinglePssDoc): JsValue = {
+    def write(singlePssDoc: PssSet): JsValue = {
       JsObject()
     }
   }
 
-  implicit object PssDocListFormat extends RootJsonFormat[PssDocList] {
+  implicit object PssSetListFormat extends RootJsonFormat[PssSetList] {
 
-    def read(json: JsValue): PssDocList = {
+    def read(json: JsValue): PssSetList = {
       val root = json.asJsObject
 
-      PssDocList(
+      PssSetList(
         `@context` = readObjectArray(root, "hits", "hits").headOption.map { hit =>
           readObject(hit, "_source", "@context").getOrElse(JsObject()).toJson
         },
@@ -39,7 +39,7 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
       )
     }
 
-    def write(pssDocList: PssDocList): JsValue =
+    def write(pssDocList: PssSetList): JsValue =
       JsObject(
         "@context" -> pssDocList.`@context`.toJson,
         "@type" -> "ItemList".toJson,

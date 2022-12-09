@@ -12,7 +12,7 @@ class PssListMappingTest extends AnyWordSpec with Matchers
   val esPssList: String =
     readFile("/elasticSearchPssList.json")
   val pssList: JsObject =
-    esPssList.parseJson.convertTo[PssDocList].toJson.asJsObject
+    esPssList.parseJson.convertTo[PssSetList].toJson.asJsObject
 
   "a list of pss records" should {
     "map count" in {
