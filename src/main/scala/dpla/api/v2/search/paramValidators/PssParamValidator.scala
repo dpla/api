@@ -21,7 +21,7 @@ object PssParamValidator extends ParamValidator with PssFields {
   override protected def preProcess(unprocessed: Map[String, String]): Map[String, String] = {
     if (unprocessed.keys.toSet.contains("@id")) {
       unprocessed
-    } else if (unprocessed.keys.toSet.contains("source_slug")) {
+    } else if (unprocessed.keys.toSet.contains("hasPart.@id")) {
       // Get a source
       unprocessed
     } else {

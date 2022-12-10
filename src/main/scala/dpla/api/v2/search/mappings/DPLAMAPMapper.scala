@@ -51,7 +51,7 @@ object DPLAMAPMapper extends Mapper {
    *
    * SearchParams should be absent for multi-fetch and random queries.
    */
-  override protected def mapDocList(
+  override protected def mapSearchResponse(
                                      body: String,
                                      searchParams: Option[SearchParams] = None
                                    ): Try[MappedResponse] =
@@ -71,33 +71,10 @@ object DPLAMAPMapper extends Mapper {
       }
     }
 
-
-
-//  override protected def mapDocList(params: SearchParams, body: String): Try[MappedDocList] =
-//    Try {
-//      val start = getStart(params.page, params.pageSize)
-//      val mapped = body.parseJson.convertTo[DPLADocList]
-//        .copy(limit=Some(params.pageSize), start=Some(start))
-//      params.fields match {
-//        case Some(f) => mapped.copy(docs = unNestFields(mapped.docs, f))
-//        case None => mapped
-//      }
-//    }
-
-  override protected def mapSingleDoc(body: String): Try[MappedResponse] =
+  override protected def mapFetchResponse(body: String): Try[MappedResponse] =
     Try {
       body.parseJson.convertTo[SingleDPLADoc]
     }
-
-//  protected def mapMultiFetch(body: String): Try[MappedDocList] =
-//    Try{
-//      body.parseJson.convertTo[DPLADocList]
-//    }
-//
-//  protected def mapRandom(body: String): Try[MappedDocList] =
-//    Try{
-//      body.parseJson.convertTo[DPLADocList]
-//    }
 
   /**
    * DPLA MAP field that gives the index of the first result on the page

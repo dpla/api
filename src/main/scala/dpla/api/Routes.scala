@@ -131,6 +131,19 @@ class Routes(
     pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
   }
 
+  def fetchPssSource(
+                      auth: Option[String],
+                      id: String,
+                      params: Map[String, String],
+                      host: String,
+                      path: String
+                    ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params + ("hasPart.@id" -> id))
+    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+  }
+
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
     if (auth.nonEmpty) auth
     else params.get("api_key")

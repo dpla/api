@@ -48,6 +48,15 @@ trait PssFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DataField(
+      name = "hasPart.@id",
+      fieldType = TextField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "hasPart.@id",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
       name = "name",
       fieldType = TextField,
       searchable = false,

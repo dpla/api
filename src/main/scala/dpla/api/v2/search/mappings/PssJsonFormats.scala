@@ -1,5 +1,6 @@
 package dpla.api.v2.search.mappings
 
+import dpla.api.v2.search.mappings.JsonFormatsHelper.filterIfEmpty
 import dpla.api.v2.search.models.PssFields
 import spray.json._
 
@@ -10,10 +11,54 @@ import spray.json._
 object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
   with PssFields {
 
+  implicit object PssSourceFormat extends RootJsonFormat[PssPart] {
+    def read(json: JsValue): PssPart = {
+      val root = json.asJsObject
+
+      PssPart(
+        `@context` = None,
+        `@id` = readString(root, "@id"),
+        `@type` = readString(root, "@type"),
+        `dct:created` = readString(root, "dct:created"),
+        `dct:modified` = readString(root, "dct:modified"),
+        dateCreated = readString(root, "dateCreated"),
+        dateModified = readString(root, "dateModified"),
+        disambiguatingDescription = readString(root, "disambiguatingDescription"),
+        isPartOf = readObject(root, "isPartOf"),
+        isRelatedTo = readObjectArray(root, "isRelatedTo"),
+        mainEntity = readObjectArray(root, "mainEntity"),
+        name = readString(root, "name"),
+        repImageUrl = readString(root, "repImageUrl"),
+        text = readString(root, "text"),
+        thumbnailUrl = readString(root, "thumbnailUrl")
+      )
+    }
+
+    def write(pssSource: PssPart): JsValue = {
+      filterIfEmpty(JsObject(
+        "@context" -> pssSource.`@context`.toJson,
+        "@id" -> pssSource.`@id`.toJson,
+        "@type" -> pssSource.`@type`.toJson,
+        "dct:created" -> pssSource.`dct:created`.toJson,
+        "dct:modified" -> pssSource.`dct:modified`.toJson,
+        "dateCreated" -> pssSource.dateCreated.toJson,
+        "dateModified" -> pssSource.dateModified.toJson,
+        "disambiguatingDescription" -> pssSource.disambiguatingDescription.toJson,
+        "isPartOf" -> pssSource.isPartOf.toJson,
+        "isRelatedTo" -> pssSource.isRelatedTo.toJson,
+        "name" -> pssSource.name.toJson,
+        "mainEntity" -> pssSource.mainEntity.toJson,
+        "repImageUrl" -> pssSource.repImageUrl.toJson,
+        "text" -> pssSource.text.toJson,
+        "thumbnailUrl" -> pssSource.thumbnailUrl.toJson
+      )).toJson
+    }
+  }
+
   implicit object PssSetFormat extends RootJsonFormat[PssSet] {
     def read(json: JsValue): PssSet = {
       val root = json.asJsObject
-      
+
       val set: Option[JsObject] = readObjectArray(root, "hits", "hits")
         .headOption
         .flatMap(hit => readObject(hit, "_source"))
@@ -36,7 +81,7 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
             dateModified = readString(set, "dateModified"),
             description = readString(set, "description"),
             educationalAlignment = readObjectArray(set, "educationalAlignment"),
-            hasPart = readObjectArray(set, "hasPart"),
+            hasPart = readObjectArray(set, "hasPart").map(_.toJson.convertTo[PssPart]),
             inLanguage = readObjectArray(set, "inLanguage"),
             isRelatedTo = readObjectArray(set, "isRelatedTo"),
             learningResourceType = readString(set, "learningResourceType"),

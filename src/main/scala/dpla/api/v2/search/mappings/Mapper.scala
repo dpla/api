@@ -16,8 +16,8 @@ trait MappedResponse
 trait Mapper {
 
   /** Abstract methods */
-  protected def mapDocList(body: String, searchParams: Option[SearchParams] = None): Try[MappedResponse]
-  protected def mapSingleDoc(body: String): Try[MappedResponse]
+  protected def mapSearchResponse(body: String, searchParams: Option[SearchParams] = None): Try[MappedResponse]
+  protected def mapFetchResponse(body: String): Try[MappedResponse]
 
   def apply(): Behavior[IntermediateSearchResult] = {
 
@@ -26,7 +26,7 @@ trait Mapper {
       Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case SearchQueryResponse(params, body, replyTo) =>
-          mapDocList(body, Some(params)) match {
+          mapSearchResponse(body, Some(params)) match {
             case Success(mappedDocList) =>
               replyTo ! MappedSearchResult(mappedDocList)
             case Failure(e) =>
@@ -38,7 +38,7 @@ trait Mapper {
           Behaviors.same
 
         case FetchQueryResponse(params, body, replyTo) =>
-          mapSingleDoc(body) match {
+          mapFetchResponse(body) match {
             case Success(singleMappedDoc) =>
               replyTo ! MappedFetchResult(singleMappedDoc)
             case Failure(e) =>
@@ -50,7 +50,7 @@ trait Mapper {
           Behaviors.same
 
         case MultiFetchQueryResponse(body, replyTo) =>
-          mapDocList(body) match {
+          mapSearchResponse(body) match {
             case Success(multiDoc) =>
               replyTo ! MappedMultiFetchResult(multiDoc)
             case Failure(e) =>
@@ -62,7 +62,7 @@ trait Mapper {
           Behaviors.same
 
         case RandomQueryResponse(_, body, replyTo) =>
-          mapDocList(body) match {
+          mapSearchResponse(body) match {
             case Success(randomDoc) =>
               replyTo ! MappedRandomResult(randomDoc)
             case Failure(e) =>

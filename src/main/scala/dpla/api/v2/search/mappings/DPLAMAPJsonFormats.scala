@@ -1,5 +1,6 @@
 package dpla.api.v2.search.mappings
 
+import dpla.api.v2.search.mappings.JsonFormatsHelper.filterIfEmpty
 import dpla.api.v2.search.models.DPLAMAPFields
 import spray.json._
 
@@ -166,25 +167,5 @@ object DPLAMAPJsonFormats extends DefaultJsonProtocol with JsonFieldReader
 
       complete.toJson
     }
-  }
-
-  /** Methods for writing JSON * */
-
-  // Filter out fields whose values are:
-  // null, empty array, or object with all empty fields.
-  def filterIfEmpty(obj: JsObject): JsObject = {
-
-    def filterFields(fields: Map[String, JsValue]): Map[String, JsValue] =
-      fields.filterNot(_._2 match {
-        case JsNull => true
-        case JsArray(values) =>
-          if (values.isEmpty) true else false
-        case JsObject(fields) =>
-          if (filterFields(fields).isEmpty) true else false
-        case _ => false
-      })
-
-    val filtered = filterFields(obj.fields)
-    JsObject(filtered)
   }
 }
