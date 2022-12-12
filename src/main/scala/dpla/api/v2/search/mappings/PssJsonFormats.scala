@@ -34,23 +34,23 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
       )
     }
 
-    def write(pssSource: PssPart): JsValue = {
+    def write(pssPart: PssPart): JsValue = {
       filterIfEmpty(JsObject(
-        "@context" -> pssSource.`@context`.toJson,
-        "@id" -> pssSource.`@id`.toJson,
-        "@type" -> pssSource.`@type`.toJson,
-        "dct:created" -> pssSource.`dct:created`.toJson,
-        "dct:modified" -> pssSource.`dct:modified`.toJson,
-        "dateCreated" -> pssSource.dateCreated.toJson,
-        "dateModified" -> pssSource.dateModified.toJson,
-        "disambiguatingDescription" -> pssSource.disambiguatingDescription.toJson,
-        "isPartOf" -> pssSource.isPartOf.toJson,
-        "isRelatedTo" -> pssSource.isRelatedTo.toJson,
-        "name" -> pssSource.name.toJson,
-        "mainEntity" -> pssSource.mainEntity.toJson,
-        "repImageUrl" -> pssSource.repImageUrl.toJson,
-        "text" -> pssSource.text.toJson,
-        "thumbnailUrl" -> pssSource.thumbnailUrl.toJson
+        "@context" -> pssPart.`@context`.toJson,
+        "@id" -> pssPart.`@id`.toJson,
+        "@type" -> pssPart.`@type`.toJson,
+        "dct:created" -> pssPart.`dct:created`.toJson,
+        "dct:modified" -> pssPart.`dct:modified`.toJson,
+        "dateCreated" -> pssPart.dateCreated.toJson,
+        "dateModified" -> pssPart.dateModified.toJson,
+        "disambiguatingDescription" -> pssPart.disambiguatingDescription.toJson,
+        "isPartOf" -> pssPart.isPartOf.toJson,
+        "isRelatedTo" -> pssPart.isRelatedTo.toJson,
+        "name" -> pssPart.name.toJson,
+        "mainEntity" -> pssPart.mainEntity.toJson,
+        "repImageUrl" -> pssPart.repImageUrl.toJson,
+        "text" -> pssPart.text.toJson,
+        "thumbnailUrl" -> pssPart.thumbnailUrl.toJson
       )).toJson
     }
   }

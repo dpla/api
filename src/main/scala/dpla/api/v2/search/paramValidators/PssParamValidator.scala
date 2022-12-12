@@ -20,7 +20,8 @@ object PssParamValidator extends ParamValidator with PssFields {
 
   override protected def preProcess(unprocessed: Map[String, String]): Map[String, String] = {
     if (unprocessed.keys.toSet.contains("@id")) {
-      unprocessed
+      // Get a set
+      unprocessed + ("fields" -> setFields.mkString(","))
     } else if (unprocessed.keys.toSet.contains("hasPart.@id")) {
       // Get a source
       unprocessed
@@ -38,5 +39,40 @@ object PssParamValidator extends ParamValidator with PssFields {
     "name",
     "repImageUrl",
     "thumbnailUrl"
+  )
+
+  val setFields: Seq[String] = Seq(
+    "@context",
+    "@id",
+    "@type",
+    "dct:created",
+    "dct:modified",
+    "dct:type",
+    "accessibilityControl",
+    "accessibilityFeature",
+    "accessibilityHazard",
+    "about",
+    "author",
+    "dateCreated",
+    "dateModified",
+    "description",
+    "educationalAlignment",
+    "hasPart.@id",
+    "hasPart.@type",
+    "hasPart.disambiguatingDescription",
+    "hasPart.mainEntity.@type",
+    "hasPart.name",
+    "hasPart.repImageUrl",
+    "hasPart.thumbnailUrl",
+    "hasPart.text",
+    "inLanguage",
+    "isRelatedTo",
+    "learningResourceType",
+    "license",
+    "name",
+    "publisher",
+    "repImageUrl",
+    "thumbnailUrl",
+    "typicalAgeRange"
   )
 }

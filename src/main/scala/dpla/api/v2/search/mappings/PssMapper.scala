@@ -71,6 +71,7 @@ object PssMapper extends Mapper {
                                    ): Try[MappedResponse] = {
 
     lazy val mappedSetList = Try { body.parseJson.convertTo[PssSetList] }
+    lazy val mappedSet = Try { body.parseJson.convertTo[PssSet] }
 
     searchParams match {
       case Some(params) =>
@@ -80,15 +81,14 @@ object PssMapper extends Mapper {
         val sourceId: Option[String] =
           params.fieldQueries.find(_.fieldName == "hasPart.@id").map(_.value)
 
-        if (setId.nonEmpty) Try {
-          body.parseJson.convertTo[PssSet]
-        }
-        else if (sourceId.nonEmpty) Try {
-          body.parseJson.convertTo[PssSet].hasPart.filter(part =>
-            part.disambiguatingDescription.contains("source") &&
-            part.`@id`.getOrElse("").endsWith("/" + sourceId.getOrElse(""))
-          ).head
-        }
+        if (setId.nonEmpty) mappedSet
+        else if (sourceId.nonEmpty)
+          mappedSet.map(set => {
+            set.hasPart.filter(part =>
+              part.disambiguatingDescription.contains("source") &&
+                part.`@id`.getOrElse("").endsWith("/" + sourceId.getOrElse(""))
+            ).head.copy(`@context` = set.`@context`)
+          })
         else mappedSetList
 
       case None => mappedSetList
