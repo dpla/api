@@ -156,7 +156,7 @@ class Routes(
     apiKeyRegistry.ask(CreateApiKey(email, _))
 
   // Log the URL with the API key or email address redacted
-  private def logURL(uri: Uri) =
+  private def logURL(uri: Uri): Unit =
     log.info(uri.toString
       .replaceAll("api_key=[^&]*", "api_key=REDACTED")
       .replaceAll("/api_key/.*", "/api_key/REDACTED"))
@@ -337,6 +337,32 @@ class Routes(
             }
           }
         )
+      ),
+      pathPrefix("sources")(
+        path(Segment) { id =>
+          get {
+            extractUri { uri =>
+              logURL(uri)
+              extractHost { host =>
+                extractMatchedPath { path =>
+                  parameterMap { params =>
+                    // Get the API key from Authorization header if it exists.
+                    optionalHeaderValueByName("Authorization") { auth =>
+                      respondWithHeaders(securityResponseHeaders) {
+                        onComplete(fetchPssSource(auth, id, params, host, path.toString)) {
+                          case Success(response) =>
+                            renderRegistryResponse(response, path.toString)
+                          case Failure(e) =>
+                            renderRegistryFailure(e, path.toString)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       )
     )
 
