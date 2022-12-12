@@ -16,7 +16,7 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
       val root = json.asJsObject
 
       PssPart(
-        `@context` = None,
+        `@context` = readObject(root, "@context"),
         `@id` = readString(root, "@id"),
         `@type` = readString(root, "@type"),
         `dct:created` = readString(root, "dct:created"),

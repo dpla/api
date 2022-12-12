@@ -70,20 +70,27 @@ object PssMapper extends Mapper {
                                      searchParams: Option[SearchParams] = None
                                    ): Try[MappedResponse] = {
 
-    val mappedSetList = Try { body.parseJson.convertTo[PssSetList] }
-    val mappedSet = Try { body.parseJson.convertTo[PssSet] }
-    val mappedSource = Try {
-      body.parseJson.convertTo[PssSet]
-    }
+    lazy val mappedSetList = Try { body.parseJson.convertTo[PssSetList] }
 
     searchParams match {
       case Some(params) =>
-        val queryFields = params.fieldQueries.map(_.fieldName)
-        if (queryFields.contains("@id")) mappedSet
-//        else if (queryFields.contains("hasPart.@id")) Try {
-//          body.parseJson.convertTo[PssSourceList].map(_)
-//        }
+        val setId: Option[String] =
+          params.fieldQueries.find(_.fieldName == "@id").map(_.value)
+
+        val sourceId: Option[String] =
+          params.fieldQueries.find(_.fieldName == "hasPart.@id").map(_.value)
+
+        if (setId.nonEmpty) Try {
+          body.parseJson.convertTo[PssSet]
+        }
+        else if (sourceId.nonEmpty) Try {
+          body.parseJson.convertTo[PssSet].hasPart.filter(part =>
+            part.disambiguatingDescription.contains("source") &&
+            part.`@id`.getOrElse("").endsWith("/" + sourceId.getOrElse(""))
+          ).head
+        }
         else mappedSetList
+
       case None => mappedSetList
     }
   }
