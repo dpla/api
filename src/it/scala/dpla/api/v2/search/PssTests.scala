@@ -2,6 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing}
 import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Route
 import dpla.api.Routes
 import dpla.api.helpers.ITHelper
@@ -55,26 +56,32 @@ class PssTests extends ITHelper with LogCapturing {
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
 
   "all sets endpoint" should {
-    implicit val request = Get(s"/v2/pss/sets?api_key=$fakeApiKey")
+    implicit val request: HttpRequest =
+      Get(s"/v2/pss/sets?api_key=$fakeApiKey")
 
     returnStatusCode(200)
     returnJSON
-
-      val fields = Seq(
-        "@context",
-        "@type",
-        "hasPart",
-        "itemListElement",
-        "numberOfItems"
-        // TODO url?
-      )
-
-    fields.foreach(includeField)
-
     returnString("@type", "ItemList")
     returnString("@context.@vocab", "http://schema.org/")
     returnInt("numberOfItems", 142)
     returnArrayWithSize("itemListElement", 142)
+
+    "return correct fields for the set list" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val fields = Seq(
+          "@context",
+          "@type",
+          "hasPart",
+          "itemListElement",
+          "numberOfItems"
+//          TODO "url"?
+        )
+
+        entity.fields.keys should contain allElementsOf fields
+      }
+    }
 
     "return correct fields for each set" in {
       request ~> routes ~> check {
@@ -86,7 +93,7 @@ class PssTests extends ITHelper with LogCapturing {
           "@type",
           "about",
           "name",
-//          "numberOfItems", // TODO
+//          TODO "numberOfItems"?
           "repImageUrl",
           "thumbnailUrl"
         )
@@ -95,8 +102,50 @@ class PssTests extends ITHelper with LogCapturing {
       }
     }
 
-    // TODO hasPart
+    // TODO hasPart?
+  }
 
+  "single set endpoint" should {
+    implicit val request: HttpRequest =
+      Get(s"/v2/pss/sets/aviation?api_key=$fakeApiKey")
 
+    returnStatusCode(200)
+    returnJSON
+
+    "return correct fields for the set" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val fields = Seq(
+          "@context",
+          "@id",
+          "@type",
+          "dct:created",
+          "dct:modified",
+          "dct:type",
+          "accessibilityControl",
+          "accessibilityFeature",
+          "accessibilityHazard",
+          "about",
+          "author",
+          "dateCreated",
+          "dateModified",
+          "description",
+          "educationalAlignment",
+          "hasPart",
+          "inLanguage",
+          "isRelatedTo",
+          "learningResourceType",
+          "license",
+          "name",
+          "publisher",
+          "repImageUrl",
+          "thumbnailUrl",
+          "typicalAgeRange"
+        )
+
+        entity.fields.keys should contain allElementsOf fields
+      }
+    }
   }
 }
