@@ -66,11 +66,37 @@ class PssTests extends ITHelper with LogCapturing {
         "hasPart",
         "itemListElement",
         "numberOfItems"
+        // TODO url?
       )
 
     fields.foreach(includeField)
 
-    returnInt("numberOfItems", 142)
     returnString("@type", "ItemList")
+    returnString("@context.@vocab", "http://schema.org/")
+    returnInt("numberOfItems", 142)
+    returnArrayWithSize("itemListElement", 142)
+
+    "return correct fields for each set" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val firstSet = readObjectArray(entity, "itemListElement").head
+
+        val setFields = Seq(
+          "@id",
+          "@type",
+          "about",
+          "name",
+//          "numberOfItems", // TODO
+          "repImageUrl",
+          "thumbnailUrl"
+        )
+
+        firstSet.fields.keys should contain allElementsOf setFields
+      }
+    }
+
+    // TODO hasPart
+
+
   }
 }

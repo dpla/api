@@ -4,17 +4,13 @@ import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing}
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ITHelper
 import dpla.api.helpers.ITUtils.fakeApiKey
 import dpla.api.v2.analytics.{AnalyticsClientCommand, ITMockAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, PssRegistry, SearchRegistryCommand}
-import dpla.api.v2.search.mappings.JsonFieldReader
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import dpla.api.v2.registry._
 import spray.json._
 
 import java.text.SimpleDateFormat

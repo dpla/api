@@ -65,7 +65,8 @@ trait ITHelper extends AnyWordSpec with Matchers with ScalatestRouteTest
     s"return $field $string" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val count: Option[String] = readString(entity, field)
+        val path = field.split("\\.")
+        val count: Option[String] = readString(entity, path:_*)
         count should contain(string)
       }
     }
