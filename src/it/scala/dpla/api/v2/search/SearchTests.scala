@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
+import dpla.api.helpers.ITHelper
 import dpla.api.helpers.ITUtils.fakeApiKey
 import dpla.api.v2.analytics.{AnalyticsClientCommand, ITMockAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
@@ -24,8 +25,7 @@ import scala.util.Try
  * Test that expected fields are sortable in item search.
  * Sort by coordinates is not included here as it requires special syntax.
  */
-class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
-  with JsonFieldReader with LogCapturing {
+class SearchTests extends ITHelper with LogCapturing {
 
   // All dates in the search index are expected to be in one of these formats.
   val dateFormats = Seq(
@@ -69,51 +69,6 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
 
   /** Helper methods */
-
-  private def returnStatusCode(code: Int)(implicit request: HttpRequest): Unit =
-    "return status code 200" in {
-      request ~> routes ~> check {
-        status.intValue shouldEqual code
-      }
-    }
-
-  private def returnJSON(implicit request: HttpRequest): Unit =
-    "return JSON" in {
-      request ~> routes ~> check {
-        val parsed = Try {
-          entityAs[String].parseJson
-        }.toOption
-        parsed shouldNot be(None)
-      }
-    }
-
-  private def returnCount(expected: Int)(implicit request: HttpRequest): Unit =
-    s"return count $expected" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val count: Option[Int] = readInt(entity, "count")
-        count should ===(Some(expected))
-      }
-    }
-
-  private def returnLimit(expected: Int)(implicit request: HttpRequest): Unit =
-    s"return limit $expected" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val limit: Option[Int] = readInt(entity, "limit")
-        limit should ===(Some(expected))
-      }
-    }
-
-  private def returnDocArrayWithSize(expected: Int)(implicit request: HttpRequest): Unit =
-    s"return doc array with size $expected" in {
-      request ~> routes ~> check {
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val docs = readObjectArray(entity, "docs")
-        docs.size should ===(expected)
-      }
-    }
 
   private def haveDateRangesAfter(queryAfter: String, field: String)(implicit request: HttpRequest): Unit =
     "return docs with date ranges that come after the given date" in {
@@ -267,7 +222,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnCount(443200)
+    returnInt("count", 443200)
   }
 
   "Search for phrase" should {
@@ -307,8 +262,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnCount(1)
-    returnDocArrayWithSize(1)
+    returnInt("count", 1)
+    returnArrayWithSize("docs", 1)
 
     "return a doc with the correct id" in {
       request ~> routes ~> check {
@@ -392,8 +347,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnLimit(500)
-    returnDocArrayWithSize(500)
+    returnInt("limit", 500)
+    returnArrayWithSize("docs", 500)
   }
 
   "Boolean AND" should {
@@ -515,8 +470,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnLimit(2)
-    returnDocArrayWithSize(2)
+    returnInt("limit", 2)
+    returnArrayWithSize("docs", 2)
   }
 
   "Simple search" should {
@@ -561,8 +516,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnCount(2)
-    returnDocArrayWithSize(2)
+    returnInt("count", 2)
+    returnArrayWithSize("docs", 2)
   }
 
   "Temporal Search, sourceResource.temporal within a range" should {
@@ -607,7 +562,7 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnDocArrayWithSize(0)
+    returnArrayWithSize("docs", 0)
 
     "return the given facet fields" in {
       request ~> routes ~> check {
@@ -736,8 +691,8 @@ class SearchTests extends AnyWordSpec with Matchers with ScalatestRouteTest
 
     returnStatusCode(200)
     returnJSON
-    returnLimit(10)
-    returnDocArrayWithSize(10)
+    returnInt("limit", 10)
+    returnArrayWithSize("docs", 10)
 
     "have a count of greater than 10" in {
       request ~> routes ~> check {
