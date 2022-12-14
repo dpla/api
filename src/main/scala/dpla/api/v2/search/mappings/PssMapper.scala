@@ -76,10 +76,10 @@ object PssMapper extends Mapper {
     searchParams match {
       case Some(params) =>
         val setId: Option[String] =
-          params.fieldQueries.find(_.fieldName == "@id").map(_.value)
+          params.fieldQueries.find(_.fieldName == "id").map(_.value)
 
         val sourceId: Option[String] =
-          params.fieldQueries.find(_.fieldName == "hasPart.@id").map(_.value)
+          params.fieldQueries.find(_.fieldName == "hasPart.id").map(_.value)
 
         if (setId.nonEmpty) mappedSet
         else if (sourceId.nonEmpty)
@@ -87,7 +87,7 @@ object PssMapper extends Mapper {
             set.hasPart.filter(part =>
               part.disambiguatingDescription.contains("source") &&
                 part.`@id`.getOrElse("").endsWith("/" + sourceId.getOrElse(""))
-            ).head.copy(`@context` = set.`@context`)
+            ).head.copy(`@context` = set.`@context`, disambiguatingDescription = None)
           })
         else mappedSetList
 

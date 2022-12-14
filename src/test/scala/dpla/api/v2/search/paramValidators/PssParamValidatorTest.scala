@@ -40,4 +40,40 @@ class PssParamValidatorTest extends AnyWordSpec with Matchers
       msg.params.fields should not be empty
     }
   }
+
+  "id validator" should {
+    "accept a valid string" in {
+      val expected = "immigration-through-angel-island"
+      val params = Map("id" -> "immigration-through-angel-island")
+      pssParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val id = msg.params.fieldQueries.find(_.fieldName == "id")
+        .map(_.value)
+      id should contain(expected)
+    }
+
+    "reject an invalid string" in {
+      val params = Map("id" -> ".")
+      pssParamValidator ! RawSearchParams(params, replyProbe.ref)
+      replyProbe.expectMessageType[InvalidSearchParams]
+    }
+  }
+
+  "hasPart.id validator" should {
+    "accept an integer" in {
+      val expected = "7"
+      val params = Map("hasPart.id" -> "7")
+      pssParamValidator ! RawSearchParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSearchParams]
+      val id = msg.params.fieldQueries.find(_.fieldName == "hasPart.id")
+        .map(_.value)
+      id should contain(expected)
+    }
+
+    "reject a non-integer" in {
+      val params = Map("hasPart.id" -> "foo")
+      pssParamValidator ! RawSearchParams(params, replyProbe.ref)
+      replyProbe.expectMessageType[InvalidSearchParams]
+    }
+  }
 }

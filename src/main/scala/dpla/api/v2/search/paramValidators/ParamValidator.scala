@@ -191,12 +191,6 @@ trait ParamValidator extends FieldDefinitions {
         val fieldQueries: Seq[FieldQuery] =
           searchableDataFields.flatMap(getValidFieldQuery(rawParams, _))
 
-//        val fields: Option[Seq[String]] =
-//          getValid(rawParams, "fields", validFields) match {
-//            case Some(f) => Some(f)
-//            case None => defaultFields
-//          }
-
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
           exactFieldMatch =
@@ -205,7 +199,7 @@ trait ParamValidator extends FieldDefinitions {
           facets =
             getValid(rawParams, "facets", validFields),
           facetSize =
-            getValid(rawParams, "facet_size", validInt)
+            getValid(rawParams, "facet_size", validIntWithRange)
               .getOrElse(defaultFacetSize),
           fields =
             getValid(rawParams, "fields", validFields),
@@ -217,10 +211,10 @@ trait ParamValidator extends FieldDefinitions {
             getValid(rawParams, "op", validAndOr)
               .getOrElse(defaultOp),
           page =
-            getValid(rawParams, "page", validInt)
+            getValid(rawParams, "page", validIntWithRange)
               .getOrElse(defaultPage),
           pageSize =
-            getValid(rawParams, "page_size", validInt)
+            getValid(rawParams, "page_size", validIntWithRange)
               .getOrElse(defaultPageSize),
           q =
             getValid(rawParams, "q", validText),
@@ -259,6 +253,7 @@ trait ParamValidator extends FieldDefinitions {
       case Some(fieldType) =>
         fieldType match {
           case TextField => validText
+          case IntField => validInt
           case URLField => validUrl
           case DateField => validDate
           case WildcardField => validText
@@ -418,8 +413,16 @@ trait ParamValidator extends FieldDefinitions {
     })
   }
 
+  // Must be an integer
+  private def validInt(int: String, param: String): String =
+    Try { int.toInt } match {
+      case Success(_) => int
+      case Failure(_) =>
+        throw ValidationException(s"$param must be an integer")
+    }
+
   // Must be an integer between the min and the max for the given param.
-  def validInt(intString: String, param: String): Int = {
+  def validIntWithRange(intString: String, param: String): Int = {
     val (min: Int, max: Int) = param match {
       case "facet_size" => (minFacetSize, maxFacetSize)
       case "page" => (minPage, maxPage)

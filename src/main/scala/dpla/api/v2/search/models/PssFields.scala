@@ -183,6 +183,15 @@ trait PssFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DataField(
+      name = "hasPart.id",
+      fieldType = IntField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "hasPart.@id",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
       name = "hasPart.mainEntity.@type",
       fieldType = TextField,
       searchable = false,
@@ -225,6 +234,15 @@ trait PssFields extends FieldDefinitions {
       facetable = false,
       sortable = false,
       elasticSearchDefault = "hasPart.text",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
+      name = "id",
+      fieldType = TextField,
+      searchable = true,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "@id",
       elasticSearchNotAnalyzed = None
     ),
     DataField(

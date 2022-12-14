@@ -19,10 +19,10 @@ object PssParamValidator extends ParamValidator with PssFields {
   override protected val defaultPageSize: Int = 200
 
   override protected def preProcess(unprocessed: Map[String, String]): Map[String, String] = {
-    if (unprocessed.keys.toSet.contains("@id")) {
+    if (unprocessed.keys.toSet.contains("id")) {
       // Get a set
       unprocessed + ("fields" -> setFields.mkString(","))
-    } else if (unprocessed.keys.toSet.contains("hasPart.@id")) {
+    } else if (unprocessed.keys.toSet.contains("hasPart.id")) {
       // Get a source
       unprocessed
     } else {

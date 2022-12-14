@@ -6,6 +6,8 @@ trait FieldDefinitions {
 
   case object TextField extends DataFieldType
 
+  case object IntField extends DataFieldType
+
   case object URLField extends DataFieldType
 
   case object DateField extends DataFieldType

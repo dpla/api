@@ -207,6 +207,7 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
   }
 
   "each set endpoint" should {
+
     "match the given slug" in {
       readFile("/set_slugs.txt").foreach(slug => {
         implicit val request: HttpRequest =
@@ -221,8 +222,63 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
     }
   }
 
-//  "single source endpoint" should {
-//
-//    "include correct fields"
-//  }
+  "single source endpoint" should {
+    implicit val request: HttpRequest =
+      Get(s"/v2/pss/sources/1441?api_key=$fakeApiKey")
+
+    returnStatusCode(200)
+    returnJSON
+
+    "include correct fields" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val fields = Seq(
+          "@context",
+          "@id",
+          "@type",
+          "dct:created",
+          "dct:modified",
+          "dateCreated",
+          "dateModified",
+          "isPartOf",
+          "isRelatedTo",
+          "mainEntity",
+          "name",
+          "repImageUrl",
+          "text",
+          "thumbnailUrl"
+        )
+
+        entity.fields.keys should contain allElementsOf fields
+      }
+    }
+  }
+
+  "each source endpoint" should {
+
+    "match the given id" in {
+      val someSourceIds = Seq(
+        "1918",
+        "1441",
+        "1234",
+        "378",
+        "99",
+        "34",
+        "5",
+        "1"
+      )
+
+      someSourceIds.foreach(id => {
+        implicit val request: HttpRequest =
+          Get(s"/v2/pss/sources/$id?api_key=$fakeApiKey")
+
+        request ~> routes ~> check {
+          val entity: JsObject = entityAs[String].parseJson.asJsObject
+          val traversed = readString(entity, "@id").get
+          assert(traversed.endsWith(s"/sources/$id"))
+        }
+      })
+    }
+  }
 }
