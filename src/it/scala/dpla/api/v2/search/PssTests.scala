@@ -5,7 +5,7 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Route
 import dpla.api.Routes
-import dpla.api.helpers.ITHelper
+import dpla.api.helpers.{FileReader, ITHelper}
 import dpla.api.helpers.ITUtils.fakeApiKey
 import dpla.api.v2.analytics.{AnalyticsClientCommand, ITMockAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
@@ -14,12 +14,11 @@ import dpla.api.v2.registry._
 import spray.json._
 
 
-
 /**
  * Test that expected fields are sortable in item search.
  * Sort by coordinates is not included here as it requires special syntax.
  */
-class PssTests extends ITHelper with LogCapturing {
+class PssTests extends ITHelper with LogCapturing with FileReader {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
 
@@ -147,5 +146,83 @@ class PssTests extends ITHelper with LogCapturing {
         entity.fields.keys should contain allElementsOf fields
       }
     }
+
+    "return correct fields for the source" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val sourceFields = Seq(
+          "@id",
+          "@type",
+          "disambiguatingDescription",
+          "name",
+          "mainEntity",
+          "repImageUrl",
+          "thumbnailUrl"
+        )
+
+        val source: JsObject = readObjectArray(entity, "hasPart")
+          .find(part => readString(part, "disambiguatingDescription").contains("source"))
+          .get
+
+        val mainEntity: JsObject = readObjectArray(source, "mainEntity").head
+
+        source.fields.keys should contain allElementsOf sourceFields
+        mainEntity.fields.keys should contain("@type")
+      }
+    }
+
+    "include the guide" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val traversed: Option[JsValue] = readObjectArray(entity, "hasPart")
+          .find(part => readString(part, "disambiguatingDescription").contains("guide"))
+
+        traversed should not be empty
+      }
+    }
+
+    "include the overview" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val traversed: Option[JsValue] = readObjectArray(entity, "hasPart")
+          .find(part => readString(part, "name").contains("Overview"))
+
+        traversed should not be empty
+      }
+    }
+
+    "include the resources" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val traversed: Option[JsValue] = readObjectArray(entity, "hasPart")
+          .find(part => readString(part, "name").contains("Resources"))
+
+        traversed should not be empty
+      }
+    }
   }
+
+  "each set endpoint" should {
+    "match the given slug" in {
+      readFile("/set_slugs.txt").foreach(slug => {
+        implicit val request: HttpRequest =
+          Get(s"/v2/pss/sets/$slug?api_key=$fakeApiKey")
+
+        request ~> routes ~> check {
+          val entity: JsObject = entityAs[String].parseJson.asJsObject
+          val traversed = readString(entity, "@id").get
+          assert(traversed.endsWith(s"/sets/$slug"))
+        }
+      })
+    }
+  }
+
+//  "single source endpoint" should {
+//
+//    "include correct fields"
+//  }
 }
