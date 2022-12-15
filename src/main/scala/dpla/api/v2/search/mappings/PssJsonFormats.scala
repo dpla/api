@@ -74,7 +74,7 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
             `dct:type` = readString(set, "dct:type"),
             about = readObjectArray(set, "about"),
             accessibilityControl = readStringArray(set, "accessibilityControl"),
-            accessibilityFeature = readStringArray(set, "accessibilityFeature"),
+            accessibilityFeature = readStringArray(set, "accessbilityFeature"), // typo in source data
             accessibilityHazard = readStringArray(set, "accessibilityHazard"),
             author = readObjectArray(set, "author"),
             dateCreated = readString(set, "dateCreated"),

@@ -53,7 +53,7 @@ trait PssFields extends FieldDefinitions {
       searchable = false,
       facetable = false,
       sortable = false,
-      elasticSearchDefault = "accessibilityFeature",
+      elasticSearchDefault = "accessbilityFeature", // typo in source data
       elasticSearchNotAnalyzed = None
     ),
     DataField(
