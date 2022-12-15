@@ -91,6 +91,7 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
           "@id",
           "@type",
           "about",
+          "dateCreated",
           "name",
 //          TODO "numberOfItems"?
           "repImageUrl",
@@ -279,6 +280,23 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
           assert(traversed.endsWith(s"/sources/$id"))
         }
       })
+    }
+  }
+
+  "sort by recently added" should {
+
+    "return sets by dateCreated descending" in {
+
+      implicit val request: HttpRequest =
+        Get(s"/v2/pss/sets?api_key=$fakeApiKey&order=recently_added")
+
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val dates = readObjectArray(entity, "itemListElement")
+          .map(set => readString(set, "dateCreated").get)
+        val sorted = dates.sorted.reverse
+        dates.zip(sorted).foreach{ case(d1, d2) => assert(d1==d2) }
+      }
     }
   }
 }

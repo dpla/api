@@ -115,9 +115,9 @@ trait PssFields extends FieldDefinitions {
       fieldType = TextField,
       searchable = false,
       facetable = false,
-      sortable = false,
+      sortable = true,
       elasticSearchDefault = "dateCreated",
-      elasticSearchNotAnalyzed = None
+      elasticSearchNotAnalyzed = Some("dateCreated")
     ),
     DataField(
       name = "dateModified",

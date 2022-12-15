@@ -6,7 +6,7 @@ object PssParamValidator extends ParamValidator with PssFields {
 
   // These parameters are valid for a search request.
   override protected val acceptedSearchParams: Seq[String] =
-    searchableDataFields ++ Seq("fields", "order")
+    searchableDataFields ++ Seq("fields", "sort_by", "sort_order")
 
   // These parameters are valid for a fetch request.
   override protected val acceptedFetchParams: Seq[String] = Seq()
@@ -27,15 +27,31 @@ object PssParamValidator extends ParamValidator with PssFields {
       unprocessed
     } else {
       // Get multiple sets
-//      unprocessed.get("order") match {
-//        case Some(order) => order match {
-//          case "recently_added" =>
-//
-//        }
-//        case None => unprocessed
-//      }
 
-      unprocessed + ("fields" -> allSetsFields.mkString(","))
+      // Default to ordering by most recently added
+      val sortBy: String = unprocessed.get("order") match {
+        case Some(order) => order match {
+          case "recently_added" => "dateCreated"
+          // TODO time period
+          case _ => "dateCreated"
+        }
+        case None => "dateCreated"
+      }
+
+      val sortOrder: String = unprocessed.get("order") match {
+        case Some(order) => order match {
+          case "recently_added" => "desc"
+          // TODO time period
+          case _ => "desc"
+        }
+        case None => "desc"
+      }
+
+      unprocessed + (
+        "fields" -> allSetsFields.mkString(","),
+        "sort_by" -> sortBy,
+        "sort_order" -> sortOrder
+      ) - ("order")
     }
   }
 
@@ -44,6 +60,7 @@ object PssParamValidator extends ParamValidator with PssFields {
     "@id",
     "@type",
     "about",
+    "dateCreated",
     "name",
     "repImageUrl",
     "thumbnailUrl"
