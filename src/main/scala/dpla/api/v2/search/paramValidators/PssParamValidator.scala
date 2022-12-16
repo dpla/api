@@ -32,7 +32,8 @@ object PssParamValidator extends ParamValidator with PssFields {
       val sortBy: String = unprocessed.get("order") match {
         case Some(order) => order match {
           case "recently_added" => "dateCreated"
-          // TODO time period
+//          case "chronology_asc" => "about.sameAs"
+//          case "chronology_desc" => "about.sameAs"
           case _ => "dateCreated"
         }
         case None => "dateCreated"
@@ -41,7 +42,8 @@ object PssParamValidator extends ParamValidator with PssFields {
       val sortOrder: String = unprocessed.get("order") match {
         case Some(order) => order match {
           case "recently_added" => "desc"
-          // TODO time period
+//          case "chronology_asc" => "asc"
+//          case "chronology_desc" => "desc"
           case _ => "desc"
         }
         case None => "desc"

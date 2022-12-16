@@ -285,8 +285,7 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
 
   "sort by recently added" should {
 
-    "return sets by dateCreated descending" in {
-
+    "sort correctly" in {
       implicit val request: HttpRequest =
         Get(s"/v2/pss/sets?api_key=$fakeApiKey&order=recently_added")
 
@@ -298,5 +297,12 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
         dates.zip(sorted).foreach{ case(d1, d2) => assert(d1==d2) }
       }
     }
+  }
+
+  "sort by time period" should {
+
+//    "sort correctly ascending"
+//
+//    "sort correctly descending"
   }
 }

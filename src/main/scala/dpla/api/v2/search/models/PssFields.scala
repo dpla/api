@@ -75,6 +75,15 @@ trait PssFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DataField(
+      name = "about.sameAs",
+      fieldType = TextField,
+      searchable = false,
+      facetable = false,
+      sortable = true,
+      elasticSearchDefault = "about.sameAs",
+      elasticSearchNotAnalyzed = Some("about.sameAs")
+    ),
+    DataField(
       name = "author",
       fieldType = WildcardField,
       searchable = false,
