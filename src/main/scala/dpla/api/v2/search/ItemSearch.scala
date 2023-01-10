@@ -1,10 +1,13 @@
 package dpla.api.v2.search
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dpla.api.v2.search.SearchProtocol.{SearchCommand, IntermediateSearchResult}
+import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, SearchCommand}
+import dpla.api.v2.search.mappings.DPLAMAPMapper
+import dpla.api.v2.search.paramValidators.ItemParamValidator
+import dpla.api.v2.search.queryBuilders.DPLAMAPQueryBuilder
 
 /**
- * Handles control flow for conducting ebook searches and fetches.
+ * Handles control flow for conducting item searches and fetches.
  * Public interface for the package.
  */
 object ItemSearch extends SearchBehavior {
@@ -33,7 +36,7 @@ object ItemSearch extends SearchBehavior {
                                   elasticSearchClient: ActorRef[IntermediateSearchResult]
                                 ): ActorRef[IntermediateSearchResult] =
     context.spawn(
-      QueryBuilder(elasticSearchClient), "ItemQueryBuilder"
+      DPLAMAPQueryBuilder(elasticSearchClient), "ItemQueryBuilder"
     )
 
   override def spawnSearchParamValidator(

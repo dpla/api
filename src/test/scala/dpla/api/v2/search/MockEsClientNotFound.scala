@@ -14,7 +14,7 @@ object MockEsClientNotFound {
         replyTo ! SearchFailure
         Behaviors.same
 
-      case FetchQuery(_, replyTo) =>
+      case FetchQuery(_, _, _, replyTo) =>
         replyTo ! FetchNotFound
         Behaviors.same
 

@@ -21,8 +21,8 @@ object MockEboookEsClientSuccess extends FileReader {
         nextPhase ! SearchQueryResponse(params, searchBody, replyTo)
         Behaviors.same
 
-      case FetchQuery(_, replyTo) =>
-        nextPhase ! FetchQueryResponse(fetchBody, replyTo)
+      case FetchQuery(_, params, _, replyTo) =>
+        nextPhase ! FetchQueryResponse(params, fetchBody, replyTo)
         Behaviors.same
 
       case MultiFetchQuery(_, replyTo) =>

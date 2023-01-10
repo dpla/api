@@ -6,21 +6,18 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
+import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.email.{EmailClient, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, JsonFieldReader, MockEbookSearch, MockEboookEsClientSuccess, MockItemEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.mappings.JsonFieldReader
+import dpla.api.v2.search.{MockEbookSearch, MockItemEsClientSuccess, MockItemSearch}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
 
 class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
-  with JsonFieldReader {
+  with JsonFieldReader with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit
@@ -29,35 +26,24 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-  val emailClient: ActorRef[EmailClient.EmailClientCommand] =
-    testKit.spawn(MockEmailClientSuccess())
-  val mapper = testKit.spawn(DPLAMAPMapper())
-  val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
-  val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(mapper))
-
-  val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit, Some(postgresClient))
-
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   val itemSearch: ActorRef[SearchCommand] =
-    MockItemSearch(testKit, Some(itemElasticSearchClient), Some(mapper))
+    MockItemSearch(testKit, Some(itemElasticSearchClient), Some(dplaMapMapper))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
+    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
-  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
+  val apiKeyRegistryWithEmailSuccess: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
 
-  val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, analyticsClient, Some(itemSearch))
+  val itemRegistryEsSuccess: ActorRef[SearchRegistryCommand] =
+    MockItemRegistry(testKit, authenticator, itemAnalyticsClient, Some(itemSearch))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry, apiKeyRegistryWithEmailSuccess)
+      .applicationRoutes
 
   "/v2/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {

@@ -3,23 +3,20 @@ package dpla.api.v2.registry
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.analytics.AnalyticsClient.{AnalyticsClientCommand, TrackFetch, TrackSearch}
-import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
+import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackSearch}
+import dpla.api.v2.authentication.AuthProtocol._
 import dpla.api.v2.authentication._
-import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.search.SearchProtocol.{DPLAMAPFetchResult, DPLAMAPMultiFetchResult, DPLAMAPRandomResult, DPLAMAPSearchResult, Fetch, FetchNotFound, InvalidSearchParams, Random, Search, SearchCommand, SearchFailure}
-import dpla.api.v2.search._
+import dpla.api.v2.registry.RegistryProtocol._
+import dpla.api.v2.search.SearchProtocol._
+import dpla.api.v2.search.mappings.MappedResponse
 
 
-final case class SearchResult(result: DPLADocList) extends RegistryResponse
-final case class FetchResult(result: SingleDPLADoc) extends RegistryResponse
-final case class MultiFetchResult(result: DPLADocList) extends RegistryResponse
-final case class RandomResult(result: DPLADocList) extends RegistryResponse
+final case class SearchResult(result: MappedResponse) extends RegistryResponse
 
 sealed trait SearchRegistryCommand
 
 final case class RegisterSearch(
-                                 apiKey: Option[String],
+                                 apiKey: Option[String] = None,
                                  rawParams: Map[String, String],
                                  host: String,
                                  path: String,
@@ -27,7 +24,7 @@ final case class RegisterSearch(
                                ) extends SearchRegistryCommand
 
 final case class RegisterFetch(
-                                apiKey: Option[String],
+                                apiKey: Option[String] = None,
                                 id: String,
                                 rawParams: Map[String, String],
                                 host: String,
@@ -36,7 +33,7 @@ final case class RegisterFetch(
                               ) extends SearchRegistryCommand
 
 final case class RegisterRandom(
-                                 apiKey: Option[String],
+                                 apiKey: Option[String] = None,
                                  rawParams: Map[String, String],
                                  replyTo: ActorRef[RegistryResponse]
                                ) extends SearchRegistryCommand
@@ -45,9 +42,6 @@ trait SearchRegistryBehavior {
 
   def spawnSearchActor(context: ActorContext[SearchRegistryCommand]):
     ActorRef[SearchCommand]
-
-  // Used in analytics tracking
-  def searchType: String
 
   def apply(
              authenticator: ActorRef[AuthenticationCommand],
@@ -108,7 +102,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var searchResult: Option[DPLADocList] = None
+      var searchResult: Option[MappedResponse] = None
       var searchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -122,12 +116,11 @@ trait SearchRegistryBehavior {
 
             // If the search was successful...
             searchResult match {
-              case Some(dplaDocList) =>
+              case Some(mappedResponse) =>
                 // ...and if account is not staff/internal...
                 if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
                   // ...track analytics hit
-                  analyticsClient ! TrackSearch(rawParams, host, path,
-                    dplaDocList.docs, searchType)
+                  analyticsClient ! TrackSearch(rawParams, host, path, mappedResponse)
                 }
               case None => // no-op
             }
@@ -177,9 +170,9 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case DPLAMAPSearchResult(dplaDocList) =>
-          searchResult = Some(dplaDocList)
-          searchResponse = Some(SearchResult(dplaDocList))
+        case MappedSearchResult(mappedResponse) =>
+          searchResult = Some(mappedResponse)
+          searchResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
@@ -216,7 +209,7 @@ trait SearchRegistryBehavior {
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var fetchResult: Option[Either[SingleDPLADoc, DPLADocList]] = None
+      var fetchResult: Option[MappedResponse] = None
       var fetchResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -230,19 +223,11 @@ trait SearchRegistryBehavior {
 
             // If the fetch was successful...
             fetchResult match {
-              case Some(either) =>
+              case Some(mapped) =>
                 // ...and if account is not staff/internal...
-                if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la")) {
+                if (!account.staff.getOrElse(false) && !account.email.endsWith("@dp.la"))
                   // ...track analytics hit.
-                  either match {
-                    case Left(singleDPLADoc) =>
-                      analyticsClient ! TrackFetch(host, path,
-                        singleDPLADoc.docs.headOption, searchType)
-                    case Right(dplaDocList) =>
-                      analyticsClient ! TrackSearch(rawParams, host, path,
-                        dplaDocList.docs, searchType)
-                  }
-                }
+                  analyticsClient ! TrackSearch(rawParams, host, path, mapped)
               case None => // no-op
             }
             Behaviors.stopped
@@ -291,14 +276,14 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case DPLAMAPFetchResult(singleDPLADoc) =>
-          fetchResult = Some(Left(singleDPLADoc))
-          fetchResponse = Some(FetchResult(singleDPLADoc))
+        case MappedFetchResult(mappedResponse) =>
+          fetchResult = Some(mappedResponse)
+          fetchResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
-        case DPLAMAPMultiFetchResult(dplaDocList) =>
-          fetchResult = Some(Right(dplaDocList))
-          fetchResponse = Some(MultiFetchResult(dplaDocList))
+        case MappedMultiFetchResult(mappedResponse) =>
+          fetchResult = Some(mappedResponse)
+          fetchResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>
@@ -322,15 +307,14 @@ trait SearchRegistryBehavior {
   private def processRandom(
                              apiKey: Option[String],
                              rawParams: Map[String, String],
-                             replyTo: ActorRef[RegistryProtocol.RegistryResponse],
-                             authenticator: ActorRef[AuthProtocol.AuthenticationCommand],
-                             searchActor: ActorRef[SearchProtocol.SearchCommand],
+                             replyTo: ActorRef[RegistryResponse],
+                             authenticator: ActorRef[AuthenticationCommand],
+                             searchActor: ActorRef[SearchCommand],
                            ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
 
       var authorizedAccount: Option[Account] = None
-      var randomResult: Option[Either[SingleDPLADoc, DPLADocList]] = None
       var randomResponse: Option[RegistryResponse] = None
 
       // This behavior is invoked if either the API key has been authorized
@@ -387,9 +371,8 @@ trait SearchRegistryBehavior {
          * Routes.
          */
 
-        case DPLAMAPRandomResult(dplaDocList) =>
-          randomResult = Some(Right(dplaDocList))
-          randomResponse = Some(RandomResult(dplaDocList))
+        case MappedRandomResult(mappedResponse) =>
+          randomResponse = Some(SearchResult(mappedResponse))
           possibleSessionResolution
 
         case InvalidSearchParams(message) =>

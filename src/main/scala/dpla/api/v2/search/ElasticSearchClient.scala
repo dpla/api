@@ -5,7 +5,8 @@ import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 import dpla.api.v2.search.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
-import dpla.api.v2.search.SearchProtocol.{FetchNotFound, FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, RandomQuery, RandomQueryResponse, SearchFailure, SearchQuery, SearchQueryResponse, SearchResponse, ValidFetchIds}
+import dpla.api.v2.search.SearchProtocol._
+import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 
 import scala.concurrent.Future
@@ -37,10 +38,10 @@ object ElasticSearchClient {
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
-        case FetchQuery(id, replyTo) =>
+        case FetchQuery(id, params, query, replyTo) =>
           // Create a session child actor to process the request.
-          val sessionChildActor = processFetch(id, endpoint, replyTo,
-            responseHandler, nextPhase)
+          val sessionChildActor = processFetch(id, params, query, endpoint,
+            replyTo, responseHandler, nextPhase)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
 
@@ -122,6 +123,8 @@ object ElasticSearchClient {
 
   private def processFetch(
                             id: String,
+                            params: Option[FetchParams],
+                            query: Option[JsValue],
                             endpoint: String,
                             replyTo: ActorRef[SearchResponse],
                             responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
@@ -145,7 +148,7 @@ object ElasticSearchClient {
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
         case ElasticSearchSuccess(body) =>
-          nextPhase ! FetchQueryResponse(body, replyTo)
+          nextPhase ! FetchQueryResponse(params, body, replyTo)
           Behaviors.stopped
 
         case ElasticSearchHttpError(statusCode) =>

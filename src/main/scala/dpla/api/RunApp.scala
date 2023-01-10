@@ -4,11 +4,10 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.api.v2.analytics._
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.Authenticator
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry._
 
 import scala.util.{Failure, Success}
 
@@ -45,28 +44,41 @@ object RunApp {
       val authenticator: ActorRef[AuthenticationCommand] =
         context.spawn(Authenticator(), "Authenticator")
 
-      val analyticsClient: ActorRef[AnalyticsClientCommand] =
-        context.spawn(AnalyticsClient(), "AnalyticsClient")
+      val ebookAnalyticsClient: ActorRef[AnalyticsClientCommand] =
+        context.spawn(EbookAnalyticsClient(), "EbookAnalyticsClient")
+
+      val itemAnalyticsClient: ActorRef[AnalyticsClientCommand] =
+        context.spawn(ItemAnalyticsClient(), "ItemAnalyticsClient")
+
+      val pssAnalyticsClient: ActorRef[AnalyticsClientCommand] =
+        context.spawn(PssAnalyticsClient(), "PssAnalyticsClient")
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
         context.spawn(
-          EbookRegistry(authenticator, analyticsClient), "EbookRegistry"
+          EbookRegistry(authenticator, ebookAnalyticsClient), "EbookRegistry"
         )
 
       val itemRegistry: ActorRef[SearchRegistryCommand] =
         context.spawn(
-          ItemRegistry(authenticator, analyticsClient), "ItemRegistry"
+          ItemRegistry(authenticator, itemAnalyticsClient), "ItemRegistry"
+        )
+
+      val pssRegistry: ActorRef[SearchRegistryCommand] =
+        context.spawn(
+          PssRegistry(authenticator, pssAnalyticsClient), name = "PssRegsitry"
         )
 
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         context.spawn(ApiKeyRegistry(authenticator), "ApiKeyRegistry")
 
       context.watch(ebookRegistry)
+      context.watch(itemRegistry)
+      context.watch(pssRegistry)
       context.watch(apiKeyRegistry)
 
       // Start the HTTP server.
       val routes =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry)(context.system)
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
 

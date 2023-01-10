@@ -14,6 +14,4 @@ object EbookRegistry extends SearchRegistryBehavior {
                                  context: ActorContext[SearchRegistryCommand]
                                ): ActorRef[SearchCommand] =
     context.spawn(EbookSearch(), "EbookSearch")
-
-  override val searchType: String = "Ebook"
 }

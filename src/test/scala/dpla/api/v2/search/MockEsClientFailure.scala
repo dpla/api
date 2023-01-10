@@ -13,7 +13,7 @@ object MockEsClientFailure {
         replyTo ! SearchFailure
         Behaviors.same
 
-      case FetchQuery(_, replyTo) =>
+      case FetchQuery(_, _, _, replyTo) =>
         replyTo ! SearchFailure
         Behaviors.same
 

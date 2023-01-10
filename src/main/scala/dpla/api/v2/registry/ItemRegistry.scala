@@ -14,6 +14,4 @@ object ItemRegistry extends SearchRegistryBehavior {
                                  context: ActorContext[SearchRegistryCommand]
                                ): ActorRef[SearchCommand] =
     context.spawn(ItemSearch(), "ItemSearch")
-
-  override val searchType: String = "Item"
 }

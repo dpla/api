@@ -7,19 +7,16 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
+import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
-import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess}
+import dpla.api.v2.registry.{MockEbookRegistry, SearchRegistryCommand}
+import dpla.api.v2.search.MockEbookSearch
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class PermittedMediaTypesTest extends AnyWordSpec with Matchers
-  with ScalatestRouteTest {
+  with ScalatestRouteTest with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -28,29 +25,15 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
-  val postgresClient = testKit.spawn(MockPostgresClientSuccess())
-  val mapper = testKit.spawn(DPLAMAPMapper())
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
-
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
-
-  val authenticator: ActorRef[AuthenticationCommand] =
-    MockAuthenticator(testKit, Some(postgresClient))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
-
-  val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-    MockApiKeyRegistry(testKit, authenticator)
-
-  val itemRegistry: ActorRef[SearchRegistryCommand] =
-    MockItemRegistry(testKit, authenticator, analyticsClient)
+    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
+      .applicationRoutes
 
   "/v2/ebooks route" should {
     "reject invalid media types" in {

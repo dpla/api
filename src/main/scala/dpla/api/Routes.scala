@@ -13,19 +13,25 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, Respons
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.util.{Failure, Success}
-import dpla.api.v2.search.JsonFormats._
+import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
+import dpla.api.v2.search.mappings.PssJsonFormats._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, NotFoundFailure, RegistryResponse, ValidationFailure}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, CreateApiKey, DisabledApiKey, ExistingApiKey, FetchResult, MultiFetchResult, NewApiKey, RandomResult, RegisterFetch, RegisterRandom, RegisterSearch, SearchRegistryCommand, SearchResult}
+import dpla.api.v2.registry.RegistryProtocol._
+import dpla.api.v2.registry._
+import dpla.api.v2.search.mappings._
 import org.slf4j.{Logger, LoggerFactory}
+
 import spray.json.enrichAny
 
 
 class Routes(
               ebookRegistry: ActorRef[SearchRegistryCommand],
               itemRegistry: ActorRef[SearchRegistryCommand],
+              pssRegistry: ActorRef[SearchRegistryCommand],
               apiKeyRegistry: ActorRef[ApiKeyRegistryCommand]
             )(implicit val system: ActorSystem[_]) {
+
+  import spray.json.DefaultJsonProtocol._
 
   // If ask takes more time than this to complete the request is failed
   private implicit val timeout: Timeout = Timeout.create(
@@ -100,6 +106,44 @@ class Routes(
     itemRegistry.ask(RegisterRandom(apiKey, cleanParams, _))
   }
 
+  def searchPss(
+                 auth: Option[String],
+                 params: Map[String, String],
+                 host: String,
+                 path: String
+               ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params)
+    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+  }
+
+  def fetchPssSet(
+                   auth: Option[String],
+                   id: String,
+                   params: Map[String, String],
+                   host: String,
+                   path: String
+                 ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params + ("id" -> id))
+    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+  }
+
+  def fetchPssSource(
+                      auth: Option[String],
+                      id: String,
+                      params: Map[String, String],
+                      host: String,
+                      path: String
+                    ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params + ("hasPart.id" -> id))
+    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+  }
+
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
     if (auth.nonEmpty) auth
     else params.get("api_key")
@@ -112,7 +156,7 @@ class Routes(
     apiKeyRegistry.ask(CreateApiKey(email, _))
 
   // Log the URL with the API key or email address redacted
-  private def logURL(uri: Uri) =
+  private def logURL(uri: Uri): Unit =
     log.info(uri.toString
       .replaceAll("api_key=[^&]*", "api_key=REDACTED")
       .replaceAll("/api_key/.*", "/api_key/REDACTED"))
@@ -121,12 +165,14 @@ class Routes(
     concat (
       pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("items")(itemsRoutes),
+      pathPrefix("pss")(pssRoutes),
       pathPrefix("api_key")(apiKeyRoute),
       pathPrefix("random")(randomRoute),
       pathPrefix("v2") {
         concat(
           pathPrefix("ebooks")(ebooksRoutes),
           pathPrefix("items")(itemsRoutes),
+          pathPrefix("pss")(pssRoutes),
           pathPrefix("api_key")(apiKeyRoute),
           pathPrefix("random")(randomRoute)
         )
@@ -148,27 +194,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(searchEbooks(auth, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case SearchResult(ebookList) =>
-                              complete(ebookList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /ebooks received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /ebooks failed to get response from Registry:", e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -190,32 +218,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case FetchResult(singleEbook) =>
-                              complete(singleEbook)
-                            case MultiFetchResult(ebookList) =>
-                              complete(ebookList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case NotFoundFailure =>
-                              complete(notFoundResponse)
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /ebooks/[ID] received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /ebooks/[ID] failed to get response from Registry:",
-                            e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -241,27 +246,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(searchItems(auth, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case SearchResult(itemList) =>
-                              complete(itemList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /items received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /items failed to get response from Registry:", e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -283,32 +270,9 @@ class Routes(
                     respondWithHeaders(securityResponseHeaders) {
                       onComplete(fetchItems(auth, id, params, host, path.toString)) {
                         case Success(response) =>
-                          response match {
-                            case FetchResult(singleItem) =>
-                              complete(singleItem)
-                            case MultiFetchResult(itemList) =>
-                              complete(itemList)
-                            case ForbiddenFailure =>
-                              complete(forbiddenResponse)
-                            case ValidationFailure(message) =>
-                              complete(badRequestResponse(message))
-                            case NotFoundFailure =>
-                              complete(notFoundResponse)
-                            case InternalFailure =>
-                              complete(internalErrorResponse)
-                            case _ =>
-                              log.error(
-                                "Routes /items/[ID] received unexpected RegistryResponse {}",
-                                response.getClass.getName
-                              )
-                              complete(internalErrorResponse)
-                          }
+                          renderRegistryResponse(response, path.toString)
                         case Failure(e) =>
-                          log.error(
-                            "Routes /items/[ID] failed to get response from Registry:",
-                            e
-                          )
-                          complete(internalErrorResponse)
+                          renderRegistryFailure(e, path.toString)
                       }
                     }
                   }
@@ -320,6 +284,88 @@ class Routes(
       }
     )
 
+  lazy val pssRoutes: Route =
+    concat(
+      pathPrefix("sets")(
+        concat(
+          pathEnd {
+            extractUri { uri =>
+              logURL(uri)
+              get {
+                extractHost { host =>
+                  extractMatchedPath { path =>
+                    parameterMap { params =>
+                      // Get the API key from Authorization header if it exists.
+                      optionalHeaderValueByName("Authorization") { auth =>
+                        respondWithHeaders(securityResponseHeaders) {
+                          onComplete(searchPss(auth, params, host, path.toString)) {
+                            case Success(response) =>
+                              renderRegistryResponse(response, path.toString)
+                            case Failure(e) =>
+                              renderRegistryFailure(e, path.toString)
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          path(Segment) { id =>
+            get {
+              extractUri { uri =>
+                logURL(uri)
+                extractHost { host =>
+                  extractMatchedPath { path =>
+                    parameterMap { params =>
+                      // Get the API key from Authorization header if it exists.
+                      optionalHeaderValueByName("Authorization") { auth =>
+                        respondWithHeaders(securityResponseHeaders) {
+                          onComplete(fetchPssSet(auth, id, params, host, path.toString)) {
+                            case Success(response) =>
+                              renderRegistryResponse(response, path.toString)
+                            case Failure(e) =>
+                              renderRegistryFailure(e, path.toString)
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        )
+      ),
+      pathPrefix("sources")(
+        path(Segment) { id =>
+          get {
+            extractUri { uri =>
+              logURL(uri)
+              extractHost { host =>
+                extractMatchedPath { path =>
+                  parameterMap { params =>
+                    // Get the API key from Authorization header if it exists.
+                    optionalHeaderValueByName("Authorization") { auth =>
+                      respondWithHeaders(securityResponseHeaders) {
+                        onComplete(fetchPssSource(auth, id, params, host, path.toString)) {
+                          case Success(response) =>
+                            renderRegistryResponse(response, path.toString)
+                          case Failure(e) =>
+                            renderRegistryFailure(e, path.toString)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      )
+    )
+
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
@@ -328,23 +374,9 @@ class Routes(
           respondWithHeaders(securityResponseHeaders) {
             onComplete(createApiKey(email)) {
               case Success(response) =>
-                response match {
-                  case NewApiKey(email) =>
-                    complete(newKeyMessage(email))
-                  case ExistingApiKey(email) =>
-                    complete(existingKeyResponse(email))
-                  case DisabledApiKey(email) =>
-                    complete(disabledKeyResponse(email))
-                  case ValidationFailure(message) =>
-                    complete(badRequestResponse(message))
-                  case InternalFailure =>
-                    complete(internalErrorResponse)
-                }
+                renderRegistryResponse(response, "/api_key")
               case Failure(e) =>
-                log.error(
-                  "Routes /api_key failed to get response from Registry:", e
-                )
-                complete(internalErrorResponse)
+                renderRegistryFailure(e, "/api_key")
             }
           }
         }
@@ -361,27 +393,9 @@ class Routes(
             respondWithHeaders(securityResponseHeaders) {
               onComplete(randomItem(auth, params)) {
                 case Success(response) =>
-                  response match {
-                    case RandomResult(singleItem) =>
-                      complete(singleItem)
-                    case ForbiddenFailure =>
-                      complete(forbiddenResponse)
-                    case ValidationFailure(message) =>
-                      complete(badRequestResponse(message))
-                    case InternalFailure =>
-                      complete(internalErrorResponse)
-                    case _ =>
-                      log.error(
-                        "Routes /random received unexpected RegistryResponse {}",
-                        response.getClass.getName
-                      )
-                      complete(internalErrorResponse)
-                  }
+                  renderRegistryResponse(response, "/random")
                 case Failure(e) =>
-                  log.error(
-                    "Routes /random failed to get response from Registry:", e
-                  )
-                  complete(internalErrorResponse)
+                  renderRegistryFailure(e, "/random")
               }
             }
           }
@@ -393,6 +407,61 @@ class Routes(
     get {
       complete(OK)
     }
+
+  private def renderRegistryFailure(error: Throwable, path: String): Route = {
+    log.error(
+      "Routes {} failed to get response from Registry:", path, error
+    )
+    complete(internalErrorResponse)
+  }
+
+  private def renderRegistryResponse(response: RegistryResponse, path: String): Route =
+    response match {
+      case SearchResult(result) =>
+        renderMappedResponse(result)
+      case NewApiKey(email) =>
+        complete(newKeyMessage(email))
+      case ExistingApiKey(email) =>
+        complete(existingKeyResponse(email))
+      case DisabledApiKey(email) =>
+        complete(disabledKeyResponse(email))
+      case NotFoundFailure =>
+        complete(notFoundResponse)
+      case ForbiddenFailure =>
+        complete(forbiddenResponse)
+      case ValidationFailure(message) =>
+        complete(badRequestResponse(message))
+      case InternalFailure =>
+        complete(internalErrorResponse)
+      case _ =>
+        log.error(
+          "Routes {} received unexpected RegistryResponse {}",
+          path,
+          response.getClass.getName
+        )
+        complete(internalErrorResponse)
+    }
+
+  /**
+   * Helper methods for rendering mapped objects.
+   * Mapped objects must be correctly cast.
+   */
+  private def renderMappedResponse(mapped: MappedResponse): Route = {
+    mapped match {
+      case dplaList: DPLADocList => complete(dplaList)
+      case dplaDoc: SingleDPLADoc => complete(dplaDoc)
+      case pssList: PssSetList => complete(pssList)
+      case pssDoc: PssSet => complete(pssDoc)
+      case pssPart: PssPart => complete(pssPart)
+      case _ =>
+        val objType = mapped.getClass.getName
+        log.error(
+          "There was an error casting {} to a MappedResponse type.",
+          objType
+        )
+        complete(internalErrorResponse)
+    }
+  }
 
   // @see https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
   // @see https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html

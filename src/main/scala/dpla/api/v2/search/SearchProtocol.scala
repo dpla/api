@@ -1,6 +1,8 @@
 package dpla.api.v2.search
 
 import akka.actor.typed.ActorRef
+import dpla.api.v2.search.mappings.MappedResponse
+import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 
 object SearchProtocol {
@@ -27,21 +29,21 @@ object SearchProtocol {
   /** Public response protocol */
   sealed trait SearchResponse
 
-  final case class DPLAMAPSearchResult(
-                                        dplaDocList: DPLADocList
-                                      ) extends SearchResponse
-
-  final case class DPLAMAPFetchResult(
-                                       singleDPLADoc: SingleDPLADoc
+  final case class MappedSearchResult(
+                                       mappedResponse: MappedResponse
                                      ) extends SearchResponse
 
-  final case class DPLAMAPMultiFetchResult(
-                                            dplaDocList: DPLADocList
-                                          ) extends SearchResponse
+  final case class MappedFetchResult(
+                                      mappedResponse: MappedResponse
+                                    ) extends SearchResponse
 
-  final case class DPLAMAPRandomResult(
-                                        dplaDocList: DPLADocList
-                                      ) extends SearchResponse
+  final case class MappedMultiFetchResult(
+                                           mappedResponse: MappedResponse
+                                         ) extends SearchResponse
+
+  final case class MappedRandomResult(
+                                       mappedResponse: MappedResponse
+                                     ) extends SearchResponse
 
   final case class InvalidSearchParams(
                                         message: String
@@ -77,10 +79,11 @@ object SearchProtocol {
                                                       replyTo: ActorRef[SearchResponse]
                                                     ) extends IntermediateSearchResult
 
-  private[search] final case class ValidFetchIds(
-                                                  ids: Seq[String],
-                                                  replyTo: ActorRef[SearchResponse]
-                                                ) extends IntermediateSearchResult
+  private[search] final case class ValidFetchParams(
+                                                     ids: Seq[String],
+                                                     params: Option[FetchParams] = None,
+                                                     replyTo: ActorRef[SearchResponse]
+                                                   ) extends IntermediateSearchResult
 
   private[search] final case class ValidRandomParams(
                                                       params: RandomParams,
@@ -95,6 +98,8 @@ object SearchProtocol {
 
   private[search] final case class FetchQuery(
                                                id: String,
+                                               params: Option[FetchParams] = None,
+                                               query: Option[JsValue] = None,
                                                replyTo: ActorRef[SearchResponse]
                                              ) extends IntermediateSearchResult
 
@@ -116,6 +121,7 @@ object SearchProtocol {
                                                       ) extends IntermediateSearchResult
 
   private[search] final case class FetchQueryResponse(
+                                                       params: Option[FetchParams],
                                                        esResponseBody: String,
                                                        replyTo: ActorRef[SearchResponse]
                                                      ) extends IntermediateSearchResult

@@ -6,19 +6,16 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
+import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.analytics.AnalyticsClient
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
-import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
-import dpla.api.v2.authentication.{MockAuthenticator, MockPostgresClientDisabled, MockPostgresClientKeyNotFound}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, SearchRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.{DPLAMAPMapper, MockEbookSearch, MockEboookEsClientSuccess}
+import dpla.api.v2.search.MockEbookSearch
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
-  with ScalatestRouteTest {
+  with ScalatestRouteTest with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit
@@ -27,32 +24,24 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val analyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(AnalyticsClient())
-  val mapper = testKit.spawn(DPLAMAPMapper())
-  val elasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(mapper))
+  val apiKeyRegistryKeyNotFound: ActorRef[ApiKeyRegistryCommand] =
+    MockApiKeyRegistry(testKit, authenticatorKeyNotFound)
+
+  val apiKeyRegistryDisabled: ActorRef[ApiKeyRegistryCommand] =
+    MockApiKeyRegistry(testKit, authenticatorDisabled)
 
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(elasticSearchClient), Some(mapper))
+    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
 
   "/v2/ebooks route" should {
     "return Forbidden if API key not found" in {
-      val postgresClient = testKit.spawn(MockPostgresClientKeyNotFound())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
-
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
-
-      val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, analyticsClient)
+        MockEbookRegistry(testKit, authenticatorKeyNotFound, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryKeyNotFound)
+          .applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -63,22 +52,13 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     }
 
     "return Forbidden if API key disabled" in {
-      val postgresClient = testKit.spawn(MockPostgresClientDisabled())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
-
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
-
-      val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, analyticsClient)
+        MockEbookRegistry(testKit, authenticatorDisabled, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryDisabled)
+          .applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -91,22 +71,13 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
 
   "/v2/ebooks[id] route" should {
     "return Forbidden if API key not found" in {
-      val postgresClient = testKit.spawn(MockPostgresClientKeyNotFound())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
-
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
-
-      val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, analyticsClient)
+        MockEbookRegistry(testKit, authenticatorKeyNotFound, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryKeyNotFound)
+          .applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
@@ -117,22 +88,13 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
     }
 
     "return Forbidden if API key disabled" in {
-      val postgresClient = testKit.spawn(MockPostgresClientDisabled())
-
-      val authenticator: ActorRef[AuthenticationCommand] =
-        MockAuthenticator(testKit, Some(postgresClient))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsClient, Some(ebookSearch))
-
-      val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
-        MockApiKeyRegistry(testKit, authenticator)
-
-      val itemRegistry: ActorRef[SearchRegistryCommand] =
-        MockItemRegistry(testKit, authenticator, analyticsClient)
+        MockEbookRegistry(testKit, authenticatorDisabled, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryDisabled)
+          .applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 

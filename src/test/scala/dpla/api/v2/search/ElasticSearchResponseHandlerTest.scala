@@ -19,6 +19,7 @@ class ElasticSearchResponseHandlerTest extends AnyWordSpec with Matchers
 
   val responseHandler: ActorRef[ElasticSearchResponseHandlerCommand] =
     testKit.spawn(ElasticSearchResponseHandler())
+
   val probe: TestProbe[ElasticSearchResponse] =
     testKit.createTestProbe[ElasticSearchResponse]()
 

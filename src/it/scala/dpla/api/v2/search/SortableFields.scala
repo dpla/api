@@ -7,11 +7,10 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ITUtils.fakeApiKey
-import dpla.api.v2.analytics.{AnalyticsClient, ITMockAnalyticsClient}
-import dpla.api.v2.analytics.AnalyticsClient.AnalyticsClientCommand
+import dpla.api.v2.analytics.{AnalyticsClientCommand, ITMockAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, PssRegistry, SearchRegistryCommand}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -50,8 +49,11 @@ class SortableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
   val itemRegistry: ActorRef[SearchRegistryCommand] =
     testKit.spawn(ItemRegistry(authenticator, analyticsClient))
 
+  val pssRegistry: ActorRef[SearchRegistryCommand] =
+    testKit.spawn(PssRegistry(authenticator, analyticsClient))
+
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
 
   val sortableFields = Seq(
     "@id",
