@@ -1,13 +1,12 @@
 package dpla.api.v2.search.mappings
 
 import spray.json._
-import DPLAMAPJsonFormats._
 import scala.annotation.tailrec
 
 /**
  * Methods for reading JSON
  */
-trait JsonFieldReader {
+trait JsonFieldReader extends DefaultJsonProtocol {
 
   /** Public methods
    * These methods take a root JsObject and a path of zero to many children

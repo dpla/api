@@ -1,6 +1,6 @@
 package dpla.api.v2.search.mappings
 
-import dpla.api.v2.search.mappings.JsonFormatsHelper.filterIfEmpty
+import dpla.api.v2.search.mappings.JsonFormatsHelper._
 import dpla.api.v2.search.models.DPLAMAPFields
 import spray.json._
 
@@ -8,7 +8,7 @@ import spray.json._
  * These formats are used for parsing ElasticSearch responses and mapping them
  * to DPLA MAP.
  */
-object DPLAMAPJsonFormats extends DefaultJsonProtocol with JsonFieldReader
+object DPLAMAPJsonFormats extends JsonFieldReader
   with DPLAMAPFields {
 
   implicit object BucketFormat extends RootJsonFormat[Bucket] {

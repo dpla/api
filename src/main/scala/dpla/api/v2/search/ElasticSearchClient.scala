@@ -5,7 +5,7 @@ import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse}
 import dpla.api.v2.search.ElasticSearchResponseHandler.{ElasticSearchResponseHandlerCommand, ProcessElasticSearchResponse}
-import dpla.api.v2.search.SearchProtocol.{FetchNotFound, FetchQuery, FetchQueryResponse, IntermediateSearchResult, MultiFetchQuery, MultiFetchQueryResponse, RandomQuery, RandomQueryResponse, SearchFailure, SearchQuery, SearchQueryResponse, SearchResponse, ValidFetchParams}
+import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 

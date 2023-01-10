@@ -8,7 +8,7 @@ import spray.json._
  * These formats are used for parsing ElasticSearch responses and mapping them
  * to Primary Source Sets output.
  */
-object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
+object PssJsonFormats extends JsonFieldReader
   with PssFields {
 
   implicit object PssSourceFormat extends RootJsonFormat[PssPart] {
