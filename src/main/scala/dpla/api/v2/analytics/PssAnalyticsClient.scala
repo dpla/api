@@ -22,17 +22,4 @@ object PssAnalyticsClient extends AnalyticsClient {
     val pageViewParams = getPageViewParams(host, pathWithQuery, title, system)
     postHit(system, pageViewParams)
   }
-
-//  override protected def trackFetch(
-//                                     cleanParams: Map[String, String],
-//                                     host: String,
-//                                     path: String,
-//                                     mappedResponse: MappedResponse,
-//                                     system: ActorSystem[Nothing]): Unit = {
-//
-//    // Track pageview
-//    val title = s"Fetch Primary Source Set"
-//    val pageViewParams = getPageViewParams(host, path, title, system)
-//    postHit(system, pageViewParams)
-//  }
 }

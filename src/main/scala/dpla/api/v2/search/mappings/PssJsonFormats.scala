@@ -149,7 +149,7 @@ object PssJsonFormats extends DefaultJsonProtocol with JsonFieldReader
       JsObject(
         "@context" -> pssDocList.`@context`.toJson,
         "@type" -> "ItemList".toJson,
-        "url" -> "foo".toJson, // TODO CHANGE ME
+        // TODO url?
         "numberOfItems" -> pssDocList.numberOfItems.toJson,
         "hasPart" -> pssDocList.hasPart.toJson,
         "itemListElement" -> pssDocList.itemListElement.toJson
