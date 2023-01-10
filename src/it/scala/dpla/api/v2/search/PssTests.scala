@@ -16,7 +16,6 @@ import spray.json._
 
 /**
  * Test that expected fields are sortable in item search.
- * Sort by coordinates is not included here as it requires special syntax.
  */
 class PssTests extends ITHelper with LogCapturing with FileReader {
 
@@ -297,12 +296,5 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
         dates.zip(sorted).foreach{ case(d1, d2) => assert(d1==d2) }
       }
     }
-  }
-
-  "sort by time period" should {
-
-//    "sort correctly ascending"
-//
-//    "sort correctly descending"
   }
 }
