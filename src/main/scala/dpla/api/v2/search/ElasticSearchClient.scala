@@ -26,7 +26,7 @@ object ElasticSearchClient {
       val responseHandler: ActorRef[ElasticSearchResponseHandlerCommand] =
         context.spawn(
           ElasticSearchResponseHandler(),
-          "ElasticSearchResponseProcessor"
+          "ElasticSearchResponseHandler"
         )
 
       Behaviors.receiveMessage[IntermediateSearchResult] {
@@ -74,7 +74,7 @@ object ElasticSearchClient {
                              query: JsValue,
                              endpoint: String,
                              replyTo: ActorRef[SearchResponse],
-                             responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
+                             responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
                              nextPhase: ActorRef[IntermediateSearchResult]
                            ): Behavior[ElasticSearchResponse] = {
 
@@ -98,8 +98,8 @@ object ElasticSearchClient {
         query.toString
       )
 
-      // Send response future to ElasticSearchResponseProcessor
-      responseProcessor ! ProcessElasticSearchResponse(futureResp, context.self)
+      // Send response future to ElasticSearchResponseHandler
+      responseHandler ! ProcessElasticSearchResponse(futureResp, context.self)
 
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
@@ -127,7 +127,7 @@ object ElasticSearchClient {
                             query: Option[JsValue],
                             endpoint: String,
                             replyTo: ActorRef[SearchResponse],
-                            responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
+                            responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
                             nextPhase: ActorRef[IntermediateSearchResult]
                           ): Behavior[ElasticSearchResponse] = {
 
@@ -142,8 +142,8 @@ object ElasticSearchClient {
 
       context.log.info("ElasticSearch fetch QUERY: {}", fetchUri)
 
-      // Send response future to ElasticSearchResponseProcessor
-      responseProcessor ! ProcessElasticSearchResponse(futureResp, context.self)
+      // Send response future to ElasticSearchResponseHandler
+      responseHandler ! ProcessElasticSearchResponse(futureResp, context.self)
 
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
@@ -177,7 +177,7 @@ object ElasticSearchClient {
                                  query: JsValue,
                                  endpoint: String,
                                  replyTo: ActorRef[SearchResponse],
-                                 responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
+                                 responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
                                  nextPhase: ActorRef[IntermediateSearchResult]
                                ): Behavior[ElasticSearchResponse] = {
 
@@ -201,8 +201,8 @@ object ElasticSearchClient {
         query.toString
       )
 
-      // Send response future to ElasticSearchResponseProcessor
-      responseProcessor ! ProcessElasticSearchResponse(futureResp, context.self)
+      // Send response future to ElasticSearchResponseHandler
+      responseHandler ! ProcessElasticSearchResponse(futureResp, context.self)
 
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
@@ -225,12 +225,12 @@ object ElasticSearchClient {
   }
 
   private def processRandom(
-                            params: RandomParams,
-                            query: JsValue,
-                            endpoint: String,
-                            replyTo: ActorRef[SearchResponse],
-                            responseProcessor: ActorRef[ElasticSearchResponseHandlerCommand],
-                            nextPhase: ActorRef[IntermediateSearchResult]
+                             params: RandomParams,
+                             query: JsValue,
+                             endpoint: String,
+                             replyTo: ActorRef[SearchResponse],
+                             responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
+                             nextPhase: ActorRef[IntermediateSearchResult]
                           ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -253,8 +253,8 @@ object ElasticSearchClient {
         query.toString
       )
 
-      // Send response future to ElasticSearchResponseProcessor
-      responseProcessor ! ProcessElasticSearchResponse(futureResp, context.self)
+      // Send response future to ElasticSearchResponseHandler
+      responseHandler ! ProcessElasticSearchResponse(futureResp, context.self)
 
       Behaviors.receiveMessage[ElasticSearchResponse] {
 
