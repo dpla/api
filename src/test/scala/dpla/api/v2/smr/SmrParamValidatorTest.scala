@@ -31,19 +31,19 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
   "smr param validator" should {
     "require service" in {
       val params = Map("post" -> defaultPost, "user" -> defaultUser)
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
     }
 
     "require post" in {
       val params = Map("service" -> defaultService, "user" -> defaultUser)
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
     }
 
     "require user" in {
       val params = Map("service" -> defaultService, "post" -> defaultPost)
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
     }
 
@@ -54,7 +54,7 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "user" -> defaultUser,
         "foo" -> "bar"
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
     }
 
@@ -64,8 +64,8 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "post" -> defaultPost,
         "user" -> defaultUser
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidParams]
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSmrParams]
       msg.params.service should be(defaultService)
     }
 
@@ -75,7 +75,7 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "post" -> defaultPost,
         "user" -> defaultUser
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
     }
 
@@ -85,8 +85,8 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "post" -> defaultPost,
         "user" -> defaultUser
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidParams]
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSmrParams]
       msg.params.post should be(defaultPost)
     }
 
@@ -96,7 +96,7 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "post" -> "<blah>",
         "user" -> defaultUser
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
     }
 
@@ -106,8 +106,8 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "post" -> defaultPost,
         "user" -> defaultUser
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidParams]
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
+      val msg = interProbe.expectMessageType[ValidSmrParams]
       msg.params.user should be(defaultUser)
     }
 
@@ -117,19 +117,8 @@ class SmrParamValidatorTest extends AnyWordSpec with Matchers
         "post" -> defaultPost,
         "user" -> "bad()=user"
       )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
+      smrParamValidator ! RawSmrParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSmrParams]
-    }
-
-    "generate timestamp" in {
-      val params = Map(
-        "service" -> defaultService,
-        "post" -> defaultPost,
-        "user" -> defaultUser
-      )
-      smrParamValidator ! RawParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidParams]
-      msg.params.timestamp should not be empty
     }
   }
 }

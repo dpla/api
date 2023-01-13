@@ -3,7 +3,7 @@ package dpla.api.v2.smr
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.http.scaladsl.model.DateTime
-import dpla.api.v2.smr.SmrProtocol.{IntermediateSmrResult, InvalidSmrParams, RawParams, ValidParams}
+import dpla.api.v2.smr.SmrProtocol.{IntermediateSmrResult, InvalidSmrParams, RawSmrParams, ValidSmrParams}
 
 import scala.util.{Failure, Success, Try}
 
@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 private[smr] case class SmrParams(
                                    post: String,
                                    service: String,
-                                   timestamp: String,
+                                   timestamp: DateTime,
                                    user: String
                                  )
 /**
@@ -30,10 +30,10 @@ object SmrParamValidator {
 
       Behaviors.receiveMessage {
 
-        case RawParams(rawParams, replyTo) =>
+        case RawSmrParams(rawParams, replyTo) =>
           getSmrParams(rawParams) match {
             case Success(smrParams) =>
-              nextPhase ! ValidParams(smrParams, replyTo)
+              nextPhase ! ValidSmrParams(smrParams, replyTo)
             case Failure(e) =>
               context.log.warn2(
                 "Invalid smr params: '{}' for params '{}'",
@@ -90,7 +90,7 @@ object SmrParamValidator {
         service = validService(rawService),
         post = validPost(rawPost),
         user = validUser(rawUser),
-        timestamp = DateTime.now.toIsoDateTimeString()
+        timestamp = DateTime.now
       )
     }
   }

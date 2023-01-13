@@ -1,7 +1,6 @@
 package dpla.api.v2.smr
 
 import akka.actor.typed.ActorRef
-import spray.json.JsValue
 
 object SmrProtocol {
 
@@ -9,10 +8,8 @@ object SmrProtocol {
   sealed trait SmrCommand
 
   final case class ArchivePost(
-                                service: String,
-                                post: String,
-                                user: String,
-                                replyTo: ActorRef[SmrCommand]
+                                params: Map[String, String],
+                                replyTo: ActorRef[SmrResponse]
                               ) extends SmrCommand
 
   /** Public response protocol */
@@ -28,18 +25,19 @@ object SmrProtocol {
    */
   private[smr] trait IntermediateSmrResult
 
-  private[smr] final case class RawParams(
-                                            params: Map[String, String],
-                                            replyTo: ActorRef[SmrResponse]
-                                          ) extends IntermediateSmrResult
+  private[smr] final case class RawSmrParams(
+                                              params: Map[String, String],
+                                              replyTo: ActorRef[SmrResponse]
+                                            ) extends IntermediateSmrResult
 
-  private[smr] final case class ValidParams(
+  private[smr] final case class ValidSmrParams(
                                              params: SmrParams,
                                              replyTo: ActorRef[SmrResponse]
                                            ) extends IntermediateSmrResult
 
-  private[smr] final case class SmrQuery(
-                                          query: JsValue,
-                                          replyTo: ActorRef[SmrResponse]
-                                        ) extends IntermediateSmrResult
+  private[smr] final case class SmrUpload(
+                                           data: String,
+                                           key: String,
+                                           replyTo: ActorRef[SmrResponse]
+                                         ) extends IntermediateSmrResult
 }

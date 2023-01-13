@@ -2,7 +2,7 @@ package dpla.api.v2.smr
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dpla.api.v2.smr.SmrProtocol.{ArchivePost, IntermediateSmrResult, SmrCommand}
+import dpla.api.v2.smr.SmrProtocol.{ArchivePost, IntermediateSmrResult, RawSmrParams, SmrCommand}
 
 trait SmrRequestHandlerBehavior {
 
@@ -37,8 +37,8 @@ trait SmrRequestHandlerBehavior {
 
       Behaviors.receiveMessage[SmrCommand] {
 
-        case ArchivePost(service, post, user, replyTo) =>
-          // TODO
+        case ArchivePost(params, replyTo) =>
+          paramValidator ! RawSmrParams(params, replyTo)
           Behaviors.same
 
         case _ =>

@@ -12,11 +12,12 @@ object SmrRequestHandler extends SmrRequestHandlerBehavior {
                               context: ActorContext[SmrCommand]
                             ): ActorRef[IntermediateSmrResult] = {
 
-    val endpoint: String = context.system.settings.config
+    val bucket: String = context.system.settings.config
       .getString("s3.smrBucket")
+      .stripPrefix("/")
       .stripSuffix("/")
 
-    context.spawn(S3Client(endpoint), "S3Client")
+    context.spawn(S3Client(bucket), "S3Client")
   }
 
   override def spawnQueryBuilder(
@@ -24,7 +25,7 @@ object SmrRequestHandler extends SmrRequestHandlerBehavior {
                                   s3Client: ActorRef[IntermediateSmrResult]
                                 ): ActorRef[IntermediateSmrResult] =
 
-    context.spawn(SmrQueryBuilder(s3Client), "SmrQueryBuilder")
+    context.spawn(SmrDataUploadBuilder(s3Client), "SmrQueryBuilder")
 
   override def spawnParamValidator(
                                     context: ActorContext[SmrCommand],
