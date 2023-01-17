@@ -42,8 +42,8 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockItemRegistry(testKit, authenticator, itemAnalyticsClient, Some(itemSearch))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry, apiKeyRegistryWithEmailSuccess)
-      .applicationRoutes
+    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry,
+      apiKeyRegistryWithEmailSuccess, smrRegistry).applicationRoutes
 
   "/v2/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {

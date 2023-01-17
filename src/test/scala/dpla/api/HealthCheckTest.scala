@@ -25,8 +25,8 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
-      .applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+      smrRegistry).applicationRoutes
 
   "Health check" should {
     "return OK" in {

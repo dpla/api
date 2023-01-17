@@ -32,8 +32,8 @@ class PermittedMediaTypesTest extends AnyWordSpec with Matchers
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
-      .applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+      smrRegistry).applicationRoutes
 
   "/v2/ebooks route" should {
     "reject invalid media types" in {

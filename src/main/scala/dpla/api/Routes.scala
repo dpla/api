@@ -28,7 +28,8 @@ class Routes(
               ebookRegistry: ActorRef[SearchRegistryCommand],
               itemRegistry: ActorRef[SearchRegistryCommand],
               pssRegistry: ActorRef[SearchRegistryCommand],
-              apiKeyRegistry: ActorRef[ApiKeyRegistryCommand]
+              apiKeyRegistry: ActorRef[ApiKeyRegistryCommand],
+              smrRegistry: ActorRef[SmrRegistryCommand]
             )(implicit val system: ActorSystem[_]) {
 
   import spray.json.DefaultJsonProtocol._
@@ -144,6 +145,18 @@ class Routes(
     pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
   }
 
+  def postSrmArchiveRequest(
+                             auth: Option[String],
+                             params: Map[String, String],
+                             host: String,
+                             path: String
+                           ): Future[RegistryResponse] = {
+
+    val apiKey: Option[String] = getApiKey(params, auth)
+    val cleanParams = getCleanParams(params)
+    smrRegistry.ask(RegisterSmrArchiveRequest(apiKey, cleanParams, host, path, _))
+  }
+
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
     if (auth.nonEmpty) auth
     else params.get("api_key")
@@ -166,6 +179,7 @@ class Routes(
       pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("items")(itemsRoutes),
       pathPrefix("pss")(pssRoutes),
+      pathPrefix("smr")(smrRoutes),
       pathPrefix("api_key")(apiKeyRoute),
       pathPrefix("random")(randomRoute),
       pathPrefix("v2") {
@@ -173,6 +187,7 @@ class Routes(
           pathPrefix("ebooks")(ebooksRoutes),
           pathPrefix("items")(itemsRoutes),
           pathPrefix("pss")(pssRoutes),
+          pathPrefix("smr")(smrRoutes),
           pathPrefix("api_key")(apiKeyRoute),
           pathPrefix("random")(randomRoute)
         )
@@ -366,6 +381,32 @@ class Routes(
       )
     )
 
+  lazy val smrRoutes: Route =
+    pathPrefix("smr") (
+      post {
+        extractUri { uri =>
+          logURL(uri)
+          extractHost { host =>
+            extractMatchedPath { path =>
+              parameterMap { params =>
+                // Get the API key from Authorization header if it exists.
+                optionalHeaderValueByName("Authorization") { auth =>
+                  respondWithHeaders(securityResponseHeaders) {
+                    onComplete(postSrmArchiveRequest(auth, params, host, path.toString)) {
+                      case Success(response) =>
+                        renderRegistryResponse(response, path.toString)
+                      case Failure(e) =>
+                        renderRegistryFailure(e, path.toString)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    )
+
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
@@ -419,6 +460,8 @@ class Routes(
     response match {
       case SearchResult(result) =>
         renderMappedResponse(result)
+      case SmrArchiveSuccess =>
+        complete(smrArchiveSuccessMessage)
       case NewApiKey(email) =>
         complete(newKeyMessage(email))
       case ExistingApiKey(email) =>
@@ -530,4 +573,7 @@ class Routes(
 
   private def newKeyMessage(email: String): String =
     s"API key created and sent to $email."
+
+  private val smrArchiveSuccessMessage: String =
+    s"Your request has been received."
 }

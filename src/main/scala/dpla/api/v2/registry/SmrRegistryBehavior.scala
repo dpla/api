@@ -3,26 +3,30 @@ package dpla.api.v2.registry
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dpla.api.v2.authentication.AuthProtocol.{AccountFound, AccountNotFound, AuthenticationCommand, AuthenticationFailure, FindAccountByKey, InvalidApiKey}
-import dpla.api.v2.registry.RegistryProtocol.{ForbiddenFailure, InternalFailure, RegistryResponse}
+import dpla.api.v2.authentication.AuthProtocol._
+import dpla.api.v2.registry.RegistryProtocol._
+import dpla.api.v2.smr.SmrProtocol.{ArchivePost, InvalidSmrParams, SmrCommand, SmrFailure, SmrSuccess}
 
 // command protocol
 
 sealed trait SmrRegistryCommand
 
-final case class SmrArchiveRequest(
-                                    apiKey: Option[String],
-                                    rawParams: Map[String, String],
-                                    host: String,
-                                    path: String,
-                                    replyTo: ActorRef[RegistryResponse]
-                                  ) extends SmrRegistryCommand
+final case class RegisterSmrArchiveRequest(
+                                            apiKey: Option[String],
+                                            rawParams: Map[String, String],
+                                            host: String,
+                                            path: String,
+                                            replyTo: ActorRef[RegistryResponse]
+                                          ) extends SmrRegistryCommand
 
 // response protocol
 
-case object SmrArchiveSuccess
+case object SmrArchiveSuccess extends RegistryResponse
 
 trait SmrRegistryBehavior {
+
+  // abstract method
+  def spawnSmrRequestHandler(context: ActorContext[SmrRegistryCommand]): ActorRef[SmrCommand]
 
   def apply(
              authenticator: ActorRef[AuthenticationCommand]
@@ -30,16 +34,17 @@ trait SmrRegistryBehavior {
 
     Behaviors.setup[SmrRegistryCommand] { context =>
 
-      // TODO Spawn children.
-      // Param validator
-      // S3 client
+      // Spawn children.
+      val smrRequestHandler: ActorRef[SmrCommand] =
+        spawnSmrRequestHandler(context)
 
       Behaviors.receiveMessage[SmrRegistryCommand] {
 
-        case SmrArchiveRequest(apiKey, rawParams, host, path, replyTo) =>
+        case RegisterSmrArchiveRequest(apiKey, rawParams, host, path, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSmrArchiveRequest(apiKey, rawParams, replyTo, authenticator)
+            processSmrArchiveRequest(apiKey, rawParams, replyTo, authenticator,
+              smrRequestHandler)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
       }
@@ -50,7 +55,8 @@ trait SmrRegistryBehavior {
                                 apiKey: Option[String],
                                 rawParams: Map[String, String],
                                 replyTo: ActorRef[RegistryResponse],
-                                authenticator: ActorRef[AuthenticationCommand]
+                                authenticator: ActorRef[AuthenticationCommand],
+                                smrRequestHandler: ActorRef[SmrCommand]
                               ): Behavior[NotUsed] = {
 
     Behaviors.setup[AnyRef] { context =>
@@ -63,8 +69,8 @@ trait SmrRegistryBehavior {
         /**
          * Possible responses from Authenticator.
          */
-        case AccountFound(account) =>
-          // TODO
+        case AccountFound(_) =>
+          smrRequestHandler ! ArchivePost(rawParams, context.self)
           Behaviors.same
 
         case AccountNotFound =>
@@ -83,9 +89,17 @@ trait SmrRegistryBehavior {
          * Possible responses from smr request handler.
          */
 
-        /**
-         * Possible responses from s3 client.
-         */
+        case InvalidSmrParams(msg) =>
+          replyTo ! ValidationFailure(msg)
+          Behaviors.stopped
+
+        case SmrSuccess =>
+          replyTo ! SmrArchiveSuccess
+          Behaviors.stopped
+
+        case SmrFailure =>
+          replyTo ! InternalFailure
+          Behaviors.stopped
 
         case _ =>
           Behaviors.unhandled
