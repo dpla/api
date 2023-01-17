@@ -382,22 +382,20 @@ class Routes(
     )
 
   lazy val smrRoutes: Route =
-    pathPrefix("smr") (
-      post {
-        extractUri { uri =>
-          logURL(uri)
-          extractHost { host =>
-            extractMatchedPath { path =>
-              parameterMap { params =>
-                // Get the API key from Authorization header if it exists.
-                optionalHeaderValueByName("Authorization") { auth =>
-                  respondWithHeaders(securityResponseHeaders) {
-                    onComplete(postSrmArchiveRequest(auth, params, host, path.toString)) {
-                      case Success(response) =>
-                        renderRegistryResponse(response, path.toString)
-                      case Failure(e) =>
-                        renderRegistryFailure(e, path.toString)
-                    }
+    post {
+      extractUri { uri =>
+        logURL(uri)
+        extractHost { host =>
+          extractMatchedPath { path =>
+            parameterMap { params =>
+              // Get the API key from Authorization header if it exists.
+              optionalHeaderValueByName("Authorization") { auth =>
+                respondWithHeaders(securityResponseHeaders) {
+                  onComplete(postSrmArchiveRequest(auth, params, host, path.toString)) {
+                    case Success(response) =>
+                      renderRegistryResponse(response, path.toString)
+                    case Failure(e) =>
+                      renderRegistryFailure(e, path.toString)
                   }
                 }
               }
@@ -405,7 +403,7 @@ class Routes(
           }
         }
       }
-    )
+    }
 
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
