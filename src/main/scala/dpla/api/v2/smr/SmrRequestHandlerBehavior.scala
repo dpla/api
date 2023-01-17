@@ -11,7 +11,7 @@ trait SmrRequestHandlerBehavior {
                      context: ActorContext[SmrCommand]
                    ): ActorRef[IntermediateSmrResult]
 
-  def spawnQueryBuilder(
+  def spawnDataUploadBuilder(
                          context: ActorContext[SmrCommand],
                          s3Client: ActorRef[IntermediateSmrResult]
                        ): ActorRef[IntermediateSmrResult]
@@ -29,11 +29,11 @@ trait SmrRequestHandlerBehavior {
       val s3Client: ActorRef[IntermediateSmrResult] =
         spawnS3Client(context)
 
-      val queryBuilder: ActorRef[IntermediateSmrResult] =
-        spawnQueryBuilder(context, s3Client)
+      val dataUploadBuilder: ActorRef[IntermediateSmrResult] =
+        spawnDataUploadBuilder(context, s3Client)
 
       val paramValidator: ActorRef[IntermediateSmrResult] =
-        spawnParamValidator(context, queryBuilder)
+        spawnParamValidator(context, dataUploadBuilder)
 
       Behaviors.receiveMessage[SmrCommand] {
 

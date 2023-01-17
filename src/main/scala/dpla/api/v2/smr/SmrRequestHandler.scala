@@ -20,7 +20,7 @@ object SmrRequestHandler extends SmrRequestHandlerBehavior {
     context.spawn(S3Client(bucket), "S3Client")
   }
 
-  override def spawnQueryBuilder(
+  override def spawnDataUploadBuilder(
                                   context: ActorContext[SmrCommand],
                                   s3Client: ActorRef[IntermediateSmrResult]
                                 ): ActorRef[IntermediateSmrResult] =
