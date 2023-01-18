@@ -3,21 +3,14 @@ package dpla.api.v2.smr
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.stream.alpakka.s3.MultipartUploadResult
+import akka.stream.alpakka.s3.{MultipartUploadResult, S3Headers}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import dpla.api.v2.smr.S3ResponseHandler.{ProcessS3Response, S3ResponseHandlerCommand}
-import dpla.api.v2.smr.SmrProtocol.{IntermediateSmrResult, SmrFailure, SmrResponse, SmrSuccess, SmrUpload}
-//import com.amazonaws.AmazonServiceException
-//import com.amazonaws.regions.Regions
-//import com.amazonaws.services.s3.model.{MultipartUpload, ObjectMetadata, PutObjectRequest, PutObjectResult}
-//import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-//import com.amazonaws.services.s3.transfer._
+import dpla.api.v2.smr.S3ResponseHandler._
+import dpla.api.v2.smr.SmrProtocol._
 
-//import java.io.ByteArrayInputStream
 import scala.concurrent.Future
-//import scala.util.Try
 
 
 /**
@@ -65,39 +58,34 @@ object S3Client {
 
       implicit val system: ActorSystem[Nothing] = context.system
 
-//      AmazonS3ClientBuilder.standard.build
-
-//      val s3 = AmazonS3ClientBuilder.standard.withRegion(Regions.DEFAULT_REGION).build
-//      val in = new ByteArrayInputStream(data.getBytes("utf-8"))
-//      val result: Try[PutObjectResult] = Try {
-//        s3.putObject(new PutObjectRequest(bucket, key, in, new ObjectMetadata))
-//      }
-//
-//      val transferManager = TransferManagerBuilder.standard.build
-//      transferManager.upload(bucket, key, in, new ObjectMetadata).waitForUploadResult()
-
-      // Upload file to S3
       val file: Source[ByteString, NotUsed] = Source.single(ByteString(data))
       val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] =
-        S3.multipartUpload(bucket, key)
+        S3.multipartUploadWithHeaders(
+          bucket = bucket,
+          key = key,
+          s3Headers = S3Headers.empty
+        )
       val futureResp: Future[MultipartUploadResult] = file.runWith(s3Sink)
 
-      context.log.infoN(
-        "S3 file upload to {}/{}: {}",
-        bucket, key, data
-      )
-
-      // Send response future to ElasticSearchResponseHandler
+      // Send response future to S3ResponseHandler
       responseHandler ! ProcessS3Response(futureResp, context.self)
 
       Behaviors.receiveMessage[S3Response] {
 
         case S3UploadSuccess =>
+          context.log.infoN(
+            "S3 file successfully upload to {}/{}: {}",
+            bucket, key, data
+          )
           replyTo ! SmrSuccess
           Behaviors.stopped
 
         case S3UploadFailure(_) =>
           // TODO any response or retries based on error type?
+          context.log.infoN(
+            "S3 file failed to upload to {}/{}: {}",
+            bucket, key, data
+          )
           replyTo ! SmrFailure
           Behaviors.stopped
       }
