@@ -14,5 +14,5 @@ object SmrRegistry extends SmrRegistryBehavior {
   override def spawnSmrRequestHandler(context: ActorContext[SmrRegistryCommand]):
     ActorRef[SmrCommand] =
 
-    context.spawn(SmrRequestHandler(), "SMR Request Handler")
+    context.spawn(SmrRequestHandler(), "SmrRequestHandler")
 }
