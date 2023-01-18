@@ -2,13 +2,15 @@ package dpla.api.v2.endToEnd
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, MockSmrRegistry, SearchRegistryCommand, SmrRegistryCommand}
+import dpla.api.v2.registry._
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.JsonFieldReader
 import dpla.api.v2.search.{MockEbookSearch, MockItemSearch}
@@ -175,11 +177,22 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   "/v2/smr route" should {
     "be happy with valid input and successful s3 upload" in {
-      val validService = "tiktok"
-      val validPost = "123"
-      val validUser = "abc"
+      val service = "tiktok"
+      val post = "123"
+      val user = "abc"
 
-      val request = Post(s"/v2/smr?api_key=$fakeApiKey&service=$validService&post=$validPost&user=$validUser")
+      val postData = JsObject(
+        "service" -> service.toJson,
+        "post" -> post.toJson,
+        "user" -> user.toJson
+      ).toString
+
+      val request = HttpRequest(
+        POST,
+        uri = "/v2/smr",
+        entity = HttpEntity(ContentTypes.`application/json`, postData),
+        headers = List(RawHeader("Authorization", fakeApiKey))
+      )
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.OK

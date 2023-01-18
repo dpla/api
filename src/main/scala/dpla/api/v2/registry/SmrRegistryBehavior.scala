@@ -3,9 +3,12 @@ package dpla.api.v2.registry
 import akka.NotUsed
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import dpla.api.v2.authentication.AuthProtocol._
 import dpla.api.v2.registry.RegistryProtocol._
 import dpla.api.v2.smr.SmrProtocol.{ArchivePost, InvalidSmrParams, SmrCommand, SmrFailure, SmrSuccess}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+
 
 // command protocol
 
@@ -13,11 +16,22 @@ sealed trait SmrRegistryCommand
 
 final case class RegisterSmrArchiveRequest(
                                             apiKey: Option[String],
-                                            rawParams: Map[String, String],
+                                            rawParams: SmrArchiveRequest,
                                             host: String,
                                             path: String,
                                             replyTo: ActorRef[RegistryResponse]
                                           ) extends SmrRegistryCommand
+
+final case class SmrArchiveRequest(
+                                    service: Option[String],
+                                    post: Option[String],
+                                    user: Option[String]
+                                  )
+// unmarshaller
+object SmrArchiveRequestJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
+  implicit val PortfolioFormats: RootJsonFormat[SmrArchiveRequest] =
+    jsonFormat3(SmrArchiveRequest)
+}
 
 // response protocol
 
@@ -40,10 +54,10 @@ trait SmrRegistryBehavior {
 
       Behaviors.receiveMessage[SmrRegistryCommand] {
 
-        case RegisterSmrArchiveRequest(apiKey, rawParams, host, path, replyTo) =>
+        case RegisterSmrArchiveRequest(apiKey, request, host, path, replyTo) =>
           // Create a session child actor to process the request.
           val sessionChildActor =
-            processSmrArchiveRequest(apiKey, rawParams, replyTo, authenticator,
+            processSmrArchiveRequest(apiKey, request, replyTo, authenticator,
               smrRequestHandler)
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
@@ -53,7 +67,7 @@ trait SmrRegistryBehavior {
 
   def processSmrArchiveRequest(
                                 apiKey: Option[String],
-                                rawParams: Map[String, String],
+                                request: SmrArchiveRequest,
                                 replyTo: ActorRef[RegistryResponse],
                                 authenticator: ActorRef[AuthenticationCommand],
                                 smrRequestHandler: ActorRef[SmrCommand]
@@ -70,7 +84,7 @@ trait SmrRegistryBehavior {
          * Possible responses from Authenticator.
          */
         case AccountFound(_) =>
-          smrRequestHandler ! ArchivePost(rawParams, context.self)
+          smrRequestHandler ! ArchivePost(request, context.self)
           Behaviors.same
 
         case AccountNotFound =>

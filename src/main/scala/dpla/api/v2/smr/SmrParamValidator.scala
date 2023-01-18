@@ -3,7 +3,10 @@ package dpla.api.v2.smr
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.http.scaladsl.model.DateTime
+import dpla.api.v2.registry.SmrArchiveRequest
+import dpla.api.v2.registry.SmrArchiveRequestJsonSupport._
 import dpla.api.v2.smr.SmrProtocol.{IntermediateSmrResult, InvalidSmrParams, RawSmrParams, ValidSmrParams}
+import spray.json.enrichAny
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,10 +38,11 @@ object SmrParamValidator {
             case Success(smrParams) =>
               nextPhase ! ValidSmrParams(smrParams, replyTo)
             case Failure(e) =>
+              rawParams.toJson
               context.log.warn2(
                 "Invalid smr params: '{}' for params '{}'",
                 e.getMessage,
-                rawParams.map { case(key, value) => s"$key: $value"}.mkString(", ")
+                rawParams.toJson.toString
               )
               replyTo ! InvalidSmrParams(e.getMessage)
           }
@@ -63,36 +67,26 @@ object SmrParamValidator {
     "user"
   )
 
-  private def getSmrParams(rawParams: Map[String, String]): Try[SmrParams] = Try {
-    // Check for unrecognized params
-    val unrecognized = rawParams.keys.toSeq diff acceptedSmrParams
+  private def getSmrParams(rawParams: SmrArchiveRequest): Try[SmrParams] = Try {
 
-    if (unrecognized.nonEmpty)
-      throw ValidationException(
-        "Unrecognized parameter: " + unrecognized.mkString(", ")
-      )
-    else {
-      // Check for valid search params
+    def missingParamException(param: String) =
+      ValidationException(s"Missing required parameter: $param")
 
-      def missingParamException(param: String) =
-        ValidationException("Missing required parameter: $param")
+    val rawService: String = rawParams.service
+      .getOrElse(throw missingParamException("service"))
 
-      val rawService: String = rawParams
-        .getOrElse("service", throw missingParamException("service"))
+    val rawPost: String = rawParams.post
+      .getOrElse( throw missingParamException("post"))
 
-      val rawPost: String = rawParams
-        .getOrElse("post", throw missingParamException("post"))
+    val rawUser: String = rawParams.user
+      .getOrElse(throw missingParamException("user"))
 
-      val rawUser: String = rawParams
-        .getOrElse("user", throw missingParamException("user"))
-
-      SmrParams(
-        service = validService(rawService),
-        post = validPost(rawPost),
-        user = validUser(rawUser),
-        timestamp = DateTime.now
-      )
-    }
+    SmrParams(
+      service = validService(rawService),
+      post = validPost(rawPost),
+      user = validUser(rawUser),
+      timestamp = DateTime.now
+    )
   }
 
   private def validService(service: String): String = {

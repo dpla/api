@@ -1,6 +1,7 @@
 package dpla.api.v2.smr
 
 import akka.actor.typed.ActorRef
+import dpla.api.v2.registry.SmrArchiveRequest
 
 object SmrProtocol {
 
@@ -8,7 +9,7 @@ object SmrProtocol {
   sealed trait SmrCommand
 
   final case class ArchivePost(
-                                params: Map[String, String],
+                                request: SmrArchiveRequest,
                                 replyTo: ActorRef[SmrResponse]
                               ) extends SmrCommand
 
@@ -26,7 +27,7 @@ object SmrProtocol {
   private[smr] trait IntermediateSmrResult
 
   private[smr] final case class RawSmrParams(
-                                              params: Map[String, String],
+                                              request: SmrArchiveRequest,
                                               replyTo: ActorRef[SmrResponse]
                                             ) extends IntermediateSmrResult
 
