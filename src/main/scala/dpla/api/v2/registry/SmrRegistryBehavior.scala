@@ -6,7 +6,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import dpla.api.v2.authentication.AuthProtocol._
 import dpla.api.v2.registry.RegistryProtocol._
-import dpla.api.v2.smr.SmrProtocol.{ArchivePost, InvalidSmrParams, SmrCommand, SmrFailure, SmrSuccess}
+import dpla.api.v2.smr.SmrProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 
