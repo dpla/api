@@ -6,7 +6,7 @@ object PssParamValidator extends ParamValidator with PssFields {
 
   // These parameters are valid for a search request.
   override protected val acceptedSearchParams: Seq[String] =
-    searchableDataFields ++ Seq("fields", "sort_by", "sort_order")
+    searchableDataFields ++ Seq("fields", "filter", "sort_by", "sort_order")
 
   // These parameters are valid for a fetch request.
   override protected val acceptedFetchParams: Seq[String] = Seq()

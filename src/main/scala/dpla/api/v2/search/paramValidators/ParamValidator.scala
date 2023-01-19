@@ -24,7 +24,7 @@ private[search] case class SearchParams(
                                          facetSize: Int,
                                          fields: Option[Seq[String]],
                                          fieldQueries: Seq[FieldQuery],
-                                         filter: Option[Filter],
+                                         filter: Option[Seq[Filter]],
                                          op: String,
                                          page: Int,
                                          pageSize: Int,
@@ -39,7 +39,7 @@ private[search] case class FetchParams(
                                       )
 
 private[search] case class RandomParams(
-                                        filter: Option[Filter] = None
+                                        filter: Option[Seq[Filter]] = None
                                        )
 
 private[search] case class FieldQuery(
@@ -292,22 +292,24 @@ trait ParamValidator extends FieldDefinitions {
   /**
    * Get a valid field name and value for a filter query.
    */
-  private def getValidFilter(rawParams: Map[String, String]): Option[Filter] =
-    rawParams.get("filter").flatMap{ filter =>
+  private def getValidFilter(rawParams: Map[String, String]): Option[Seq[Filter]] =
+    rawParams.get("filter").map{ filter =>
 
       val fieldName = filter.split(":", 2).headOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
 
-      val value = filter.split(":", 2).lastOption
+      val values = filter.split(":", 2).lastOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
+        .split("AND").map(_.trim)
 
       if (searchableDataFields.contains(fieldName)) {
         val validationMethod = getValidationMethod(fieldName)
-        val params = Map(fieldName -> value)
 
-        getValid(params, fieldName, validationMethod)
-          .map(Filter(fieldName, _))
-
+        values.flatMap(value => {
+          val params = Map(fieldName -> value)
+          getValid(params, fieldName, validationMethod)
+            .map(Filter(fieldName, _))
+        })
       } else {
         throw ValidationException(s"$fieldName is not a valid filter field")
       }
