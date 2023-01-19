@@ -60,13 +60,6 @@ object SmrParamValidator {
 
   private val validServices: Seq[String] = Seq("tiktok")
 
-  // These user parameters are valid.
-  private val acceptedSmrParams = Seq(
-    "service",
-    "post",
-    "user"
-  )
-
   private def getSmrParams(rawParams: SmrArchiveRequest): Try[SmrParams] = Try {
 
     def missingParamException(param: String) =
