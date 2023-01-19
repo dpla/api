@@ -4,6 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import spray.json._
 import dpla.api.v2.smr.SmrProtocol.{IntermediateSmrResult, SmrUpload, ValidSmrParams}
+import scala.util.Random
 
 /**
  * Composes JSON data to be uploaded to S3 from user-submitted parameters.
@@ -17,7 +18,10 @@ object SmrDataUploadBuilder extends DefaultJsonProtocol {
     Behaviors.receiveMessage[IntermediateSmrResult] {
 
       case ValidSmrParams(smrParams, replyTo) =>
-        val key: String = smrParams.timestamp.clicks.toString + ".json"
+        // File name is the timestamp in clicks followed by a random 6-digit
+        // number.
+        val key: String = smrParams.timestamp.clicks.toString +
+          "_" + Random.between(100000, 999999).toString + ".json"
 
         val data: String = JsObject(
           "service" -> smrParams.service.toJson,

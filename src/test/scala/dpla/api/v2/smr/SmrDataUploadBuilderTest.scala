@@ -42,10 +42,11 @@ class SmrDataUploadBuilderTest extends AnyWordSpec with Matchers
     }
 
     "create file key name" in {
-      val expected = "1656208800000.json"
+      val clicks = "1656208800000"
       smrDataUploadBuilder ! ValidSmrParams(smrParams, replyProbe.ref)
       val msg = interProbe.expectMessageType[SmrUpload]
-      msg.key should be(expected)
+      msg.key should startWith(clicks)
+      msg.key should endWith(".json")
     }
 
     "pass on replyTo" in {
