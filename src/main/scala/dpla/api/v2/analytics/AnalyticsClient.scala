@@ -57,8 +57,8 @@ trait AnalyticsClient extends JsonFieldReader {
   protected def getTrackingId(system: ActorSystem[Nothing]): String =
     system.settings.config.getString("googleAnalytics.trackingId")
 
-  protected def getClientId(system: ActorSystem[Nothing]): String =
-    system.settings.config.getString("googleAnalytics.clientId")
+  protected def getClientId: String =
+    java.util.UUID.randomUUID.toString
 
   protected def getPageViewParams(
                                    host: String,
@@ -70,7 +70,7 @@ trait AnalyticsClient extends JsonFieldReader {
       "v" -> "1",
       "t" -> "pageview",
       "tid" -> getTrackingId(system),
-      "cid" -> getClientId(system),
+      "cid" -> getClientId,
       "dh" -> host,
       "dp" -> path,
       "dt" -> title
@@ -90,7 +90,7 @@ trait AnalyticsClient extends JsonFieldReader {
       "v" -> "1",
       "t" -> "event",
       "tid" -> getTrackingId(system),
-      "cid" -> getClientId(system),
+      "cid" -> getClientId,
       "dh" -> host,
       "dp" -> path,
       "ec" -> category,
