@@ -146,7 +146,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facetSize = 100,
     fields = None,
     fieldQueries = Seq[FieldQuery](),
-    filter = Some(Filter("provider.@id", "http://dp.la/api/contributor/lc")),
+    filter = Some(Seq(Filter("provider.@id", "http://dp.la/api/contributor/lc"))),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -166,7 +166,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   val multiFetchQuery: JsObject = getJsFetchQuery(multiFetchIds)
 
   val randomParams: RandomParams = RandomParams(
-    filter = Some(Filter("provider.@id", "http://dp.la/api/contributor/lc")),
+    filter = Some(Seq(Filter("provider.@id", "http://dp.la/api/contributor/lc"))),
   )
 
   val randomQuery: JsObject = getJsRandomQuery(randomParams)
@@ -233,8 +233,9 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
     "specify filter" in {
       val expected = Some("http://dp.la/api/contributor/lc")
-      val traversed = readString(randomQuery, "query", "function_score",
-        "query", "bool", "filter", "bool", "must", "term", "provider.@id")
+      val traversed = readObjectArray(randomQuery, "query", "function_score",
+        "query", "bool", "filter", "bool", "must").headOption
+        .flatMap(must => readString(must, "term", "provider.@id"))
       assert(traversed == expected)
     }
   }
@@ -778,8 +779,10 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   "filter query builder" should {
     "specify field and term" in {
       val expected = Some("http://dp.la/api/contributor/lc")
-      val traversed = readString(filterQuery, "query", "bool", "filter",
-        "bool", "must", "term", "provider.@id")
+      val traversed =
+        readObjectArray(filterQuery, "query", "bool", "filter", "bool", "must")
+          .headOption
+          .flatMap(must => readString(must, "term", "provider.@id"))
       assert(traversed == expected)
     }
   }
