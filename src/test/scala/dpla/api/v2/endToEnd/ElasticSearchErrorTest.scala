@@ -35,7 +35,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+          smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -54,7 +55,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+          smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -76,7 +78,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+          smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
@@ -95,7 +98,8 @@ class ElasticSearchErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+          smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))

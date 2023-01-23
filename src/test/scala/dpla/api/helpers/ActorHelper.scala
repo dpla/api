@@ -7,9 +7,10 @@ import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication._
 import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.email.{MockEmailClientFailure, MockEmailClientSuccess}
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockItemRegistry, MockPssRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockItemRegistry, MockPssRegistry, MockSmrRegistry, SearchRegistryCommand, SmrRegistryCommand}
 import dpla.api.v2.search.{MockEboookEsClientSuccess, MockEsClientFailure, MockEsClientNotFound, MockItemEsClientSuccess}
 import dpla.api.v2.search.mappings.{DPLAMAPMapper, MockMapperFailure}
+import dpla.api.v2.smr.{MockS3ClientFailure, MockS3ClientSuccess}
 
 trait ActorHelper {
 
@@ -59,6 +60,9 @@ trait ActorHelper {
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     MockPssRegistry(testKit, authenticator, pssAnalyticsClient)
 
+  val smrRegistry: ActorRef[SmrRegistryCommand] =
+    MockSmrRegistry(testKit, authenticator)
+
   val dplaMapMapper = testKit.spawn(DPLAMAPMapper())
 
   val mapperFailure = testKit.spawn(MockMapperFailure())
@@ -70,4 +74,8 @@ trait ActorHelper {
   val elasticSearchClientFailure = testKit.spawn(MockEsClientFailure())
 
   val elasticSearchClientNotFound = testKit.spawn(MockEsClientNotFound())
+
+  val s3ClientSuccess = testKit.spawn(MockS3ClientSuccess())
+
+  val s3ClientFailure = testKit.spawn(MockS3ClientFailure())
 }

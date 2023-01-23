@@ -50,8 +50,12 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     testKit.spawn(PssRegistry(authenticator, analyticsClient))
 
+  val smrRegistry: ActorRef[SmrRegistryCommand] =
+    testKit.spawn(SmrRegistry(authenticator))
+
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+      smrRegistry).applicationRoutes
 
   "all sets endpoint" should {
     implicit val request: HttpRequest =

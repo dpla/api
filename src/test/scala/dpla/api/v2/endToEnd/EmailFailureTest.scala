@@ -30,8 +30,8 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockApiKeyRegistry(testKit, authenticator, Some(emailClientFailure))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryWithEmailFailure)
-      .applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry,
+      apiKeyRegistryWithEmailFailure, smrRegistry).applicationRoutes
 
   "/api_key/[email]" should {
     "return InternalServerError if email fails" in {

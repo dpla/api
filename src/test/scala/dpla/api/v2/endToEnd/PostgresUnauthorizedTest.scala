@@ -40,8 +40,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorKeyNotFound, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryKeyNotFound)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryKeyNotFound, smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -57,8 +57,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorDisabled, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryDisabled)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryDisabled, smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -76,8 +76,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorKeyNotFound, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryKeyNotFound)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryKeyNotFound, smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
@@ -93,8 +93,8 @@ class PostgresUnauthorizedTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorDisabled, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryDisabled)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryDisabled, smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 

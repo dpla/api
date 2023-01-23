@@ -61,8 +61,12 @@ class SearchTests extends ITHelper with LogCapturing {
   val pssRegistry: ActorRef[SearchRegistryCommand] =
     testKit.spawn(PssRegistry(authenticator, analyticsClient))
 
+  val smrRegistry: ActorRef[SmrRegistryCommand] =
+    testKit.spawn(SmrRegistry(authenticator))
+
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry).applicationRoutes
+    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+      smrRegistry).applicationRoutes
 
   /** Helper methods */
 

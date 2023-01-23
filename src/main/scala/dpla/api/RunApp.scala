@@ -68,6 +68,11 @@ object RunApp {
           PssRegistry(authenticator, pssAnalyticsClient), name = "PssRegsitry"
         )
 
+      val smrRegistry: ActorRef[SmrRegistryCommand] =
+        context.spawn(
+          SmrRegistry(authenticator), name = "SmrRegistry"
+        )
+
       val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
         context.spawn(ApiKeyRegistry(authenticator), "ApiKeyRegistry")
 
@@ -75,10 +80,17 @@ object RunApp {
       context.watch(itemRegistry)
       context.watch(pssRegistry)
       context.watch(apiKeyRegistry)
+      context.watch(smrRegistry)
 
       // Start the HTTP server.
       val routes =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)(context.system)
+        new Routes(
+          ebookRegistry,
+          itemRegistry,
+          pssRegistry,
+          apiKeyRegistry,
+          smrRegistry
+        )(context.system)
 
       startHttpServer(routes.applicationRoutes)(context.system)
 

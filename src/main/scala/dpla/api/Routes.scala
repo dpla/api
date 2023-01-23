@@ -15,12 +15,12 @@ import akka.http.scaladsl.model.headers.RawHeader
 import scala.util.{Failure, Success}
 import dpla.api.v2.search.mappings.DPLAMAPJsonFormats._
 import dpla.api.v2.search.mappings.PssJsonFormats._
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import dpla.api.v2.registry.SmrArchiveRequest
+import dpla.api.v2.registry.SmrArchiveRequestJsonSupport._
 import dpla.api.v2.registry.RegistryProtocol._
 import dpla.api.v2.registry._
 import dpla.api.v2.search.mappings._
 import org.slf4j.{Logger, LoggerFactory}
-
 import spray.json.enrichAny
 
 
@@ -28,10 +28,12 @@ class Routes(
               ebookRegistry: ActorRef[SearchRegistryCommand],
               itemRegistry: ActorRef[SearchRegistryCommand],
               pssRegistry: ActorRef[SearchRegistryCommand],
-              apiKeyRegistry: ActorRef[ApiKeyRegistryCommand]
+              apiKeyRegistry: ActorRef[ApiKeyRegistryCommand],
+              smrRegistry: ActorRef[SmrRegistryCommand]
             )(implicit val system: ActorSystem[_]) {
 
   import spray.json.DefaultJsonProtocol._
+  import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
   // If ask takes more time than this to complete the request is failed
   private implicit val timeout: Timeout = Timeout.create(
@@ -40,8 +42,7 @@ class Routes(
 
   val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")
 
-  // Ebook search and fetch requests are send to EbookRegistry actor for
-  // processing.
+  // Requests are send to the appropriate register for processing.
 
   def searchEbooks(
                     auth: Option[String],
@@ -144,6 +145,15 @@ class Routes(
     pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
   }
 
+  // API key must be in header
+  def postSrmArchiveRequest(
+                             auth: Option[String],
+                             request: SmrArchiveRequest,
+                             host: String,
+                             path: String
+                           ): Future[RegistryResponse] =
+    smrRegistry.ask(RegisterSmrArchiveRequest(auth, request, host, path, _))
+
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
     if (auth.nonEmpty) auth
     else params.get("api_key")
@@ -166,6 +176,7 @@ class Routes(
       pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("items")(itemsRoutes),
       pathPrefix("pss")(pssRoutes),
+      pathPrefix("smr")(smrRoutes),
       pathPrefix("api_key")(apiKeyRoute),
       pathPrefix("random")(randomRoute),
       pathPrefix("v2") {
@@ -173,6 +184,7 @@ class Routes(
           pathPrefix("ebooks")(ebooksRoutes),
           pathPrefix("items")(itemsRoutes),
           pathPrefix("pss")(pssRoutes),
+          pathPrefix("smr")(smrRoutes),
           pathPrefix("api_key")(apiKeyRoute),
           pathPrefix("random")(randomRoute)
         )
@@ -366,6 +378,30 @@ class Routes(
       )
     )
 
+  lazy val smrRoutes: Route =
+    post {
+      extractUri { uri =>
+        logURL(uri)
+        entity(as[SmrArchiveRequest]) { request =>
+          extractHost { host =>
+            extractMatchedPath { path =>
+              // Get the API key from Authorization header if it exists.
+              optionalHeaderValueByName("Authorization") { auth =>
+                respondWithHeaders(securityResponseHeaders) {
+                  onComplete(postSrmArchiveRequest(auth, request, host, path.toString)) {
+                    case Success(response) =>
+                      renderRegistryResponse(response, path.toString)
+                    case Failure(e) =>
+                      renderRegistryFailure(e, path.toString)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   lazy val apiKeyRoute: Route =
     path(Segment) { email =>
       post {
@@ -419,6 +455,8 @@ class Routes(
     response match {
       case SearchResult(result) =>
         renderMappedResponse(result)
+      case SmrArchiveSuccess =>
+        complete(smrArchiveSuccessMessage)
       case NewApiKey(email) =>
         complete(newKeyMessage(email))
       case ExistingApiKey(email) =>
@@ -530,4 +568,7 @@ class Routes(
 
   private def newKeyMessage(email: String): String =
     s"API key created and sent to $email."
+
+  private val smrArchiveSuccessMessage: String =
+    s"Your request has been received."
 }

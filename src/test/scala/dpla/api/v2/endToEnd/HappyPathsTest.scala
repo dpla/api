@@ -2,16 +2,20 @@ package dpla.api.v2.endToEnd
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, MockItemRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry._
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.JsonFieldReader
-import dpla.api.v2.search.{MockEbookSearch, MockItemEsClientSuccess, MockItemSearch}
+import dpla.api.v2.search.{MockEbookSearch, MockItemSearch}
+import dpla.api.v2.smr.MockSmrRequestHandler
+import dpla.api.v2.smr.SmrProtocol.SmrCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
@@ -32,6 +36,9 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val itemSearch: ActorRef[SearchCommand] =
     MockItemSearch(testKit, Some(itemElasticSearchClient), Some(dplaMapMapper))
 
+  val smrRequestHandler: ActorRef[SmrCommand] =
+    MockSmrRequestHandler(testKit, Some(s3ClientSuccess))
+
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
     MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
@@ -41,9 +48,12 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val itemRegistryEsSuccess: ActorRef[SearchRegistryCommand] =
     MockItemRegistry(testKit, authenticator, itemAnalyticsClient, Some(itemSearch))
 
+  val smrRegistryS3Success: ActorRef[SmrRegistryCommand] =
+    MockSmrRegistry(testKit, authenticator, Some(smrRequestHandler))
+
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry, apiKeyRegistryWithEmailSuccess)
-      .applicationRoutes
+    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry,
+      apiKeyRegistryWithEmailSuccess, smrRegistryS3Success).applicationRoutes
 
   "/v2/ebooks route" should {
     "be happy with valid user inputs and successful es response" in {
@@ -165,7 +175,32 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "v2/random route" should {
+  "/v2/smr route" should {
+    "be happy with valid input and successful s3 upload" in {
+      val service = "tiktok"
+      val post = "123"
+      val user = "abc"
+
+      val postData = JsObject(
+        "service" -> service.toJson,
+        "post" -> post.toJson,
+        "user" -> user.toJson
+      ).toString
+
+      val request = HttpRequest(
+        POST,
+        uri = "/v2/smr",
+        entity = HttpEntity(ContentTypes.`application/json`, postData),
+        headers = List(RawHeader("Authorization", fakeApiKey))
+      )
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  "/v2/random route" should {
     "be happy with empty params and successful es response" in {
       val request = Get(s"/v2/random?api_key=$fakeApiKey")
 
@@ -176,7 +211,7 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     }
   }
 
-  "/api_key/[email] route" should {
+  "/v2/api_key/[email] route" should {
     "be happy with valid input, successful db write, & successful email" in {
       val validEmail = "test@example.com"
       val request = Post(s"/v2/api_key/$validEmail")

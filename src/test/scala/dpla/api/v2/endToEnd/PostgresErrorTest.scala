@@ -40,8 +40,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+          smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
 
@@ -59,8 +59,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient, Some(ebookSearch))
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryAuthError)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryAuthError, smrRegistry).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
 
@@ -78,8 +78,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorError, ebookAnalyticsClient)
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryAuthError)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryAuthError, smrRegistry).applicationRoutes
 
       val request = Post(s"/v2/api_key/email@example.com")
 
@@ -97,8 +97,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
         MockEbookRegistry(testKit, authenticatorExistingKey, ebookAnalyticsClient)
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistryExistingKey)
-          .applicationRoutes
+        new Routes(ebookRegistry, itemRegistry, pssRegistry,
+          apiKeyRegistryExistingKey, smrRegistry).applicationRoutes
 
       val request = Post("/v2/api_key/email@example.com")
 
