@@ -842,28 +842,28 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
   "filter validator" should {
     "accept valid value for URL field" in {
       val given = "provider.@id:http://dp.la/api/contributor/lc"
-      val expectedFieldName = Some("provider.@id")
-      val expectedValue = Some("http://dp.la/api/contributor/lc")
+      val expectedFieldName = "provider.@id"
+      val expectedValue = "http://dp.la/api/contributor/lc"
       val params = Map("filter" -> given)
       itemParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldName = msg.params.filter.map(_.fieldName)
-      val value = msg.params.filter.map(_.value)
-      assert(fieldName == expectedFieldName)
-      assert(value == expectedValue)
+      val fieldName = msg.params.filter.flatMap(_.headOption.map(_.fieldName))
+      val value = msg.params.filter.flatMap(_.headOption.map(_.value))
+      fieldName should contain (expectedFieldName)
+      value should contain (expectedValue)
     }
 
     "accept valid value for text field" in {
       val given = "provider.name:california"
-      val expectedFieldName = Some("provider.name")
-      val expectedValue = Some("california")
+      val expectedFieldName = "provider.name"
+      val expectedValue = "california"
       val params = Map("filter" -> given)
       itemParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
-      val fieldName = msg.params.filter.map(_.fieldName)
-      val value = msg.params.filter.map(_.value)
-      assert(fieldName == expectedFieldName)
-      assert(value == expectedValue)
+      val fieldName = msg.params.filter.flatMap(_.headOption.map(_.fieldName))
+      val value = msg.params.filter.flatMap(_.headOption.map(_.value))
+      fieldName should contain (expectedFieldName)
+      value should contain (expectedValue)
     }
 
     "reject unsearchable field" in {

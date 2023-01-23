@@ -297,4 +297,30 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
       }
     }
   }
+
+  "filter by about.name" should {
+
+    val timePeriod = "Postwar%20United%20States%20(1945%20to%20early%201970s)"
+    val subject = "Labor%20History"
+
+    implicit val request: HttpRequest =
+      Get(s"/v2/pss/sets?api_key=$fakeApiKey&filter=about.name:$timePeriod+AND+$subject")
+
+    returnStatusCode(200)
+    returnJSON
+    returnInt("numberOfItems", 2)
+
+    "include given filter terms" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+        val aboutNames = readObjectArray(entity, "itemListElement")
+          .flatMap(set =>
+            readObjectArray(set, "about")
+            .map(about => readString(about, "name").get)
+          )
+        aboutNames should contain (timePeriod.replaceAll("%20", " "))
+        aboutNames should contain (subject.replaceAll("%20", " "))
+      }
+    }
+  }
 }

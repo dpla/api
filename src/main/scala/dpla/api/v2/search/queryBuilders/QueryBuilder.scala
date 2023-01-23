@@ -130,7 +130,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
   private def from(page: Int, pageSize: Int): Int = (page - 1) * pageSize
 
   private def query(q: Option[String],
-                    filter: Option[Filter],
+                    filter: Option[Seq[Filter]],
                     fieldQueries: Seq[FieldQuery],
                     exactFieldMatch: Boolean,
                     op: String
@@ -184,16 +184,21 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
    * This will filter out fields that do not match the given value, but will
    * not affect the score for matching documents.
    */
-  private def filterQuery(filter: Filter): JsObject =
-    JsObject(
-      "bool" -> JsObject(
-        "must" -> JsObject(
-          "term" -> JsObject(
-            filter.fieldName -> filter.value.toJson
-          )
+  private def filterQuery(filters: Seq[Filter]): JsObject = {
+    val mustArray: JsValue = filters.map(filter => {
+      JsObject(
+        "term" -> JsObject(
+          filter.fieldName -> filter.value.toJson
         )
       )
+    }).toJson
+
+    JsObject(
+      "bool" -> JsObject(
+        "must" -> mustArray
+      )
     )
+  }
 
   /**
    * For general field query, use a keyword (i.e. "query_string") query.
