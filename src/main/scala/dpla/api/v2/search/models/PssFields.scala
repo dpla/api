@@ -192,12 +192,30 @@ trait PssFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = None
     ),
     DataField(
+      name = "hasPart.author",
+      fieldType = WildcardField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "hasPart.author.*",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
       name = "hasPart.disambiguatingDescription",
       fieldType = TextField,
       searchable = false,
       facetable = false,
       sortable = false,
       elasticSearchDefault = "hasPart.disambiguatingDescription",
+      elasticSearchNotAnalyzed = None
+    ),
+    DataField(
+      name = "hasPart.hasPart",
+      fieldType = WildcardField,
+      searchable = false,
+      facetable = false,
+      sortable = false,
+      elasticSearchDefault = "hasPart.hasPart.*",
       elasticSearchNotAnalyzed = None
     ),
     DataField(
