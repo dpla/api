@@ -116,7 +116,7 @@ object PssJsonFormats extends JsonFieldReader
         "educationalAlignment" -> pssSet.educationalAlignment.toJson,
         "hasPart" -> pssSet.hasPart.toJson,
         "inLanguage" -> pssSet.inLanguage.toJson,
-        "isRelatedTo" -> pssSet.isRelatedTo.toJson,
+        "isRelatedTo" -> pssSet.isRelatedTo.take(8).toJson, // limit related sets
         "learningResourceType" -> pssSet.learningResourceType.toJson,
         "license" -> pssSet.license.toJson,
         "name" -> pssSet.name.toJson,
