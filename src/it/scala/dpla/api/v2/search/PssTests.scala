@@ -208,6 +208,16 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
         traversed should not be empty
       }
     }
+
+    "have a limited number of related sets" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val traversed: Seq[JsValue] = readObjectArray(entity, "isRelatedTo")
+
+        assert(traversed.length == 8)
+      }
+    }
   }
 
   "each set endpoint" should {
