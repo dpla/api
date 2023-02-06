@@ -46,22 +46,24 @@ final case class PssSet(
                  ) extends MappedResponse
 
 final case class PssPart(
-                      `@context`: Option[JsValue],
-                      `@id`: Option[String],
-                      `@type`: Option[String],
-                      `dct:created`: Option[String],
-                      `dct:modified`: Option[String],
-                      dateCreated: Option[String],
-                      dateModified: Option[String],
-                      disambiguatingDescription: Option[String],
-                      isPartOf: Option[JsValue],
-                      isRelatedTo: Seq[JsValue],
-                      mainEntity: Seq[JsValue],
-                      name: Option[String],
-                      repImageUrl: Option[String],
-                      text: Option[String],
-                      thumbnailUrl: Option[String]
-                    ) extends MappedResponse
+                          `@context`: Option[JsValue],
+                          `@id`: Option[String],
+                          `@type`: Option[String],
+                          `dct:created`: Option[String],
+                          `dct:modified`: Option[String],
+                          author: Seq[JsValue],
+                          dateCreated: Option[String],
+                          dateModified: Option[String],
+                          disambiguatingDescription: Option[String],
+                          hasPart: Seq[JsValue],
+                          isPartOf: Option[JsValue],
+                          isRelatedTo: Seq[JsValue],
+                          mainEntity: Seq[JsValue],
+                          name: Option[String],
+                          repImageUrl: Option[String],
+                          text: Option[String],
+                          thumbnailUrl: Option[String]
+                        ) extends MappedResponse
 
 object PssMapper extends Mapper {
 

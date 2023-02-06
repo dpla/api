@@ -187,6 +187,32 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
       }
     }
 
+    "includes the guide author" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val guide: Option[JsValue] = readObjectArray(entity, "hasPart")
+          .find(part => readString(part, "disambiguatingDescription").contains("guide"))
+
+        val traversed = guide.map(g => readObjectArray(g.asJsObject, "author"))
+
+        traversed should not be empty
+      }
+    }
+
+    "includes the guide parts" in {
+      request ~> routes ~> check {
+        val entity: JsObject = entityAs[String].parseJson.asJsObject
+
+        val guide: Option[JsValue] = readObjectArray(entity, "hasPart")
+          .find(part => readString(part, "disambiguatingDescription").contains("guide"))
+
+        val traversed = guide.map(g => readObjectArray(g.asJsObject, "hasPart"))
+
+        traversed should not be empty
+      }
+    }
+
     "include the overview" in {
       request ~> routes ~> check {
         val entity: JsObject = entityAs[String].parseJson.asJsObject
