@@ -88,7 +88,7 @@ object PssMapper extends Mapper {
           mappedSet.map(set => {
             set.hasPart.filter(part =>
               part.disambiguatingDescription.contains("source") &&
-                part.`@id`.getOrElse("").endsWith("/" + sourceId.getOrElse(""))
+                part.`@id`.getOrElse("") == sourceId.getOrElse("").stripSuffix("\"").stripPrefix("\"")
             ).head.copy(`@context` = set.`@context`, disambiguatingDescription = None)
           })
         else mappedSetList

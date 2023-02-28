@@ -2,6 +2,8 @@ package dpla.api.v2.search.paramValidators
 
 import dpla.api.v2.search.models.PssFields
 
+import scala.util.{Failure, Success, Try}
+
 object PssParamValidator extends ParamValidator with PssFields {
 
   // These parameters are valid for a search request.
@@ -24,7 +26,19 @@ object PssParamValidator extends ParamValidator with PssFields {
       unprocessed + ("fields" -> setFields.mkString(","))
     } else if (unprocessed.keys.toSet.contains("hasPart.id")) {
       // Get a source
-      unprocessed
+      val shortId = unprocessed("hasPart.id")
+
+      // Safety check that shortId is an Int
+      Try { shortId.toInt } match {
+        case Success(_) =>
+          val longId = "\"https://api.dp.la/primary-source-sets/sources/" + shortId + "\""
+          unprocessed - "hasPart.id" + ("hasPart.id" -> longId)
+        case Failure(_) =>
+          // This should cause an appropriate validation failure during normal
+          // validation, which will check that hasPart.id is a valid URL
+          unprocessed
+      }
+
     } else {
       // Get multiple sets
 

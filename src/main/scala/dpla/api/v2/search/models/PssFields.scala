@@ -220,7 +220,7 @@ trait PssFields extends FieldDefinitions {
     ),
     DataField(
       name = "hasPart.id",
-      fieldType = IntField,
+      fieldType = URLField,
       searchable = true,
       facetable = false,
       sortable = false,
