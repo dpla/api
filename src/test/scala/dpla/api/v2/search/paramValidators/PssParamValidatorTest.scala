@@ -60,8 +60,8 @@ class PssParamValidatorTest extends AnyWordSpec with Matchers
   }
 
   "hasPart.id validator" should {
-    "accept an integer" in {
-      val expected = "7"
+    "construct an ES-safe URI from an Int" in {
+      val expected = "\"https://api.dp.la/primary-source-sets/sources/7\""
       val params = Map("hasPart.id" -> "7")
       pssParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
@@ -70,7 +70,7 @@ class PssParamValidatorTest extends AnyWordSpec with Matchers
       id should contain(expected)
     }
 
-    "reject a non-integer" in {
+    "reject an invalid URI" in {
       val params = Map("hasPart.id" -> "foo")
       pssParamValidator ! RawSearchParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
