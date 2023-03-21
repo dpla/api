@@ -68,7 +68,3 @@ jobs:
         -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
         --platform linux/amd64,linux/arm64 . \
         --push
-
-# echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG,latest,$BRANCH_NAME"
-# --iidfile /tmp/docker-build-push-CKIkrH/iidfile --metadata-file /tmp/docker-build-push-CKIkrH/metadata-file
-# docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
