@@ -3,7 +3,7 @@ FROM amazoncorretto:11
 WORKDIR /tmp
 
 COPY aws-certs.sh .
-RUN yum update -y && yum install openssl perl -y
+RUN yum update -y && yum install openssl -y
 RUN bash aws-certs.sh
 
 WORKDIR /opt/api
