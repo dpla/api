@@ -1,4 +1,4 @@
-name: Deploy to Amazon ECR
+name: Staging Deploy to Amazon ECR
 on:
   workflow_dispatch:
 
