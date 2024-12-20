@@ -40,7 +40,7 @@ class Routes(
       system.settings.config.getDuration("application.routes.askTimeout")
   )
 
-  val log: Logger = LoggerFactory.getLogger("dpla.ebookapi.Routes")
+  val log: Logger = LoggerFactory.getLogger(getClass)
 
   // Requests are send to the appropriate register for processing.
 
