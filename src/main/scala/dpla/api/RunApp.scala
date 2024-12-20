@@ -96,7 +96,7 @@ object RunApp {
 
       Behaviors.empty
     }
-    ActorSystem[Nothing](rootBehavior, "HelloAkkaHttpServer")
+    ActorSystem[Nothing](rootBehavior, "DPLA API Server")
     //#server-bootstrapping
   }
 }
