@@ -5,8 +5,8 @@ on:
 jobs:
   deploy:
     name: Deploy Staging
-    runs-on: ubuntu-latest
-    environment: production
+    runs-on: ubuntu-22.04
+    environment: staging
 
     steps:
       - name: Checkout
