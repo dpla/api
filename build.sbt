@@ -1,6 +1,17 @@
 lazy val akkaHttpVersion = "10.4.0"
 lazy val akkaVersion     = "2.7.0"
 
+lazy val openTelemetrySpecific = {
+  val version = "1.45.0"
+  Seq(
+    "io.opentelemetry" % "opentelemetry-bom" % version pomOnly(),
+    "io.opentelemetry" % "opentelemetry-api" % version,
+    "io.opentelemetry" % "opentelemetry-sdk" % version,
+    "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % version,
+    "io.opentelemetry" % "opentelemetry-exporter-otlp" % version
+  )
+}
+
 lazy val root = (project in file("."))
   .configs(IntegrationTest)
   .settings(
@@ -34,7 +45,8 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % IntegrationTest,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % IntegrationTest,
       "org.scalatest"     %% "scalatest"                % "3.2.11"        % IntegrationTest
-    )
+    ) ++ openTelemetrySpecific,
+
   )
 
 ThisBuild / assemblyMergeStrategy := {
