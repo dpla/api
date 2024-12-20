@@ -96,7 +96,7 @@ object RunApp {
 
       Behaviors.empty
     }
-    ActorSystem[Nothing](rootBehavior, "DPLA API Server")
+    ActorSystem[Nothing](rootBehavior, "dpla-api-server")
     //#server-bootstrapping
   }
 }
