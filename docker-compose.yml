@@ -1,0 +1,63 @@
+services:
+
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.2
+    volumes:
+      - ./es-scripts:/usr/share/elasticsearch/config/scripts
+    command: >
+      /bin/bash -c "
+        chmod +x /usr/share/elasticsearch/config/scripts/*.sh &&
+        /usr/share/elasticsearch/config/scripts/init-indices.sh
+      "
+    depends_on:
+      - elasticsearch
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.2
+    volumes:
+      - ./tmp/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      #- network.host=localhost
+      - discovery.type=single-node
+      - bootstrap.system_call_filter=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+
+    ports:
+      - "9200:9200"
+
+  # psql -h localhost -p 5432 -U postgres -f src/main/resources/00-init.sql
+  postgres:
+    image: postgres:16
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+      - ./db-scripts:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=weebaeloo3taZiezaip6Uph4R
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/postgres
+      - ITEM_ELASTICSEARCH_URL=http://elasticsearch:9200/dpla_alias
+      - PSS_ELASTICSEARCH_URL=http://search.internal.dp.la:9200/dpla_pss
+      - EBOOK_ELASTICSEARCH_URL=http://elasticsearch:9200/dpla_ebooks
+      - POSTGRES_PASSWORD=weebaeloo3taZiezaip6Uph4R
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - SSL_MODE=disable
+      - SSL=false
+      - SSL_FACTORY=org.postgresql.ssl.DefaultJavaSSLFactory
+    command: ["/usr/bin/java", "-jar", "/opt/api/dpla-api.jar"]
+    depends_on:
+      - elasticsearch
+      - postgres

@@ -2,6 +2,7 @@
 # modified to import into cacerts so they're available without specifying a truststore
 # modified to not require perl
 
+set -euxo pipefail
 
 mydir=tmp/certs
 if [ ! -e "${mydir}" ]
@@ -12,9 +13,11 @@ fi
 storepassword=changeit
 
 curl -sS "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem" > ${mydir}/global-bundle.pem
-awk 'split_after == 1 {n++;split_after=0} /-----END CERTIFICATE-----/ {split_after=1}{print > "rds-ca-" n+1 ".pem"}' < ${mydir}/global-bundle.pem
+#awk 'split_after == 1 {n++;split_after=0} /-----END CERTIFICATE-----/ {split_after=1}{print > "rds-ca-" n+1 ".pem"}' < ${mydir}/global-bundle.pem
+cd ${mydir} && awk 'BEGIN {n=0; split_after=0} split_after == 1 {n++;split_after=0} /-----END CERTIFICATE-----/ {split_after=1}{print > ("rds-ca-" (n+1) ".pem")}' < global-bundle.pem && cd -
 
-for CERT in rds-ca-*; do
+#for CERT in rds-ca-*; do
+for CERT in ${mydir}/rds-ca-*; do
   alias=$(openssl x509 -noout -subject -in $CERT | awk -F'CN=' '{print $2}')
   echo "Importing $alias"
   keytool -import -file ${CERT} -alias "${alias}" -storepass ${storepassword} -cacerts -noprompt
