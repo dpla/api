@@ -157,7 +157,7 @@ curl -s -X PUT "http://elasticsearch:9200/dpla_alias?include_type_name=true" -H 
             }
           }
         },
-        "ipfs" : {
+        "filecoin" : {
           "type" : "keyword"
         },
         "isPartOf" : {
