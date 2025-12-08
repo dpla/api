@@ -20,8 +20,19 @@ object ElasticSearchClient {
   // Concurrency limiter to prevent overwhelming the ES cluster and Akka HTTP pool.
   // This caps the number of concurrent in-flight ES requests per API instance.
   // Default 32 permits; can be tuned via environment variable.
-  private val maxConcurrentEsRequests: Int =
-    sys.env.getOrElse("ES_MAX_CONCURRENT_REQUESTS", "32").toInt
+  private val maxConcurrentEsRequests: Int = {
+    val value = sys.env.getOrElse("ES_MAX_CONCURRENT_REQUESTS", "32")
+    try {
+      val parsed = value.toInt
+      if (parsed <= 0) {
+        throw new IllegalArgumentException(s"ES_MAX_CONCURRENT_REQUESTS must be positive, got: $parsed")
+      }
+      parsed
+    } catch {
+      case _: NumberFormatException =>
+        throw new IllegalArgumentException(s"ES_MAX_CONCURRENT_REQUESTS must be a valid integer, got: $value")
+    }
+  }
   private val semaphore = new Semaphore(maxConcurrentEsRequests)
 
   // Timeout for acquiring a semaphore permit (seconds).
