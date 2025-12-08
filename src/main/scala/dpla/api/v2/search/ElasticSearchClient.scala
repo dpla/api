@@ -9,7 +9,7 @@ import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 
-import java.util.concurrent.Semaphore
+import java.util.concurrent.{Semaphore, TimeUnit}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -24,14 +24,34 @@ object ElasticSearchClient {
     sys.env.getOrElse("ES_MAX_CONCURRENT_REQUESTS", "32").toInt
   private val semaphore = new Semaphore(maxConcurrentEsRequests)
 
+  // Timeout for acquiring a semaphore permit (seconds).
+  // If exceeded, the request fails fast rather than blocking indefinitely.
+  // Keep this well below askTimeout (30s) to leave time for the actual ES query.
+  private val semaphoreTimeoutSeconds: Long =
+    sys.env.getOrElse("ES_SEMAPHORE_TIMEOUT_SECONDS", "5").toLong
+
   /**
    * Wraps an ES request Future with concurrency limiting.
-   * Acquires a permit before making the request and releases it when complete.
+   * Uses tryAcquire with timeout to avoid blocking actor threads indefinitely.
+   * Ensures permit is released even if Future construction fails.
    */
   private def withConcurrencyLimit[T](f: => Future[T])
                                      (implicit ec: ExecutionContext): Future[T] = {
-    semaphore.acquire()
-    f.andThen { case _ => semaphore.release() }(ec)
+    if (!semaphore.tryAcquire(semaphoreTimeoutSeconds, TimeUnit.SECONDS)) {
+      Future.failed(new RuntimeException(
+        s"ES request rejected: concurrency limit ($maxConcurrentEsRequests) exceeded, " +
+        s"timed out after ${semaphoreTimeoutSeconds}s waiting for permit"
+      ))
+    } else {
+      try {
+        val future = f
+        future.andThen { case _ => semaphore.release() }(ec)
+      } catch {
+        case e: Throwable =>
+          semaphore.release()
+          Future.failed(e)
+      }
+    }
   }
 
   def apply(
