@@ -9,12 +9,30 @@ import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search.paramValidators.{FetchParams, RandomParams, SearchParams}
 import spray.json.JsValue
 
-import scala.concurrent.Future
+import java.util.concurrent.Semaphore
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Sends requests to Elastic Search.
  */
 object ElasticSearchClient {
+
+  // Concurrency limiter to prevent overwhelming the ES cluster and Akka HTTP pool.
+  // This caps the number of concurrent in-flight ES requests per API instance.
+  // Default 32 permits; can be tuned via environment variable.
+  private val maxConcurrentEsRequests: Int =
+    sys.env.getOrElse("ES_MAX_CONCURRENT_REQUESTS", "32").toInt
+  private val semaphore = new Semaphore(maxConcurrentEsRequests)
+
+  /**
+   * Wraps an ES request Future with concurrency limiting.
+   * Acquires a permit before making the request and releases it when complete.
+   */
+  private def withConcurrencyLimit[T](f: => Future[T])
+                                     (implicit ec: ExecutionContext): Future[T] = {
+    semaphore.acquire()
+    f.andThen { case _ => semaphore.release() }(ec)
+  }
 
   def apply(
              endpoint: String,
@@ -81,6 +99,7 @@ object ElasticSearchClient {
     Behaviors.setup { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
+      implicit val ec: ExecutionContext = system.executionContext
 
       // Make an HTTP request to elastic search.
       val searchUri: String = s"$endpoint/_search"
@@ -89,8 +108,9 @@ object ElasticSearchClient {
         uri = searchUri,
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
-      val futureResp: Future[HttpResponse] =
+      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
         Http().singleRequest(request)
+      }
 
       context.log.info2(
         "ElasticSearch search QUERY: {}: {}",
@@ -134,11 +154,13 @@ object ElasticSearchClient {
     Behaviors.setup { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
+      implicit val ec: ExecutionContext = system.executionContext
 
       // Make an HTTP request to elastic search.
       val fetchUri = s"$endpoint/_doc/$id"
-      val futureResp: Future[HttpResponse] =
+      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
         Http().singleRequest(HttpRequest(uri = fetchUri))
+      }
 
       context.log.info("ElasticSearch fetch QUERY: {}", fetchUri)
 
@@ -184,6 +206,7 @@ object ElasticSearchClient {
     Behaviors.setup { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
+      implicit val ec: ExecutionContext = system.executionContext
 
       // Make an HTTP request to elastic search.
       val searchUri: String = s"$endpoint/_search"
@@ -192,8 +215,9 @@ object ElasticSearchClient {
         uri = searchUri,
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
-      val futureResp: Future[HttpResponse] =
+      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
         Http().singleRequest(request)
+      }
 
       context.log.info2(
         "ElasticSearch multi-fetch QUERY: {}: {}",
@@ -236,6 +260,7 @@ object ElasticSearchClient {
     Behaviors.setup { context =>
 
       implicit val system: ActorSystem[Nothing] = context.system
+      implicit val ec: ExecutionContext = system.executionContext
 
       // Make an HTTP request to elastic search.
       val searchUri: String = s"$endpoint/_search"
@@ -244,8 +269,9 @@ object ElasticSearchClient {
         uri = searchUri,
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
-      val futureResp: Future[HttpResponse] =
+      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
         Http().singleRequest(request)
+      }
 
       context.log.info2(
         "ElasticSearch random QUERY: {}: {}",
