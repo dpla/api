@@ -22,7 +22,6 @@ import dpla.api.v2.search.paramValidators.{
 }
 import spray.json.JsValue
 
-import java.util.concurrent.{Semaphore, TimeUnit}
 import scala.concurrent.{ExecutionContext, Future}
 import org.slf4j.LoggerFactory
 
@@ -60,7 +59,6 @@ object ElasticSearchClient {
       case None => DefaultMaxConcurrentRequests
     }
   }
-  private val semaphore = new Semaphore(maxConcurrentEsRequests)
 
   // Timeout for acquiring a semaphore permit (seconds).
   // If exceeded, the request fails fast rather than blocking indefinitely.
@@ -88,31 +86,11 @@ object ElasticSearchClient {
     }
   }
 
-  /** Wraps an ES request Future with concurrency limiting. Uses tryAcquire with
-    * timeout to avoid blocking actor threads indefinitely. Ensures permit is
-    * released even if Future construction fails.
-    */
-  private def withConcurrencyLimit[T](
-      f: => Future[T]
-  )(implicit ec: ExecutionContext): Future[T] = {
-    if (!semaphore.tryAcquire(semaphoreTimeoutSeconds, TimeUnit.SECONDS)) {
-      Future.failed(
-        new RuntimeException(
-          s"ES request rejected: concurrency limit ($maxConcurrentEsRequests) exceeded, " +
-            s"timed out after ${semaphoreTimeoutSeconds}s waiting for permit"
-        )
-      )
-    } else {
-      try {
-        val future = f
-        future.andThen { case _ => semaphore.release() }(ec)
-      } catch {
-        case e: Throwable =>
-          semaphore.release()
-          Future.failed(e)
-      }
-    }
-  }
+  // Concurrency limiter instance used to wrap ES requests
+  private val concurrencyLimiter = new ConcurrencyLimiter(
+    maxConcurrent = maxConcurrentEsRequests,
+    timeoutSeconds = semaphoreTimeoutSeconds
+  )
 
   def apply(
       endpoint: String,
@@ -209,7 +187,7 @@ object ElasticSearchClient {
         uri = searchUri,
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
-      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
+      val futureResp: Future[HttpResponse] = concurrencyLimiter {
         Http().singleRequest(request)
       }
 
@@ -258,7 +236,7 @@ object ElasticSearchClient {
 
       // Make an HTTP request to elastic search.
       val fetchUri = s"$endpoint/_doc/$id"
-      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
+      val futureResp: Future[HttpResponse] = concurrencyLimiter {
         Http().singleRequest(HttpRequest(uri = fetchUri))
       }
 
@@ -313,7 +291,7 @@ object ElasticSearchClient {
         uri = searchUri,
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
-      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
+      val futureResp: Future[HttpResponse] = concurrencyLimiter {
         Http().singleRequest(request)
       }
 
@@ -366,7 +344,7 @@ object ElasticSearchClient {
         uri = searchUri,
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
-      val futureResp: Future[HttpResponse] = withConcurrencyLimit {
+      val futureResp: Future[HttpResponse] = concurrencyLimiter {
         Http().singleRequest(request)
       }
 
