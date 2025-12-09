@@ -193,14 +193,13 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       .toJson
       .asInstanceOf[JsArray]
 
-  /** For general field query, use a keyword (i.e. "query_string") query. For
-    * exact field match, use "term" query.
-    *   - term" searches for an exact term (with no additional text before or
+  /** For general field query, use a multi_match query. For exact field match, use "term" query.
+    *   - "term" searches for an exact term (with no additional text before or
     *     after).
     *   - It is case-sensitive and does not analyze the search term.
     *   - You can optionally set a parameter to ignore case,
     *   - but this is NOT applied in the cultural heritage API.
-    *   - It is only for fields that non-analyzed (i.e. indexed as "keyword")
+    *   - It is only for fields that are non-analyzed (i.e. indexed as "keyword")
     */
   private def singleFieldQuery(
       fieldQuery: FieldQuery,
