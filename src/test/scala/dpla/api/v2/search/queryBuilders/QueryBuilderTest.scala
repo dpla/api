@@ -418,6 +418,96 @@ class QueryBuilderTest
         assert(traversed == expected)
       }
 
+      "not strip when internal quotation marks are present" in {
+        val original = "\"Mystery \"fiction\"\""
+        val expected = Some(original)
+        val fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", original))
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        assert(traversed == expected)
+      }
+
+      "not strip when only leading quotation mark is present" in {
+        val original = "\"Mystery fiction"
+        val expected = Some(original)
+        val fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", original))
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        assert(traversed == expected)
+      }
+
+      "not strip when only trailing quotation mark is present" in {
+        val original = "Mystery fiction\""
+        val expected = Some(original)
+        val fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", original))
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        assert(traversed == expected)
+      }
+
+      "strip empty quoted string to empty value" in {
+        val original = "\"\""
+        val expected = Some("")
+        val fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", original))
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        assert(traversed == expected)
+      }
+
+      "leave unquoted string unchanged" in {
+        val original = "Mystery fiction"
+        val expected = Some(original)
+        val fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", original))
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
+        val query = getJsSearchQuery(params)
+        val boolMust = readObjectArray(query, "query", "bool", "must")
+        val queryTerm =
+          boolMust.flatMap(obj => readObject(obj, "term")).head
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        assert(traversed == expected)
+      }
+
       "handle multiple terms joined by +AND+" in {
         val expected = Seq(Some("Legislators"), Some("City Council"))
         val fieldQueries = Seq(
