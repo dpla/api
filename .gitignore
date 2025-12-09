@@ -183,3 +183,6 @@ log/*
 metastore_db/
 
 .bsp/
+
+# sbt installation directory
+sbt/
