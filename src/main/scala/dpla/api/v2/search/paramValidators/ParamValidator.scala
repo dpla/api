@@ -243,7 +243,7 @@ trait ParamValidator extends FieldDefinitions {
 
         if (fromValue + requestedPageSize > 1000)
           throw ValidationException(
-            s"Pagination too deep: from ($fromValue) + size ($pageSize) exceeds 1000"
+            s"Pagination too deep: from ($fromValue) + size ($requestedPageSize) exceeds 1000"
           )
 
         val hasFacets = facets.nonEmpty
