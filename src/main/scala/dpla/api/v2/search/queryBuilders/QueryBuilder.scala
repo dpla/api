@@ -113,7 +113,6 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
   // Reduced high-value fields for multi_match keyword queries
   private val keywordQueryFields = Seq(
     "sourceResource.title^2",
-    "sourceResource.subtitle^2",
     "sourceResource.subject.name^1",
     "sourceResource.description^0.75",
     "sourceResource.creator^1",
@@ -193,13 +192,15 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       .toJson
       .asInstanceOf[JsArray]
 
-  /** For general field query, use a multi_match query. For exact field match, use "term" query.
+  /** For general field query, use a multi_match query. For exact field match,
+    * use "term" query.
     *   - "term" searches for an exact term (with no additional text before or
     *     after).
     *   - It is case-sensitive and does not analyze the search term.
     *   - You can optionally set a parameter to ignore case,
     *   - but this is NOT applied in the cultural heritage API.
-    *   - It is only for fields that are non-analyzed (i.e. indexed as "keyword")
+    *   - It is only for fields that are non-analyzed (i.e. indexed as
+    *     "keyword")
     */
   private def singleFieldQuery(
       fieldQuery: FieldQuery,
@@ -251,11 +252,11 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
           )
         ) // This should not happen
 
-      val values = stripLeadingAndTrainingQuotationMarks(fieldQuery.value)
+      val values = stripLeadingAndTrailingQuotationMarks(fieldQuery.value)
         .split("AND")
         .flatMap(_.split("OR"))
         .map(_.trim)
-        .map(stripLeadingAndTrainingQuotationMarks)
+        .map(stripLeadingAndTrailingQuotationMarks)
 
       values.map { value =>
         JsObject(
@@ -276,7 +277,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
   /** Strip leading and trailing quotation marks only if there are no internal
     * quotation marks.
     */
-  private def stripLeadingAndTrainingQuotationMarks(str: String): String =
+  private def stripLeadingAndTrailingQuotationMarks(str: String): String =
     if (str.matches("^\"[^\"]*\"$"))
       str.stripPrefix("\"").stripSuffix("\"")
     else
