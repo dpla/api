@@ -501,7 +501,7 @@ trait ParamValidator extends FieldDefinitions {
     Try(intString.toInt).toOption match {
       case Some(int) =>
         if (int < min) throw ValidationException(rule)
-        else if (int > max) max
+        else if (int > max) throw ValidationException(rule)
         else int
       case None =>
         // not an integer
