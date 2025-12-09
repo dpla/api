@@ -8,14 +8,26 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry.{MockSmrRegistry, SmrRegistryCommand}
+import dpla.api.v2.registry.{
+  MockEbookRegistry,
+  MockSmrRegistry,
+  SearchRegistryCommand,
+  SmrRegistryCommand
+}
+import dpla.api.v2.search.MockEbookSearch
+import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.smr.MockSmrRequestHandler
 import dpla.api.v2.smr.SmrProtocol.SmrCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.duration._
+import akka.http.scaladsl.testkit.RouteTestTimeout
 
-class InvalidParamsTest extends AnyWordSpec with Matchers
-  with ScalatestRouteTest with ActorHelper {
+class InvalidParamsTest
+    extends AnyWordSpec
+    with Matchers
+    with ScalatestRouteTest
+    with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit
@@ -25,6 +37,19 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds)
+
+  val ebookSearch: ActorRef[SearchCommand] =
+    MockEbookSearch(testKit)
+
+  val ebookRegistry: ActorRef[SearchRegistryCommand] =
+    MockEbookRegistry(
+      testKit,
+      authenticator,
+      ebookAnalyticsClient,
+      Some(ebookSearch)
+    )
+
   val smrRequestHandler: ActorRef[SmrCommand] =
     MockSmrRequestHandler(testKit, Some(s3ClientSuccess))
 
@@ -32,8 +57,13 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     MockSmrRegistry(testKit, authenticator, Some(smrRequestHandler))
 
   lazy val routes: Route =
-    new Routes(itemRegistry, pssRegistry, apiKeyRegistry,
-      smrRegistryS3Success).applicationRoutes
+    new Routes(
+      ebookRegistry,
+      itemRegistry,
+      pssRegistry,
+      apiKeyRegistry,
+      smrRegistryS3Success
+    ).applicationRoutes
 
   "malformed api_key" should {
     "return Forbidden for a key that is too short" in {
@@ -61,10 +91,50 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     }
 
     "still pass a well-formed key through to the registry" in {
-      val request = Get(s"/v2/items?api_key=$fakeApiKey")
+      val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
       request ~> Route.seal(routes) ~> check {
         status should not be StatusCodes.Forbidden
-        status should not be StatusCodes.NotFound
+      }
+    }
+  }
+
+  "/v2/ebooks route" should {
+    "return BadRequest if params are invalid" in {
+      val request = Get(s"/v2/ebooks?page=foo&api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        contentType should ===(ContentTypes.`application/json`)
+      }
+    }
+
+    "ignore empty params" in {
+      val request = Get(s"/v2/ebooks?page=&api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status should not be StatusCodes.BadRequest
+        contentType should ===(ContentTypes.`application/json`)
+      }
+    }
+  }
+
+  "/v2/ebooks[id] route" should {
+    "return BadRequest if id is invalid" in {
+      val request = Get(s"/v2/ebooks/<foo>?api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        contentType should ===(ContentTypes.`application/json`)
+      }
+    }
+
+    "return BadRequest if params are invalid" in {
+      val request =
+        Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?foo=bar&api_key=$fakeApiKey")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        contentType should ===(ContentTypes.`application/json`)
       }
     }
   }
@@ -75,7 +145,9 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
       val validPost = "123"
       val validUser = "abc"
 
-      val request = Post(s"/v2/smr?api_key=$fakeApiKey&service=$validService&post=$validPost&user=$validUser")
+      val request = Post(
+        s"/v2/smr?api_key=$fakeApiKey&service=$validService&post=$validPost&user=$validUser"
+      )
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -89,7 +161,7 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.BadRequest
-        contentType should === (ContentTypes.`application/json`)
+        contentType should ===(ContentTypes.`application/json`)
       }
     }
   }

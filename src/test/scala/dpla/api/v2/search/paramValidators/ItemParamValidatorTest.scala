@@ -2,13 +2,20 @@ package dpla.api.v2.search.paramValidators
 
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import dpla.api.v2.search.SearchProtocol.{IntermediateSearchResult, RawSearchParams, SearchResponse, ValidSearchParams}
+import dpla.api.v2.search.SearchProtocol.{
+  IntermediateSearchResult,
+  RawSearchParams,
+  SearchResponse,
+  ValidSearchParams
+}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ItemParamValidatorTest extends AnyWordSpec with Matchers
-  with BeforeAndAfterAll {
+class ItemParamValidatorTest
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -26,7 +33,7 @@ class ItemParamValidatorTest extends AnyWordSpec with Matchers
     "ignore valid DPLA Map fields not applicable to items" in {
       val given = "sourceResource.subtitle"
       val expected = Some(Seq())
-      val params = Map("facets" -> given)
+      val params = Map("facets" -> given, "q" -> "test")
       itemParamValidator ! RawSearchParams(params, replyProbe.ref)
       val msg = interProbe.expectMessageType[ValidSearchParams]
       msg.params.facets shouldEqual expected
