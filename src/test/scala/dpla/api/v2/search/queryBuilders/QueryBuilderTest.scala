@@ -5,14 +5,23 @@ import akka.actor.typed.ActorRef
 import dpla.api.v2.search.SearchProtocol._
 import dpla.api.v2.search.mappings.JsonFieldReader
 import dpla.api.v2.search.paramValidators
-import dpla.api.v2.search.paramValidators.{FieldQuery, Filter, RandomParams, SearchParams}
+import dpla.api.v2.search.paramValidators.{
+  FieldQuery,
+  Filter,
+  RandomParams,
+  SearchParams
+}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
 import spray.json._
 
-class QueryBuilderTest extends AnyWordSpec with Matchers
-  with PrivateMethodTester with JsonFieldReader with BeforeAndAfterAll {
+class QueryBuilderTest
+    extends AnyWordSpec
+    with Matchers
+    with PrivateMethodTester
+    with JsonFieldReader
+    with BeforeAndAfterAll {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -146,7 +155,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     facetSize = 100,
     fields = None,
     fieldQueries = Seq[FieldQuery](),
-    filter = Some(Seq(Filter("provider.@id", "http://dp.la/api/contributor/lc"))),
+    filter =
+      Some(Seq(Filter("provider.@id", "http://dp.la/api/contributor/lc"))),
     op = "AND",
     page = 3,
     pageSize = 20,
@@ -166,7 +176,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   val multiFetchQuery: JsObject = getJsFetchQuery(multiFetchIds)
 
   val randomParams: RandomParams = RandomParams(
-    filter = Some(Seq(Filter("provider.@id", "http://dp.la/api/contributor/lc"))),
+    filter =
+      Some(Seq(Filter("provider.@id", "http://dp.la/api/contributor/lc")))
   )
 
   val randomQuery: JsObject = getJsRandomQuery(randomParams)
@@ -213,15 +224,15 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   "random query builder" should {
     "specify random score" in {
-      val traversed = readObject(randomQuery, "query", "function_score",
-        "random_score")
+      val traversed =
+        readObject(randomQuery, "query", "function_score", "random_score")
       traversed should not be None
     }
 
     "specify boost mode" in {
       val expected = Some("sum")
-      val traversed = readString(randomQuery, "query", "function_score",
-        "boost_mode")
+      val traversed =
+        readString(randomQuery, "query", "function_score", "boost_mode")
       assert(traversed == expected)
     }
 
@@ -233,9 +244,15 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
     "specify filter" in {
       val expected = Some("http://dp.la/api/contributor/lc")
-      val traversed = readObjectArray(randomQuery, "query", "function_score",
-        "query", "bool", "filter", "bool", "must").headOption
-        .flatMap(must => readString(must, "term", "provider.@id"))
+      val traversed = readObjectArray(
+        randomQuery,
+        "query",
+        "function_score",
+        "query",
+        "bool",
+        "filter"
+      ).headOption
+        .flatMap(f => readString(f, "term", "provider.@id"))
       assert(traversed == expected)
     }
   }
@@ -254,8 +271,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify track_total_hits" in {
-      val expected = Some(true)
-      val traversed = readBoolean(minQuery, "track_total_hits")
+      val expected = Some(10000)
+      val traversed = readInt(minQuery, "track_total_hits")
       assert(traversed == expected)
     }
   }
@@ -271,7 +288,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = Some("dogs")
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
+        boolMust.flatMap(obj => readObject(obj, "multi_match")).head
       val traversed = readString(queryString, "query")
       assert(traversed == expected)
     }
@@ -279,26 +296,17 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "specify fields to search" in {
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
+        boolMust.flatMap(obj => readObject(obj, "multi_match")).head
       val traversed = readStringArray(queryString, "fields")
       assert(traversed.nonEmpty)
-    }
-
-    "specify wildcard analyzer" in {
-      val expected = Some(true)
-      val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
-      val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
-      val traversed = readBoolean(queryString, "analyze_wildcard")
-      assert(traversed == expected)
     }
 
     "specify default operator" in {
       val expected = Some("AND")
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
-      val traversed = readString(queryString, "default_operator")
+        boolMust.flatMap(obj => readObject(obj, "multi_match")).head
+      val traversed = readString(queryString, "operator")
       assert(traversed == expected)
     }
 
@@ -306,7 +314,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val expected = Some(true)
       val boolMust = readObjectArray(detailQuery, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
+        boolMust.flatMap(obj => readObject(obj, "multi_match")).head
       val traversed = readBoolean(queryString, "lenient")
       assert(traversed == expected)
     }
@@ -314,22 +322,22 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
   "field query builder" should {
     "handle no field search with q" in {
-      val params = minSearchParams.copy(q=Some("dogs"))
+      val params = minSearchParams.copy(q = Some("dogs"))
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string"))
+        boolMust.flatMap(obj => readObject(obj, "multi_match"))
       assert(queryString.size == 1)
     }
 
     "handle field search with no q" in {
-      val fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "london"))
-      val params = minSearchParams.copy(fieldQueries=fieldQueries)
+      val fieldQueries =
+        Seq(FieldQuery("sourceResource.subject.name", "london"))
+      val params = minSearchParams.copy(fieldQueries = fieldQueries)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
-
-        boolMust.flatMap(obj => readObject(obj, "query_string"))
+        boolMust.flatMap(obj => readObject(obj, "multi_match"))
       assert(queryString.size == 1)
     }
 
@@ -338,34 +346,35 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         FieldQuery("sourceResource.subject.name", "london"),
         FieldQuery("provider.@id", "http://standardebooks.org")
       )
-      val params = minSearchParams.copy(fieldQueries=fieldQueries)
+      val params = minSearchParams.copy(fieldQueries = fieldQueries)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryMatch =
-        boolMust.flatMap(obj => readObject(obj, "query_string"))
+        boolMust.flatMap(obj => readObject(obj, "multi_match"))
       assert(queryMatch.size == 2)
     }
 
     "specify field query term" in {
       val expected = Some("london")
       val fieldQuery = Seq(FieldQuery("sourceResource.subject.name", "london"))
-      val params = minSearchParams.copy(fieldQueries=fieldQuery)
+      val params = minSearchParams.copy(fieldQueries = fieldQuery)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
+        boolMust.flatMap(obj => readObject(obj, "multi_match")).head
       val traversed = readString(queryString, "query")
       assert(traversed == expected)
     }
 
     "specify field to search" in {
       val expected = Seq("sourceResource.subject.name")
-      val fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "london"))
-      val params = minSearchParams.copy(fieldQueries=fieldQueries)
+      val fieldQueries =
+        Seq(FieldQuery("sourceResource.subject.name", "london"))
+      val params = minSearchParams.copy(fieldQueries = fieldQueries)
       val query = getJsSearchQuery(params)
       val boolMust = readObjectArray(query, "query", "bool", "must")
       val queryString =
-        boolMust.flatMap(obj => readObject(obj, "query_string")).head
+        boolMust.flatMap(obj => readObject(obj, "multi_match")).head
       val traversed = readStringArray(queryString, "fields")
       assert(traversed == expected)
     }
@@ -387,7 +396,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
           boolMust.flatMap(obj => readObject(obj, "term")).head
-        val traversed = readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
         assert(traversed == expected)
       }
 
@@ -395,42 +405,60 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
         val expected = Some("Mystery fiction")
         val fieldQueries =
           Seq(FieldQuery("sourceResource.subject.name", "\"Mystery fiction\""))
-        val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
         val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerm =
           boolMust.flatMap(obj => readObject(obj, "term")).head
-        val traversed = readString(queryTerm, "sourceResource.subject.name.not_analyzed")
+        val traversed =
+          readString(queryTerm, "sourceResource.subject.name.not_analyzed")
         assert(traversed == expected)
       }
 
       "handle multiple terms joined by +AND+" in {
         val expected = Seq(Some("Legislators"), Some("City Council"))
-        val fieldQueries = Seq(FieldQuery(
-          "sourceResource.subject.name",
-          "\"Legislators\" AND \"City Council\""
-        ))
-        val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
+        val fieldQueries = Seq(
+          FieldQuery(
+            "sourceResource.subject.name",
+            "\"Legislators\" AND \"City Council\""
+          )
+        )
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
         val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerms = boolMust.flatMap(obj => readObject(obj, "term"))
         val traversed =
-          queryTerms.map(readString(_, "sourceResource.subject.name.not_analyzed"))
+          queryTerms.map(
+            readString(_, "sourceResource.subject.name.not_analyzed")
+          )
         assert(traversed == expected)
       }
 
       "handle multiple terms joined by +OR+" in {
         val expected = Seq(Some("Legislators"), Some("City Council"))
-        val fieldQueries = Seq(FieldQuery(
-          "sourceResource.subject.name",
-          "\"Legislators OR City Council\""
-        ))
-        val params = minSearchParams.copy(fieldQueries=fieldQueries, exactFieldMatch=true)
+        val fieldQueries = Seq(
+          FieldQuery(
+            "sourceResource.subject.name",
+            "\"Legislators OR City Council\""
+          )
+        )
+        val params = minSearchParams.copy(
+          fieldQueries = fieldQueries,
+          exactFieldMatch = true
+        )
         val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryTerms = boolMust.flatMap(obj => readObject(obj, "term"))
         val traversed =
-          queryTerms.map(readString(_, "sourceResource.subject.name.not_analyzed"))
+          queryTerms.map(
+            readString(_, "sourceResource.subject.name.not_analyzed")
+          )
         assert(traversed == expected)
       }
     }
@@ -439,7 +467,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       "specify after value" in {
         val expected = Some("1980")
         val fieldQueries = Seq(FieldQuery("sourceResource.date.after", "1980"))
-        val params = minSearchParams.copy(fieldQueries=fieldQueries)
+        val params = minSearchParams.copy(fieldQueries = fieldQueries)
         val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryRange =
@@ -451,12 +479,13 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       "specify before value" in {
         val expected = Some("1980")
         val fieldQueries = Seq(FieldQuery("sourceResource.date.before", "1980"))
-        val params = minSearchParams.copy(fieldQueries=fieldQueries)
+        val params = minSearchParams.copy(fieldQueries = fieldQueries)
         val query = getJsSearchQuery(params)
         val boolMust = readObjectArray(query, "query", "bool", "must")
         val queryRange =
           boolMust.flatMap(obj => readObject(obj, "range")).head
-        val traversed = readString(queryRange, "sourceResource.date.begin", "lte")
+        val traversed =
+          readString(queryRange, "sourceResource.date.begin", "lte")
         assert(traversed == expected)
       }
     }
@@ -470,9 +499,9 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       fieldNames should contain only expected
     }
 
-    "set should for OR" in  {
+    "set should for OR" in {
       val expected = "should"
-      val params = detailSearchParams.copy(op="OR")
+      val params = detailSearchParams.copy(op = "OR")
       val query = getJsSearchQuery(params)
       val parent = readObject(query, "query", "bool")
       val fieldNames = parent.get.fields.keys
@@ -489,7 +518,11 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
 
     "include all facets" in {
       val expected =
-        Seq("provider.@id", "sourceResource.publisher", "sourceResource.subject.name")
+        Seq(
+          "provider.@id",
+          "sourceResource.publisher",
+          "sourceResource.subject.name"
+        )
       val parent = readObject(detailQuery, "aggs")
       val fieldNames = parent.get.fields.keys
       fieldNames should contain allElementsOf expected
@@ -498,14 +531,26 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "specify facet field" in {
       val expected = Some("sourceResource.subject.name.not_analyzed")
       val traversed =
-        readString(detailQuery, "aggs", "sourceResource.subject.name", "terms", "field")
+        readString(
+          detailQuery,
+          "aggs",
+          "sourceResource.subject.name",
+          "terms",
+          "field"
+        )
       assert(traversed == expected)
     }
 
     "specify facet size" in {
       val expected = Some(100)
       val traversed =
-        readInt(detailQuery, "aggs", "sourceResource.subject.name", "terms", "size")
+        readInt(
+          detailQuery,
+          "aggs",
+          "sourceResource.subject.name",
+          "terms",
+          "size"
+        )
       assert(traversed == expected)
     }
   }
@@ -513,37 +558,62 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   "geo agg query builder" should {
     "specify facet field" in {
       val expected = Some("sourceResource.spatial.coordinates")
-      val traversed = readString(geoFacetQuery, "aggs",
-        "sourceResource.spatial.coordinates", "geo_distance", "field")
+      val traversed = readString(
+        geoFacetQuery,
+        "aggs",
+        "sourceResource.spatial.coordinates",
+        "geo_distance",
+        "field"
+      )
       assert(traversed == expected)
     }
 
     "specify origin coordinates" in {
       val expected = Some("42,-70")
-      val traversed = readString(geoFacetQuery, "aggs",
-        "sourceResource.spatial.coordinates", "geo_distance", "origin")
+      val traversed = readString(
+        geoFacetQuery,
+        "aggs",
+        "sourceResource.spatial.coordinates",
+        "geo_distance",
+        "origin"
+      )
       assert(traversed == expected)
     }
 
     "specify unit" in {
       val expected = Some("mi")
-      val traversed = readString(geoFacetQuery, "aggs",
-        "sourceResource.spatial.coordinates", "geo_distance", "unit")
+      val traversed = readString(
+        geoFacetQuery,
+        "aggs",
+        "sourceResource.spatial.coordinates",
+        "geo_distance",
+        "unit"
+      )
       assert(traversed == expected)
     }
 
     "specify range start" in {
       val expected = Some(0)
-      val range = readObjectArray(geoFacetQuery, "aggs",
-        "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
+      val range = readObjectArray(
+        geoFacetQuery,
+        "aggs",
+        "sourceResource.spatial.coordinates",
+        "geo_distance",
+        "ranges"
+      ).head
       val traversed = readInt(range, "from")
       assert(traversed == expected)
     }
 
     "specify range end" in {
       val expected = Some(99)
-      val range = readObjectArray(geoFacetQuery, "aggs",
-        "sourceResource.spatial.coordinates", "geo_distance", "ranges").head
+      val range = readObjectArray(
+        geoFacetQuery,
+        "aggs",
+        "sourceResource.spatial.coordinates",
+        "geo_distance",
+        "ranges"
+      ).head
       val traversed = readInt(range, "to")
       assert(traversed == expected)
     }
@@ -552,17 +622,29 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
   "date agg query builder" should {
     "specify facet field" in {
       val expected = Some("sourceResource.date.begin")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
-        "date_histogram", "field")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "aggs",
+        "sourceResource.date.begin",
+        "date_histogram",
+        "field"
+      )
       assert(traversed == expected)
     }
 
     "specify default interval" in {
       val expected = Some("year")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
-        "date_histogram", "interval")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "aggs",
+        "sourceResource.date.begin",
+        "date_histogram",
+        "interval"
+      )
       assert(traversed == expected)
     }
 
@@ -571,9 +653,15 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.begin.year")))
       val query = getJsSearchQuery(params)
-      val traversed = readString(query, "aggs",
-        "sourceResource.date.begin.year", "aggs",
-        "sourceResource.date.begin.year", "date_histogram", "interval")
+      val traversed = readString(
+        query,
+        "aggs",
+        "sourceResource.date.begin.year",
+        "aggs",
+        "sourceResource.date.begin.year",
+        "date_histogram",
+        "interval"
+      )
       assert(traversed == expected)
     }
 
@@ -582,17 +670,29 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.begin.month")))
       val query = getJsSearchQuery(params)
-      val traversed = readString(query, "aggs",
-        "sourceResource.date.begin.month", "aggs",
-        "sourceResource.date.begin.month", "date_histogram", "interval")
+      val traversed = readString(
+        query,
+        "aggs",
+        "sourceResource.date.begin.month",
+        "aggs",
+        "sourceResource.date.begin.month",
+        "date_histogram",
+        "interval"
+      )
       assert(traversed == expected)
     }
 
     "specify default format" in {
       val expected = Some("yyyy")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
-        "date_histogram", "format")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "aggs",
+        "sourceResource.date.begin",
+        "date_histogram",
+        "format"
+      )
       assert(traversed == expected)
     }
 
@@ -601,9 +701,15 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.end.year")))
       val query = getJsSearchQuery(params)
-      val traversed = readString(query, "aggs",
-        "sourceResource.date.end.year", "aggs",
-        "sourceResource.date.end.year", "date_histogram", "format")
+      val traversed = readString(
+        query,
+        "aggs",
+        "sourceResource.date.end.year",
+        "aggs",
+        "sourceResource.date.end.year",
+        "date_histogram",
+        "format"
+      )
       assert(traversed == expected)
     }
 
@@ -612,33 +718,58 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.end.month")))
       val query = getJsSearchQuery(params)
-      val traversed = readString(query, "aggs",
-        "sourceResource.date.end.month", "aggs",
-        "sourceResource.date.end.month", "date_histogram", "format")
+      val traversed = readString(
+        query,
+        "aggs",
+        "sourceResource.date.end.month",
+        "aggs",
+        "sourceResource.date.end.month",
+        "date_histogram",
+        "format"
+      )
       assert(traversed == expected)
     }
 
     "specify min doc count" in {
       val expected = Some("1")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
-        "date_histogram", "min_doc_count")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "aggs",
+        "sourceResource.date.begin",
+        "date_histogram",
+        "min_doc_count"
+      )
       assert(traversed == expected)
     }
 
     "specify order" in {
       val expected = Some("desc")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "aggs", "sourceResource.date.begin",
-        "date_histogram", "order", "_key")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "aggs",
+        "sourceResource.date.begin",
+        "date_histogram",
+        "order",
+        "_key"
+      )
       assert(traversed == expected)
     }
 
     "specify default filter gte" in {
       val expected = Some("now-2000y")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "filter", "range",
-        "sourceResource.date.begin", "gte")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "filter",
+        "range",
+        "sourceResource.date.begin",
+        "gte"
+      )
       assert(traversed == expected)
     }
 
@@ -647,9 +778,15 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.end.year")))
       val query = getJsSearchQuery(params)
-      val traversed = readString(query, "aggs",
-        "sourceResource.date.end.year", "filter", "range",
-        "sourceResource.date.end", "gte")
+      val traversed = readString(
+        query,
+        "aggs",
+        "sourceResource.date.end.year",
+        "filter",
+        "range",
+        "sourceResource.date.end",
+        "gte"
+      )
       assert(traversed == expected)
     }
 
@@ -658,17 +795,29 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.end.month")))
       val query = getJsSearchQuery(params)
-      val traversed = readString(query, "aggs",
-        "sourceResource.date.end.month", "filter", "range",
-        "sourceResource.date.end", "gte")
+      val traversed = readString(
+        query,
+        "aggs",
+        "sourceResource.date.end.month",
+        "filter",
+        "range",
+        "sourceResource.date.end",
+        "gte"
+      )
       assert(traversed == expected)
     }
 
     "specify filter lte" in {
       val expected = Some("now")
-      val traversed = readString(dateFacetQuery, "aggs",
-        "sourceResource.date.begin", "filter", "range",
-        "sourceResource.date.begin", "lte")
+      val traversed = readString(
+        dateFacetQuery,
+        "aggs",
+        "sourceResource.date.begin",
+        "filter",
+        "range",
+        "sourceResource.date.begin",
+        "lte"
+      )
       assert(traversed == expected)
     }
   }
@@ -691,7 +840,9 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "default to sorting by score when fieldQuery is present" in {
       val expected = "_score"
       val params = minSearchParams
-        .copy(fieldQueries = Seq(FieldQuery("sourceResource.subject.name", "adventure")))
+        .copy(fieldQueries =
+          Seq(FieldQuery("sourceResource.subject.name", "adventure"))
+        )
       val query: JsObject = getJsSearchQuery(params)
       val traversed: String = readStringArray(query, "sort").head
       assert(traversed == expected)
@@ -780,9 +931,8 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     "specify field and term" in {
       val expected = Some("http://dp.la/api/contributor/lc")
       val traversed =
-        readObjectArray(filterQuery, "query", "bool", "filter", "bool", "must")
-          .headOption
-          .flatMap(must => readString(must, "term", "provider.@id"))
+        readObjectArray(filterQuery, "query", "bool", "filter").headOption
+          .flatMap(f => readString(f, "term", "provider.@id"))
       assert(traversed == expected)
     }
   }

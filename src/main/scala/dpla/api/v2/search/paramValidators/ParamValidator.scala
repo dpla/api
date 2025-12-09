@@ -9,57 +9,54 @@ import java.net.URL
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
-/**
- * Validates user-submitted search and fetch parameters.
- * Provides default values when appropriate.
- * Bad actors may use invalid search params to try and hack the system, so they
- * are logged as warnings.
- */
+/** Validates user-submitted search and fetch parameters. Provides default
+  * values when appropriate. Bad actors may use invalid search params to try and
+  * hack the system, so they are logged as warnings.
+  */
 
 /** Case classes for representing valid search parameters */
 
 private[search] case class SearchParams(
-                                         exactFieldMatch: Boolean,
-                                         facets: Option[Seq[String]],
-                                         facetSize: Int,
-                                         fields: Option[Seq[String]],
-                                         fieldQueries: Seq[FieldQuery],
-                                         filter: Option[Seq[Filter]],
-                                         op: String,
-                                         page: Int,
-                                         pageSize: Int,
-                                         q: Option[String],
-                                         sortBy: Option[String],
-                                         sortByPin: Option[String],
-                                         sortOrder: String
-                                       )
+    exactFieldMatch: Boolean,
+    facets: Option[Seq[String]],
+    facetSize: Int,
+    fields: Option[Seq[String]],
+    fieldQueries: Seq[FieldQuery],
+    filter: Option[Seq[Filter]],
+    op: String,
+    page: Int,
+    pageSize: Int,
+    q: Option[String],
+    sortBy: Option[String],
+    sortByPin: Option[String],
+    sortOrder: String
+)
 
 private[search] case class FetchParams(
-                                        fields: Option[Seq[String]] = None
-                                      )
+    fields: Option[Seq[String]] = None
+)
 
 private[search] case class RandomParams(
-                                        filter: Option[Seq[Filter]] = None
-                                       )
+    filter: Option[Seq[Filter]] = None
+)
 
 private[search] case class FieldQuery(
-                                       fieldName: String,
-                                       value: String
-                                      )
+    fieldName: String,
+    value: String
+)
 
 private[search] case class Filter(
-                                   fieldName: String,
-                                   value: String
-                                 )
+    fieldName: String,
+    value: String
+)
 
 trait ParamValidator extends FieldDefinitions {
 
   def apply(
-             nextPhase: ActorRef[IntermediateSearchResult]
-           ): Behavior[IntermediateSearchResult] = {
+      nextPhase: ActorRef[IntermediateSearchResult]
+  ): Behavior[IntermediateSearchResult] = {
 
     Behaviors.setup { context =>
-
       Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case RawSearchParams(rawParams, replyTo) =>
@@ -71,7 +68,9 @@ trait ParamValidator extends FieldDefinitions {
               context.log.warn2(
                 "Invalid search params: '{}' for params '{}'",
                 e.getMessage,
-                rawParams.map { case(key, value) => s"$key: $value"}.mkString(", ")
+                rawParams
+                  .map { case (key, value) => s"$key: $value" }
+                  .mkString(", ")
               )
               replyTo ! InvalidSearchParams(e.getMessage)
           }
@@ -86,7 +85,7 @@ trait ParamValidator extends FieldDefinitions {
                 "Invalid fetch params: '{}' for params '{}'",
                 e.getMessage,
                 rawParams
-                  .map { case(key, value) => s"$key: $value"}
+                  .map { case (key, value) => s"$key: $value" }
                   .++(Map("id" -> id))
                   .mkString(", ")
               )
@@ -102,7 +101,9 @@ trait ParamValidator extends FieldDefinitions {
               context.log.warn2(
                 "Invalid random params: '{}' for params '{}'",
                 e.getMessage,
-                rawParams.map { case(key, value) => s"$key: $value"}.mkString(", ")
+                rawParams
+                  .map { case (key, value) => s"$key: $value" }
+                  .mkString(", ")
               )
               replyTo ! InvalidSearchParams(e.getMessage)
           }
@@ -121,14 +122,14 @@ trait ParamValidator extends FieldDefinitions {
   protected val defaultExactFieldMatch: Boolean = false
   protected val defaultFacetSize: Int = 50
   protected val minFacetSize: Int = 0
-  protected val maxFacetSize: Int = 2000
+  protected val maxFacetSize: Int = 200
   protected val defaultOp: String = "AND"
   protected val defaultPage: Int = 1
   protected val minPage: Int = 1
-  protected val maxPage: Int = 100
+  protected val maxPage: Int = 10
   protected val defaultPageSize: Int = 10
   protected val minPageSize: Int = 0
-  protected val maxPageSize: Int = 500
+  protected val maxPageSize: Int = 100
   protected val defaultSortOrder: String = "asc"
 
   // Abstract.
@@ -145,17 +146,16 @@ trait ParamValidator extends FieldDefinitions {
   protected val ignoredFields: Seq[String]
 
   private case class ValidationException(
-                                          private val message: String = ""
-                                        ) extends Exception(message)
+      private val message: String = ""
+  ) extends Exception(message)
 
-  /**
-   * Get valid fetch params.
-   * Fails with ValidationException if id or any raw params are invalid.
-   */
+  /** Get valid fetch params. Fails with ValidationException if id or any raw
+    * params are invalid.
+    */
   private def getFetchIds(
-                           id: String,
-                           rawParams: Map[String, String]
-                         ): Try[Seq[String]] =
+      id: String,
+      rawParams: Map[String, String]
+  ): Try[Seq[String]] =
     Try {
       // There are no recognized params for a fetch request
       if (rawParams.nonEmpty)
@@ -164,18 +164,20 @@ trait ParamValidator extends FieldDefinitions {
         )
       else {
         val ids = id.split(",")
-        if (ids.size > maxPageSize) throw ValidationException(
-          s"The number of ids cannot exceed $maxPageSize"
-        )
+        if (ids.size > maxPageSize)
+          throw ValidationException(
+            s"The number of ids cannot exceed $maxPageSize"
+          )
         ids.map(getValidId)
       }
     }
 
-  /**
-   * Get valid search params.
-   * Fails with ValidationException if any raw params are invalid.
-   */
-  private def getSearchParams(rawParams: Map[String, String]): Try[SearchParams] =
+  /** Get valid search params. Fails with ValidationException if any raw params
+    * are invalid.
+    */
+  private def getSearchParams(
+      rawParams: Map[String, String]
+  ): Try[SearchParams] =
     Try {
       // Check for unrecognized params
       val unrecognized = rawParams.keys.toSeq diff acceptedSearchParams
@@ -191,45 +193,90 @@ trait ParamValidator extends FieldDefinitions {
         val fieldQueries: Seq[FieldQuery] =
           searchableDataFields.flatMap(getValidFieldQuery(rawParams, _))
 
+        val exactFieldMatch =
+          getValid(rawParams, "exact_field_match", validBoolean)
+            .getOrElse(defaultExactFieldMatch)
+
+        val facets =
+          getValid(rawParams, "facets", validFields)
+
+        val facetSize =
+          getValid(rawParams, "facet_size", validIntWithRange)
+            .getOrElse(defaultFacetSize)
+
+        val fields =
+          getValid(rawParams, "fields", validFields)
+
+        val filter =
+          getValidFilter(rawParams)
+
+        val op =
+          getValid(rawParams, "op", validAndOr)
+            .getOrElse(defaultOp)
+
+        val page =
+          getValid(rawParams, "page", validIntWithRange)
+            .getOrElse(defaultPage)
+
+        val pageSize =
+          getValid(rawParams, "page_size", validIntWithRange)
+            .getOrElse(defaultPageSize)
+
+        val q =
+          getValid(rawParams, "q", validText)
+
+        val sortBy =
+          getValidSortField(rawParams)
+
+        val sortByPin =
+          getValidSortByPin(rawParams)
+
+        val sortOrder =
+          getValid(rawParams, "sort_order", validSortOrder)
+            .getOrElse(defaultSortOrder)
+
+        val requestedPage =
+          rawParams.get("page").flatMap(_.toIntOption).getOrElse(page)
+        val requestedPageSize =
+          rawParams.get("page_size").flatMap(_.toIntOption).getOrElse(pageSize)
+        val fromValue = (requestedPage - 1) * requestedPageSize
+
+        if (fromValue + requestedPageSize > 1000)
+          throw ValidationException(
+            s"Pagination too deep: from ($fromValue) + size ($pageSize) exceeds 1000"
+          )
+
+        val hasFacets = facets.nonEmpty
+        val hasQuery = q.isDefined || fieldQueries.nonEmpty
+        val hasFilter = filter.isDefined
+
+        if (hasFacets && !hasQuery && !hasFilter)
+          throw ValidationException(
+            "Facet requests require at least one query term (q) or filter"
+          )
+
         // Return valid search params. Provide defaults when appropriate.
         SearchParams(
-          exactFieldMatch =
-            getValid(rawParams, "exact_field_match", validBoolean)
-              .getOrElse(defaultExactFieldMatch),
-          facets =
-            getValid(rawParams, "facets", validFields),
-          facetSize =
-            getValid(rawParams, "facet_size", validIntWithRange)
-              .getOrElse(defaultFacetSize),
-          fields =
-            getValid(rawParams, "fields", validFields),
-          fieldQueries =
-            fieldQueries,
-          filter =
-            getValidFilter(rawParams),
-          op =
-            getValid(rawParams, "op", validAndOr)
-              .getOrElse(defaultOp),
-          page =
-            getValid(rawParams, "page", validIntWithRange)
-              .getOrElse(defaultPage),
-          pageSize =
-            getValid(rawParams, "page_size", validIntWithRange)
-              .getOrElse(defaultPageSize),
-          q =
-            getValid(rawParams, "q", validText),
-          sortBy =
-            getValidSortField(rawParams),
-          sortByPin =
-            getValidSortByPin(rawParams),
-          sortOrder =
-            getValid(rawParams, "sort_order", validSortOrder)
-              .getOrElse(defaultSortOrder)
+          exactFieldMatch = exactFieldMatch,
+          facets = facets,
+          facetSize = facetSize,
+          fields = fields,
+          fieldQueries = fieldQueries,
+          filter = filter,
+          op = op,
+          page = page,
+          pageSize = pageSize,
+          q = q,
+          sortBy = sortBy,
+          sortByPin = sortByPin,
+          sortOrder = sortOrder
         )
       }
     }
 
-  private def getRandomParams(rawParams: Map[String, String]): Try[RandomParams] =
+  private def getRandomParams(
+      rawParams: Map[String, String]
+  ): Try[RandomParams] =
     Try {
       // Check for unrecognized params
       val unrecognized = rawParams.keys.toSeq diff Seq("filter")
@@ -252,22 +299,20 @@ trait ParamValidator extends FieldDefinitions {
     getDataFieldType(paramName) match {
       case Some(fieldType) =>
         fieldType match {
-          case TextField => validText
-          case IntField => validInt
-          case URLField => validUrl
-          case DateField => validDate
+          case TextField     => validText
+          case IntField      => validInt
+          case URLField      => validUrl
+          case DateField     => validDate
           case WildcardField => validText
-          case _ => validText
+          case _             => validText
         }
       case None =>
         throw ValidationException(s"Unrecognized parameter: $paramName")
     }
 
-  /**
-   * Method returns Failure if ID is invalid.
-   * Ebook ID must be a non-empty String comprised of letters, numbers, and
-   * hyphens.
-   */
+  /** Method returns Failure if ID is invalid. Ebook ID must be a non-empty
+    * String comprised of letters, numbers, and hyphens.
+    */
   private def getValidId(id: String): String = {
     val rule = "ID must be a String comprised of letters, numbers, and " +
       "hyphens between 1 and 32 characters long"
@@ -277,11 +322,12 @@ trait ParamValidator extends FieldDefinitions {
     else throw ValidationException(rule)
   }
 
-  /**
-   * Get a valid value for a field query.
-   */
-  private def getValidFieldQuery(rawParams: Map[String, String],
-                                 paramName: String): Option[FieldQuery] = {
+  /** Get a valid value for a field query.
+    */
+  private def getValidFieldQuery(
+      rawParams: Map[String, String],
+      paramName: String
+  ): Option[FieldQuery] = {
 
     val validationMethod = getValidationMethod(paramName)
 
@@ -289,18 +335,23 @@ trait ParamValidator extends FieldDefinitions {
       .map(FieldQuery(paramName, _))
   }
 
-  /**
-   * Get a valid field name and value for a filter query.
-   */
-  private def getValidFilter(rawParams: Map[String, String]): Option[Seq[Filter]] =
-    rawParams.get("filter").map{ filter =>
-
-      val fieldName = filter.split(":", 2).headOption
+  /** Get a valid field name and value for a filter query.
+    */
+  private def getValidFilter(
+      rawParams: Map[String, String]
+  ): Option[Seq[Filter]] =
+    rawParams.get("filter").map { filter =>
+      val fieldName = filter
+        .split(":", 2)
+        .headOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
 
-      val values = filter.split(":", 2).lastOption
+      val values = filter
+        .split(":", 2)
+        .lastOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
-        .split("AND").map(_.trim)
+        .split("AND")
+        .map(_.trim)
 
       if (searchableDataFields.contains(fieldName)) {
         val validationMethod = getValidationMethod(fieldName)
@@ -315,13 +366,14 @@ trait ParamValidator extends FieldDefinitions {
       }
     }
 
-  /**
-   * Get a valid value for sort_by parameter.
-   * Must be in the list of sortable fields.
-   * If coordinates, query must also contain the "sort_by_pin" parameter.
-   */
-  private def getValidSortField(rawParams: Map[String, String]): Option[String] =
-    rawParams.get("sort_by").map{ sortField =>
+  /** Get a valid value for sort_by parameter. Must be in the list of sortable
+    * fields. If coordinates, query must also contain the "sort_by_pin"
+    * parameter.
+    */
+  private def getValidSortField(
+      rawParams: Map[String, String]
+  ): Option[String] =
+    rawParams.get("sort_by").map { sortField =>
       // Check if field is sortable according to the field definition
       if (sortableDataFields.contains(sortField)) {
         // Check if field represents coordinates
@@ -331,7 +383,7 @@ trait ParamValidator extends FieldDefinitions {
             // Check if raw params also contains sort_by_pin
             rawParams.get("sort_by_pin") match {
               case Some(_) => sortField
-              case None =>
+              case None    =>
                 throw ValidationException(
                   "The sort_by_pin parameter is required."
                 )
@@ -347,11 +399,12 @@ trait ParamValidator extends FieldDefinitions {
         )
     }
 
-  /**
-   * Get valid value for sort_by_pin.
-   * Query must also contain the "sort_by" parameter with the coordinates field.
-   */
-  private def getValidSortByPin(rawParams: Map[String, String]): Option[String] = {
+  /** Get valid value for sort_by_pin. Query must also contain the "sort_by"
+    * parameter with the coordinates field.
+    */
+  private def getValidSortByPin(
+      rawParams: Map[String, String]
+  ): Option[String] = {
     rawParams.get("sort_by_pin").map { coordinates =>
       // Check if field is valid text (will throw exception if not)
       val validCoordinates: String = validText(coordinates, "sort_by_pin")
@@ -366,20 +419,24 @@ trait ParamValidator extends FieldDefinitions {
             )
         case None =>
           throw ValidationException(
-              s"The sort_by parameter is required."
+            s"The sort_by parameter is required."
           )
       }
     }
   }
 
-  /**
-   * Find the raw parameter with the given name.
-   * Then validate with the given method.
-   */
-  private def getValid[T](rawParams: Map[String, String],
-                          paramName: String,
-                          validationMethod: (String, String) => T): Option[T] =
-    rawParams.find(_._1 == paramName).map{case (k,v) => validationMethod(v,k)}
+  /** Find the raw parameter with the given name. Then validate with the given
+    * method.
+    */
+  private def getValid[T](
+      rawParams: Map[String, String],
+      paramName: String,
+      validationMethod: (String, String) => T
+  ): Option[T] =
+    rawParams.find(_._1 == paramName).flatMap {
+      case (k, v) if v.trim.isEmpty => None
+      case (k, v)                   => Some(validationMethod(v, k))
+    }
 
   // Must be a Boolean value.
   private def validBoolean(boolString: String, param: String): Boolean =
@@ -394,25 +451,30 @@ trait ParamValidator extends FieldDefinitions {
     val acceptedFields = param match {
       case "facets" => facetableDataFields
       case "fields" => allDataFields
-      case _ => Seq[String]()
+      case _        => Seq[String]()
     }
 
-    fieldString.split(",").flatMap(candidate => {
-      // Need to check ignoredFields first b/c acceptedFields may contain
-      // fields that are also in ignoredFields
-      if (ignoredFields.contains(candidate))
-        None
-      else if (acceptedFields.contains(candidate))
-        Some(candidate)
-      else if (param == "facets" && coordinatesField.map(_.name)
-        .contains(candidate.split(":").head))
-
-        Some(candidate)
-      else
-        throw ValidationException(
-          s"'$candidate' is not an allowable value for '$param'"
+    fieldString
+      .split(",")
+      .flatMap(candidate => {
+        // Need to check ignoredFields first b/c acceptedFields may contain
+        // fields that are also in ignoredFields
+        if (ignoredFields.contains(candidate))
+          None
+        else if (acceptedFields.contains(candidate))
+          Some(candidate)
+        else if (
+          param == "facets" && coordinatesField
+            .map(_.name)
+            .contains(candidate.split(":").head)
         )
-    })
+
+          Some(candidate)
+        else
+          throw ValidationException(
+            s"'$candidate' is not an allowable value for '$param'"
+          )
+      })
   }
 
   // Must be an integer
@@ -427,9 +489,9 @@ trait ParamValidator extends FieldDefinitions {
   def validIntWithRange(intString: String, param: String): Int = {
     val (min: Int, max: Int) = param match {
       case "facet_size" => (minFacetSize, maxFacetSize)
-      case "page" => (minPage, maxPage)
-      case "page_size" => (minPageSize, maxPageSize)
-      case _ => (0, 2147483647)
+      case "page"       => (minPage, maxPage)
+      case "page_size"  => (minPageSize, maxPageSize)
+      case _            => (0, 2147483647)
     }
 
     val rule = s"$param must be an integer between 0 and $max"
@@ -448,9 +510,9 @@ trait ParamValidator extends FieldDefinitions {
   // Must be a string between 2 and 200 characters.
   private def validText(text: String, param: String): String =
     if (text.length < 2 || text.length > 200)
-    // In the DPLA API (cultural heritage), an exception is thrown if q is too
-    // long, but not if q is too short.
-    // For internal consistency, and exception is thrown here in both cases.
+      // In the DPLA API (cultural heritage), an exception is thrown if q is too
+      // long, but not if q is too short.
+      // For internal consistency, and exception is thrown here in both cases.
       throw ValidationException(s"$param must be between 2 and 200 characters")
     else text
 
@@ -462,7 +524,10 @@ trait ParamValidator extends FieldDefinitions {
     val yearMonth: Regex = raw"""\d{4}-\d{2}""".r
     val yearMonthDay: Regex = raw"""\d{4}-\d{2}-\d{2}""".r
 
-    if (year.matches(text) || yearMonth.matches(text) || yearMonthDay.matches(text))
+    if (
+      year.matches(text) || yearMonth
+        .matches(text) || yearMonthDay.matches(text)
+    )
       text
     else
       throw ValidationException(rule)

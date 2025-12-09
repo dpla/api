@@ -14,9 +14,14 @@ import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.MockEbookSearch
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.duration._
+import akka.http.scaladsl.testkit.RouteTestTimeout
 
-class MapperFailureTest extends AnyWordSpec with Matchers
-  with ScalatestRouteTest with ActorHelper {
+class MapperFailureTest
+    extends AnyWordSpec
+    with Matchers
+    with ScalatestRouteTest
+    with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit
@@ -24,6 +29,8 @@ class MapperFailureTest extends AnyWordSpec with Matchers
   implicit def typedSystem: ActorSystem[Nothing] = testKit.system
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
+
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds)
 
   "/v2/ebooks route" should {
 
@@ -33,18 +40,28 @@ class MapperFailureTest extends AnyWordSpec with Matchers
         MockEbookSearch(testKit, None, Some(mapperFailure))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
+        MockEbookRegistry(
+          testKit,
+          authenticator,
+          ebookAnalyticsClient,
+          Some(ebookSearch)
+        )
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
-          smrRegistry).applicationRoutes
+        new Routes(
+          ebookRegistry,
+          itemRegistry,
+          pssRegistry,
+          apiKeyRegistry,
+          smrRegistry
+        ).applicationRoutes
 
       val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.InternalServerError
-        contentType should === (ContentTypes.`application/json`)
+        contentType should ===(ContentTypes.`application/json`)
       }
     }
   }
@@ -57,18 +74,28 @@ class MapperFailureTest extends AnyWordSpec with Matchers
         MockEbookSearch(testKit, None, Some(mapperFailure))
 
       val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
+        MockEbookRegistry(
+          testKit,
+          authenticator,
+          ebookAnalyticsClient,
+          Some(ebookSearch)
+        )
 
       lazy val routes: Route =
-        new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
-          smrRegistry).applicationRoutes
+        new Routes(
+          ebookRegistry,
+          itemRegistry,
+          pssRegistry,
+          apiKeyRegistry,
+          smrRegistry
+        ).applicationRoutes
 
       val request = Get(s"/v2/ebooks/R0VfVX4BfY91SSpFGqxt?api_key=$fakeApiKey")
         .withHeaders(Accept(Seq(MediaRange(MediaTypes.`application/json`))))
 
       request ~> Route.seal(routes) ~> check {
         status shouldEqual StatusCodes.InternalServerError
-        contentType should === (ContentTypes.`application/json`)
+        contentType should ===(ContentTypes.`application/json`)
       }
     }
   }

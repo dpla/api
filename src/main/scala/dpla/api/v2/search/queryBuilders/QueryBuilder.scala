@@ -9,32 +9,38 @@ import spray.json._
 
 import scala.collection.mutable.ArrayBuffer
 
-/**
- * Composes ElasticSearch queries from user-submitted parameters.
- */
+/** Composes ElasticSearch queries from user-submitted parameters.
+  */
 trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
 
-  def apply(nextPhase: ActorRef[IntermediateSearchResult]): Behavior[IntermediateSearchResult] = {
+  def apply(
+      nextPhase: ActorRef[IntermediateSearchResult]
+  ): Behavior[IntermediateSearchResult] = {
 
     Behaviors.receiveMessage[IntermediateSearchResult] {
 
       case ValidSearchParams(searchParams, replyTo) =>
-        nextPhase ! SearchQuery(searchParams,
-          composeSearchQuery(searchParams), replyTo)
+        nextPhase ! SearchQuery(
+          searchParams,
+          composeSearchQuery(searchParams),
+          replyTo
+        )
         Behaviors.same
 
       case ValidFetchParams(ids, params, replyTo) =>
         if (ids.size == 1) {
           nextPhase ! FetchQuery(ids.head, params, None, replyTo)
-        }
-        else {
+        } else {
           nextPhase ! MultiFetchQuery(composeMultiFetchQuery(ids), replyTo)
         }
         Behaviors.same
 
       case ValidRandomParams(randomParams, replyTo) =>
-        nextPhase ! RandomQuery(randomParams, composeRandomQuery(randomParams),
-          replyTo)
+        nextPhase ! RandomQuery(
+          randomParams,
+          composeRandomQuery(randomParams),
+          replyTo
+        )
         Behaviors.same
 
       case _ =>
@@ -59,7 +65,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
     ).toJson
 
   def composeRandomQuery(params: RandomParams): JsValue = {
-    val filterClause: Option[JsObject] = params.filter.map(filterQuery)
+    val filterClause: Option[JsArray] = params.filter.map(filterQuery)
 
     // Setting "boost_mode" to "sum" ensures that if a filter is used, the
     // random query will return a different doc every time (otherwise, it will
@@ -83,7 +89,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       "query" -> JsObject(
         "function_score" -> functionScore
       ),
-      "size" -> 1.toJson,
+      "size" -> 1.toJson
     ).toJson
   }
 
@@ -91,54 +97,45 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
     JsObject(
       "from" -> from(params.page, params.pageSize).toJson,
       "size" -> params.pageSize.toJson,
-      "query" -> query(params.q, params.filter, params.fieldQueries, params.exactFieldMatch, params.op),
+      "query" -> query(
+        params.q,
+        params.filter,
+        params.fieldQueries,
+        params.exactFieldMatch,
+        params.op
+      ),
       "aggs" -> aggs(params.facets, params.facetSize),
       "sort" -> sort(params),
       "_source" -> fieldRetrieval(params.fields),
-      "track_total_hits" -> true.toJson
+      "track_total_hits" -> 10000.toJson
     ).toJson
 
-  // Fields to search in a keyword query and their boost values
+  // Reduced high-value fields for multi_match keyword queries
   private val keywordQueryFields = Seq(
-    "dataProvider.name^1",
-    "intermediateProvider^1",
-    "provider.name^1",
-    "sourceResource.collection.description^1",
-    "sourceResource.collection.title^1",
-    "sourceResource.contributor^1",
-    "sourceResource.creator^1",
-    "sourceResource.description^0.75",
-    "sourceResource.extent^1",
-    "sourceResource.format^1",
-    "sourceResource.language.name^1",
-    "sourceResource.publisher^1",
-    "sourceResource.relation^1",
-    "sourceResource.rights^1",
-    "sourceResource.spatial.country^0.75",
-    "sourceResource.spatial.county^1",
-    "sourceResource.spatial.name^1",
-    "sourceResource.spatial.region^1",
-    "sourceResource.spatial.state^0.75",
-    "sourceResource.specType^1",
-    "sourceResource.subject.name^1",
-    "sourceResource.subtitle^2",
     "sourceResource.title^2",
-    "sourceResource.type^1"
+    "sourceResource.subtitle^2",
+    "sourceResource.subject.name^1",
+    "sourceResource.description^0.75",
+    "sourceResource.creator^1",
+    "sourceResource.collection.title^1",
+    "dataProvider.name^1",
+    "provider.name^1"
   )
 
   // ElasticSearch param that defines the number of hits to skip
   private def from(page: Int, pageSize: Int): Int = (page - 1) * pageSize
 
-  private def query(q: Option[String],
-                    filter: Option[Seq[Filter]],
-                    fieldQueries: Seq[FieldQuery],
-                    exactFieldMatch: Boolean,
-                    op: String
-                   ) = {
+  private def query(
+      q: Option[String],
+      filter: Option[Seq[Filter]],
+      fieldQueries: Seq[FieldQuery],
+      exactFieldMatch: Boolean,
+      op: String
+  ) = {
 
     val keyword: Seq[JsObject] =
       q.map(keywordQuery(_, keywordQueryFields)).toSeq
-    val filterClause: Option[JsObject] = filter.map(filterQuery)
+    val filterClause: Option[JsArray] = filter.map(filterQuery)
     val fieldQuery: Seq[JsObject] =
       fieldQueries.flatMap(singleFieldQuery(_, exactFieldMatch))
     val queryTerms: Seq[JsObject] = keyword ++ fieldQuery
@@ -163,60 +160,60 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
     }
   }
 
-  /**
-   * A general keyword query on the given fields.
-   * "query_string" does a keyword search within the given fields.
-   * It is case-insensitive and analyzes the search term.
-   */
-  private def keywordQuery(q: String, fields: Seq[String]): JsObject =
+  /** A general keyword query on the given fields. Uses multi_match for
+    * best_fields with lenient parsing.
+    */
+  private def keywordQuery(q: String, fields: Seq[String]): JsObject = {
+    val targetFields = if (fields.nonEmpty) fields else keywordQueryFields
+
     JsObject(
-      "query_string" -> JsObject(
-        "fields" -> fields.toJson,
+      "multi_match" -> JsObject(
         "query" -> q.toJson,
-        "analyze_wildcard" -> true.toJson,
-        "default_operator" -> "AND".toJson,
+        "fields" -> targetFields.toJson,
+        "type" -> "best_fields".toJson,
+        "operator" -> "AND".toJson,
         "lenient" -> true.toJson
-      )
-    )
-
-  /**
-   * A filter for a specific field.
-   * This will filter out fields that do not match the given value, but will
-   * not affect the score for matching documents.
-   */
-  private def filterQuery(filters: Seq[Filter]): JsObject = {
-    val mustArray: JsValue = filters.map(filter => {
-      JsObject(
-        "term" -> JsObject(
-          filter.fieldName -> filter.value.toJson
-        )
-      )
-    }).toJson
-
-    JsObject(
-      "bool" -> JsObject(
-        "must" -> mustArray
       )
     )
   }
 
-  /**
-   * For general field query, use a keyword (i.e. "query_string") query.
-   * For exact field match, use "term" query.
-   * - term" searches for an exact term (with no additional text before or after).
-   * - It is case-sensitive and does not analyze the search term.
-   * - You can optionally set a parameter to ignore case,
-   * - but this is NOT applied in the cultural heritage API.
-   * - It is only for fields that non-analyzed (i.e. indexed as "keyword")
-   */
-  private def singleFieldQuery(fieldQuery: FieldQuery,
-                               exactFieldMatch: Boolean): Seq[JsObject] =
+  /** A filter for a specific field. This will filter out fields that do not
+    * match the given value, but will not affect the score for matching
+    * documents.
+    */
+  private def filterQuery(filters: Seq[Filter]): JsArray =
+    filters
+      .map(filter => {
+        JsObject(
+          "term" -> JsObject(
+            filter.fieldName -> filter.value.toJson
+          )
+        )
+      })
+      .toJson
+      .asInstanceOf[JsArray]
+
+  /** For general field query, use a keyword (i.e. "query_string") query. For
+    * exact field match, use "term" query.
+    *   - term" searches for an exact term (with no additional text before or
+    *     after).
+    *   - It is case-sensitive and does not analyze the search term.
+    *   - You can optionally set a parameter to ignore case,
+    *   - but this is NOT applied in the cultural heritage API.
+    *   - It is only for fields that non-analyzed (i.e. indexed as "keyword")
+    */
+  private def singleFieldQuery(
+      fieldQuery: FieldQuery,
+      exactFieldMatch: Boolean
+  ): Seq[JsObject] =
 
     if (fieldQuery.fieldName.endsWith(".before")) {
       // Range query
       val field: String = getElasticSearchField(fieldQuery.fieldName)
         .getOrElse(
-          throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
+          throw new RuntimeException(
+            "Unrecognized field name: " + fieldQuery.fieldName
+          )
         )
 
       val obj = JsObject(
@@ -232,7 +229,9 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       // Range query
       val field: String = getElasticSearchField(fieldQuery.fieldName)
         .getOrElse(
-          throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
+          throw new RuntimeException(
+            "Unrecognized field name: " + fieldQuery.fieldName
+          )
         )
 
       val obj = JsObject(
@@ -248,7 +247,9 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       // Exact match query
       val field: String = getElasticSearchExactMatchField(fieldQuery.fieldName)
         .getOrElse(
-          throw new RuntimeException("Unrecognized field name: " + fieldQuery.fieldName)
+          throw new RuntimeException(
+            "Unrecognized field name: " + fieldQuery.fieldName
+          )
         ) // This should not happen
 
       val values = stripLeadingAndTrainingQuotationMarks(fieldQuery.value)
@@ -273,20 +274,18 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       Seq(obj)
     }
 
-  /**
-   * Strip leading and trailing quotation marks only if there are no
-   * internal quotation marks.
-   */
+  /** Strip leading and trailing quotation marks only if there are no internal
+    * quotation marks.
+    */
   private def stripLeadingAndTrainingQuotationMarks(str: String): String =
     if (str.matches("^\"[^\"]*\"$"))
       str.stripPrefix("\"").stripSuffix("\"")
     else
       str
 
-  /**
-   * Composes an aggregates (facets) query object.
-   * Fields must be non-analyzed (i.e. indexed as keyword)
-   */
+  /** Composes an aggregates (facets) query object. Fields must be non-analyzed
+    * (i.e. indexed as keyword)
+    */
   private def aggs(facets: Option[Seq[String]], facetSize: Int): JsObject =
     facets match {
       case Some(facetArray) =>
@@ -302,7 +301,10 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
                 val ranges = ArrayBuffer.empty[JsValue]
 
                 for (i <- 0 to 2000 by 100)
-                  ranges += JsObject("from" -> i.toJson, "to" -> (i + 99).toJson)
+                  ranges += JsObject(
+                    "from" -> i.toJson,
+                    "to" -> (i + 99).toJson
+                  )
                 ranges += JsObject("from" -> 2100.toJson)
 
                 val geoDistance = JsObject(
@@ -325,17 +327,17 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
 
             val interval = facet.split("\\.").lastOption match {
               case Some("month") => "month"
-              case _ => "year"
+              case _             => "year"
             }
 
             val format = facet.split("\\.").lastOption match {
               case Some("month") => "yyyy-MM"
-              case _ => "yyyy"
+              case _             => "yyyy"
             }
 
             val gte = facet.split("\\.").lastOption match {
               case Some("month") => "now-416y"
-              case _ => "now-2000y"
+              case _             => "now-2000y"
             }
 
             val dateHistogram = JsObject(
@@ -390,9 +392,9 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
     // This is the fastest way to sort documents but is meaningless.
     // It is the order in which they are saved to disk.
     val diskSort: JsArray =
-    JsArray(
-      "_doc".toJson
-    )
+      JsArray(
+        "_doc".toJson
+      )
 
     params.sortBy match {
       case Some(field) =>
@@ -448,7 +450,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
   private def fieldRetrieval(fields: Option[Seq[String]]): JsValue = {
     fields match {
       case Some(f) => f.map(getElasticSearchField).toJson
-      case None => Seq("*").toJson
+      case None    => Seq("*").toJson
     }
   }
 }

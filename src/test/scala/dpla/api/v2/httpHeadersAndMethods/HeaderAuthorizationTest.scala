@@ -14,9 +14,14 @@ import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.MockEbookSearch
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.duration._
+import akka.http.scaladsl.testkit.RouteTestTimeout
 
-class HeaderAuthorizationTest extends AnyWordSpec with Matchers
-  with ScalatestRouteTest with ActorHelper {
+class HeaderAuthorizationTest
+    extends AnyWordSpec
+    with Matchers
+    with ScalatestRouteTest
+    with ActorHelper {
 
   lazy val testKit: ActorTestKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -25,15 +30,31 @@ class HeaderAuthorizationTest extends AnyWordSpec with Matchers
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds)
+
   val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
+    MockEbookSearch(
+      testKit,
+      Some(ebookElasticSearchClient),
+      Some(dplaMapMapper)
+    )
 
   val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
+    MockEbookRegistry(
+      testKit,
+      authenticator,
+      ebookAnalyticsClient,
+      Some(ebookSearch)
+    )
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
-      smrRegistry).applicationRoutes
+    new Routes(
+      ebookRegistry,
+      itemRegistry,
+      pssRegistry,
+      apiKeyRegistry,
+      smrRegistry
+    ).applicationRoutes
 
   "/v2/ebooks route" should {
     "accept API key in HTTP header" in {
