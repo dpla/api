@@ -350,13 +350,11 @@ class ParamValidatorTest
       replyProbe.expectMessageType[InvalidSearchParams]
     }
 
-    "default to max if param is too large" in {
+    "reject param if too large" in {
       val given = "9999"
-      val expected = 200
       val params = Map("facet_size" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
-      val msg = interProbe.expectMessageType[ValidSearchParams]
-      msg.params.facetSize shouldEqual expected
+      replyProbe.expectMessageType[InvalidSearchParams]
     }
   }
 
