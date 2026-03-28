@@ -104,12 +104,18 @@ object PostgresClient {
           Behaviors.same
 
         case ValidApiKey(apiKey, replyTo) =>
-          // Find all accounts with the given API key
-          val accounts = TableQuery[Accounts]
-          val query = accounts.filter(_.key === apiKey)
-          val result: Future[Seq[Account]] = db.run(query.result)
+          implicit val getAccountResult: AnyRef with GetResult[Account] =
+            GetResult(a => Account(a.<<, a.<<, a.<<, a.<<, a.<<))
 
-          // Map the Future value to a message, handled by this actor.
+          // Update usage stats and return the account in one atomic query.
+          val result: Future[Seq[Account]] = db.run(
+            sql"""UPDATE account
+                  SET last_used_at = now(), request_count = request_count + 1
+                  WHERE key = $apiKey
+                  RETURNING id, key, email, enabled, staff"""
+              .as[Account]
+          )
+
           context.pipeToSelf(result) {
             case Success(matches) =>
               ProcessFindResponse(matches, replyTo)
