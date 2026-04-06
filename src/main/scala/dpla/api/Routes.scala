@@ -52,8 +52,12 @@ class Routes(
                   ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    ebookRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params)
+      ebookRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    }
   }
 
   def fetchEbooks(
@@ -65,8 +69,12 @@ class Routes(
                  ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    ebookRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params)
+      ebookRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
+    }
   }
 
   // Item search and fetch requests are send to ItemRegistry actor for
@@ -80,8 +88,12 @@ class Routes(
                   ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    itemRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params)
+      itemRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    }
   }
 
   def fetchItems(
@@ -93,8 +105,12 @@ class Routes(
                  ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    itemRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params)
+      itemRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
+    }
   }
 
   def randomItem(
@@ -103,8 +119,12 @@ class Routes(
                 ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    itemRegistry.ask(RegisterRandom(apiKey, cleanParams, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params)
+      itemRegistry.ask(RegisterRandom(apiKey, cleanParams, _))
+    }
   }
 
   def searchPss(
@@ -115,8 +135,12 @@ class Routes(
                ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params)
-    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params)
+      pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    }
   }
 
   def fetchPssSet(
@@ -128,8 +152,12 @@ class Routes(
                  ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params + ("id" -> id))
-    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params + ("id" -> id))
+      pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    }
   }
 
   def fetchPssSource(
@@ -141,8 +169,12 @@ class Routes(
                     ): Future[RegistryResponse] = {
 
     val apiKey: Option[String] = getApiKey(params, auth)
-    val cleanParams = getCleanParams(params + ("hasPart.id" -> id))
-    pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else {
+      val cleanParams = getCleanParams(params + ("hasPart.id" -> id))
+      pssRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
+    }
   }
 
   // API key must be in header
@@ -160,6 +192,13 @@ class Routes(
 
   private def getCleanParams(params: Map[String, String]) =
     params.filterNot(_._1 == "api_key").filterNot(_._2.trim.isEmpty)
+
+  // Must be 32 characters, alphanumeric and hyphens only.
+  // Mirrors the check in AuthParamValidator so malformed keys are rejected
+  // before any actor or Elasticsearch query is spawned.
+  private val apiKeyFormat = "[a-zA-Z0-9-]*".r
+  private def hasValidApiKeyFormat(key: String): Boolean =
+    key.length == 32 && apiKeyFormat.matches(key)
 
   // Create API key requests are sent to ApiKeyRegistry for processing.
   def createApiKey(email: String): Future[RegistryResponse] =
