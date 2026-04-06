@@ -179,6 +179,10 @@ trait SearchRegistryBehavior {
           searchResponse = Some(ValidationFailure(message))
           possibleSessionResolution
 
+        case SearchNotFound =>
+          searchResponse = Some(NotFoundFailure)
+          possibleSessionResolution
+
         case SearchFailure =>
           searchResponse = Some(InternalFailure)
           possibleSessionResolution

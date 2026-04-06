@@ -97,7 +97,7 @@ object PssJsonFormats extends JsonFieldReader
             typicalAgeRange = readString(set, "typicalAgeRange")
           )
         case None =>
-          throw new RuntimeException("Could not map PSS set.")
+          throw new SearchResultNotFoundException("PSS set not found in ElasticSearch response.")
       }
     }
 
