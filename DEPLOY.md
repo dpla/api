@@ -89,13 +89,13 @@ With 50% minimum healthy, some requests will hit tasks being replaced. Callers �
 
 ### Why the webhook is disabled
 
-The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disabled. The reason: the pipeline does not build a new Docker image — it only deploys whatever is currently in ECR. If the webhook were active, every PR merge would trigger a rolling restart of all 13 tasks deploying stale code, with no pre-flight checks and no post-deploy health verification.
+The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disabled. The reason: the pipeline does not build a new Docker image — it only deploys whatever is currently in ECR. If the webhook were active, every PR merge would trigger a rolling restart of all 13 tasks, deploying stale code with no pre-flight checks and no post-deploy health verification.
 
 ---
 
 ## Pre-deploy checklist
 
-- [ ] Confirm API is healthy: `curl -s "https://api.dp.la/v2/items?api_key=<KEY>&page_size=1" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['count'], 'items')"`
+- [ ] Confirm API is healthy: `curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['count'], 'items')"`
 - [ ] No in-flight pipeline executions: `aws codepipeline list-pipeline-executions --pipeline-name api-pipeline --query 'pipelineExecutionSummaries[?status==\`InProgress\`]'`
 - [ ] No in-flight GH Action runs: `gh run list --repo dpla/api --workflow "Deploy to Amazon ECR" --limit 3`
 
@@ -108,7 +108,7 @@ curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print('HTTP 200 —', d['count'], 'items in index')"
 ```
 
-Expect ~50 million items. A dramatically lower count could indicate an Elasticsearch connectivity issue.
+The API uses Elasticsearch as its primary data store and search index (~50 million items). Expect ~50 million items in the response. A dramatically lower count could indicate an Elasticsearch connectivity issue.
 
 ---
 
