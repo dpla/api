@@ -1,13 +1,27 @@
 # Deploying the DPLA API
 
-The DPLA API is a Scala/JVM service running on AWS ECS Fargate (13 tasks, rolling deployment). It powers all search and item retrieval for dp.la and all local hub sites.
+The DPLA API is a Scala/JVM service running on AWS ECS Fargate (8 tasks, blue/green deployment via CodeDeploy). It powers all search and item retrieval for dp.la and all local hub sites.
 
 **Production URL:** https://api.dp.la
 **Internal URL:** https://api-internal.dp.la (used by dp.la frontends for SSR)
 
 ---
 
-## How deployment works
+## Preferred: deploy both API services together
+
+When deploying both the DPLA API and the thumbnail API in the same maintenance window, use the combined script to run everything in parallel. This produces one impact window instead of two:
+
+```bash
+~/bin/deploy-api-services          # deploy both
+~/bin/deploy-api-services api      # api only
+~/bin/deploy-api-services thumb    # thumbnail-api only
+```
+
+The script handles pre-flight checks, parallel ECR builds, ECR verification, and parallel pipeline execution with live monitoring.
+
+---
+
+## Manual deploy (this service only)
 
 Deployment is a **two-phase process**. Merging a PR to `main` does **not** automatically deploy — the pipeline webhook is intentionally disabled. Every deployment must be triggered manually after a PR is merged.
 
@@ -56,9 +70,9 @@ The pipeline has three stages:
 |---|---|---|
 | **Source** | Pulls latest `main` from GitHub | ~10 seconds |
 | **Build** | Generates `taskdef.json` (pointing at new `api:latest`) and `appspec.yaml` | ~1 minute |
-| **Production** | Rolling ECS deploy across 13 tasks (50% minimum healthy) | ~10–15 minutes |
+| **Production** | Blue/green ECS deploy (CodeDeploy `ECSAllAtOnce`) | ~8 minutes |
 
-**Total typical duration: ~35–45 minutes** (dominated by Phase 1).
+**Total typical duration: ~30–35 minutes** (dominated by Phase 1).
 
 Monitor pipeline progress:
 
@@ -73,23 +87,22 @@ aws codepipeline get-pipeline-state \
 
 ## Important characteristics
 
-### Rolling deployment — no auto-rollback
+### Blue/green deployment with automatic rollback
 
-This service uses a **rolling deployment** strategy (not blue/green). Up to half the tasks (6–7 of 13) may be replaced simultaneously. There is **no automatic rollback** configured — if tasks fail to start, the service may be left in a degraded state until manual intervention. Monitor ECS events if the deploy hangs:
+This service uses **blue/green deployment** via AWS CodeDeploy (`ECSAllAtOnce`). During a deploy:
 
-```bash
-aws ecs describe-services \
-  --cluster api --services api \
-  --query 'services[0].events[0:5]'
-```
+1. A new "green" task set (8 tasks) is created alongside the live "blue" set.
+2. Once all green tasks pass health checks, CodeDeploy shifts 100% of ALB traffic to green.
+3. Blue tasks are terminated 5 minutes later.
+4. Automatic rollback is enabled — a deployment failure will revert traffic to the blue task set.
 
-### Brief 503s during deploy are expected
+### Slow-start on ALB target groups
 
-With 50% minimum healthy, some requests will hit tasks being replaced. Callers — including dp.la frontends via `api-internal.dp.la` — may see brief 503 errors during the ~10–15 minute deploy window. This is expected and not a sign of a failed deployment.
+Both `api-tg-blue` and `api-tg-green` have **90-second slow start** enabled. When the ALB registers new tasks after a traffic shift, it ramps each task's traffic share from near-zero to full over 90 seconds. This gives the JVM time to warm before absorbing real load — without it, cold tasks receive full traffic immediately and can return brief 503s. No action required; this is configured at the ALB level.
 
 ### Why the webhook is disabled
 
-The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disabled. The reason: the pipeline does not build a new Docker image — it only deploys whatever is currently in ECR. If the webhook were active, every PR merge would trigger a rolling restart of all 13 tasks, deploying stale code with no pre-flight checks and no post-deploy health verification.
+The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disabled. The reason: the pipeline does not build a new Docker image — it only deploys whatever is currently in ECR. If the webhook were active, every PR merge would trigger a deploy of stale code with no pre-flight checks and no post-deploy health verification.
 
 ---
 
@@ -108,7 +121,7 @@ curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print('HTTP 200 —', d['count'], 'items in index')"
 ```
 
-The API uses Elasticsearch as its primary data store and search index (~50 million items). Expect ~50 million items in the response. A dramatically lower count could indicate an Elasticsearch connectivity issue.
+Expect ~50 million items. A dramatically lower count could indicate an Elasticsearch connectivity issue.
 
 ---
 
@@ -122,7 +135,9 @@ The API uses Elasticsearch as its primary data store and search index (~50 milli
 | ECR image tag | `latest` (also tagged with branch name and commit SHA) |
 | CodePipeline | `api-pipeline` |
 | CodeBuild project | `api-codebuild` |
+| CodeDeploy app / group | `api-deployment` / `api-deployment-group` |
 | ECS cluster / service | `api` / `api` |
-| Task count | 13 (rolling, 50% min healthy, 200% max) |
-| Deployment type | Rolling — **no automatic rollback** |
+| Task count | 8 |
+| ALB target groups | `api-tg-blue`, `api-tg-green` (90s slow start) |
+| Deployment type | Blue/green (`ECSAllAtOnce`) — auto-rollback on failure |
 | AWS region | `us-east-1` |
