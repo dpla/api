@@ -50,6 +50,7 @@ object SearchProtocol {
                                       ) extends SearchResponse
 
   final case object FetchNotFound extends SearchResponse
+  final case object SearchNotFound extends SearchResponse
   final case object SearchFailure extends SearchResponse
 
   /**

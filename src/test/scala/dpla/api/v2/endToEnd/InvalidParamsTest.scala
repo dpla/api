@@ -43,6 +43,39 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
       smrRegistryS3Success).applicationRoutes
 
+  "malformed api_key" should {
+    "return Forbidden for a key that is too short" in {
+      val request = Get("/v2/items?api_key=tooshort")
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        contentType should === (ContentTypes.`application/json`)
+      }
+    }
+
+    "return Forbidden for a key with invalid characters" in {
+      val request = Get("/v2/items?api_key=your_dpla_api_key_here__________")
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        contentType should === (ContentTypes.`application/json`)
+      }
+    }
+
+    "return Forbidden for a key that is too long" in {
+      val request = Get(s"/v2/items?api_key=${fakeApiKey}extra")
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        contentType should === (ContentTypes.`application/json`)
+      }
+    }
+
+    "still pass a well-formed key through to the registry" in {
+      val request = Get(s"/v2/ebooks?api_key=$fakeApiKey")
+      request ~> Route.seal(routes) ~> check {
+        status should not be StatusCodes.Forbidden
+      }
+    }
+  }
+
   "/v2/ebooks route" should {
     "return BadRequest if params are invalid" in {
       val request = Get(s"/v2/ebooks?page=foo&api_key=$fakeApiKey")

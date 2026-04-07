@@ -13,6 +13,9 @@ import scala.util.{Failure, Success, Try}
 
 trait MappedResponse
 
+/** Thrown by a mapper when the ES response contains no matching document. */
+class SearchResultNotFoundException(message: String) extends Exception(message)
+
 trait Mapper {
 
   /** Abstract methods */
@@ -29,6 +32,8 @@ trait Mapper {
           mapSearchResponse(body, Some(params)) match {
             case Success(mappedDocList) =>
               replyTo ! MappedSearchResult(mappedDocList)
+            case Failure(_: SearchResultNotFoundException) =>
+              replyTo ! SearchNotFound
             case Failure(e) =>
               context.log.error(
                 "Failed to parse MappedDocList from ElasticSearch response:", e
