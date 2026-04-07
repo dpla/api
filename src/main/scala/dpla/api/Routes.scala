@@ -184,7 +184,10 @@ class Routes(
                              host: String,
                              path: String
                            ): Future[RegistryResponse] =
-    smrRegistry.ask(RegisterSmrArchiveRequest(auth, request, host, path, _))
+    if (auth.exists(k => !hasValidApiKeyFormat(k)))
+      Future.successful(ForbiddenFailure)
+    else
+      smrRegistry.ask(RegisterSmrArchiveRequest(auth, request, host, path, _))
 
   private def getApiKey(params: Map[String, String], auth: Option[String]) =
     if (auth.nonEmpty) auth
