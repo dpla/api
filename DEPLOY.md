@@ -70,6 +70,8 @@ The pipeline has three stages:
 |---|---|---|
 | **Source** | Pulls latest `main` from GitHub | ~10 seconds |
 | **Build** | Generates `taskdef.json` (pointing at new `api:latest`) and `appspec.yaml` | ~1 minute |
+
+> The `api-codebuild` buildspec is stored inline in the AWS CodeBuild project, not in this repository. It injects the current `api:latest` ECR digest into `taskdef.json` and renders `appspec_template.yaml` into `appspec.yaml` for CodeDeploy.
 | **Production** | Blue/green ECS deploy (CodeDeploy `ECSAllAtOnce`) | ~8 minutes |
 
 **Total typical duration: ~30–35 minutes** (dominated by Phase 1).
@@ -94,7 +96,7 @@ This service uses **blue/green deployment** via AWS CodeDeploy (`ECSAllAtOnce`).
 1. A new "green" task set (8 tasks) is created alongside the live "blue" set.
 2. Once all green tasks pass health checks, CodeDeploy shifts 100% of ALB traffic to green.
 3. Blue tasks are terminated 5 minutes later.
-4. Automatic rollback is enabled — a deployment failure will revert traffic to the blue task set.
+4. Automatic rollback is enabled — a deployment failure will revert traffic to the blue task set. *(Verified in AWS console 2026-04-08; configured on the CodeDeploy deployment group, not in `appspec_template.yaml`.)*
 
 ### Slow-start on ALB target groups
 
