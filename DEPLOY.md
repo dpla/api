@@ -37,7 +37,7 @@ gh api --method POST \
 
 Or go to **Actions → Deploy to Amazon ECR → Run workflow** in the GitHub UI.
 
-This runs `sbt assembly` to build the JAR, then builds a multi-arch (amd64 + arm64) Docker image and pushes it to ECR tagged as `latest`, `main`, and the commit SHA. **This takes approximately 20–25 minutes.**
+This runs `sbt assembly` to build the JAR, then builds a multi-arch (amd64 + arm64) Docker image and pushes it to ECR tagged as `latest`, the branch name (e.g. `main`), and the commit SHA. **This takes approximately 20–25 minutes.**
 
 > ⚠️ **Do not skip this step.** The CodePipeline does not build Docker images — it only deploys whatever `api:latest` is currently in ECR. Starting the pipeline without first building a new image will re-deploy stale code silently.
 
@@ -121,7 +121,7 @@ curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print('HTTP 200 —', d['count'], 'items in index')"
 ```
 
-Expect ~50 million items. A dramatically lower count could indicate an Elasticsearch connectivity issue.
+Expect ~50 million items. The API uses Elasticsearch as its primary data store; a dramatically lower count likely indicates an Elasticsearch connectivity or index issue.
 
 ---
 
