@@ -17,7 +17,7 @@ When deploying both the DPLA API and the thumbnail API in the same maintenance w
 ~/bin/deploy-api-services thumb    # thumbnail-api only
 ```
 
-The script handles pre-flight checks, parallel ECR builds, ECR verification, and parallel pipeline execution with live monitoring.
+`deploy-api-services` is a local operator script at `~/bin/deploy-api-services` on the deploy machine — it is not part of this repository. It handles pre-flight checks, parallel ECR builds, ECR verification, and parallel pipeline execution with live monitoring. If you don't have it, follow the manual steps below for each service separately.
 
 ---
 
@@ -113,6 +113,7 @@ The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disab
 - [ ] Confirm API is healthy: `curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['count'], 'items')"`
 - [ ] No in-flight pipeline executions: `aws codepipeline list-pipeline-executions --pipeline-name api-pipeline --query 'pipelineExecutionSummaries[?status==\`InProgress\`]'`
 - [ ] No in-flight GH Action runs: `gh run list --repo dpla/api --workflow "Deploy to Amazon ECR" --limit 3`
+- [ ] Confirm auto-rollback is still enabled: `aws deploy get-deployment-group --application-name api-deployment --deployment-group-name api-deployment-group --region us-east-1 --query 'deploymentGroupInfo.autoRollbackConfiguration' --output json` — verify `"enabled": true`
 
 ---
 
@@ -123,7 +124,7 @@ curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print('HTTP 200 —', d['count'], 'items in index')"
 ```
 
-Expect ~50 million items. The API uses Elasticsearch as its primary data store; a dramatically lower count likely indicates an Elasticsearch connectivity or index issue.
+The API uses Elasticsearch as its primary data store. Expect 45–55 million items as of April 2026 (the count grows over time). A dramatically lower count (e.g. under 40 million) likely indicates an Elasticsearch connectivity or index issue.
 
 ---
 
