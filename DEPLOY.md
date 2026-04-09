@@ -110,6 +110,8 @@ The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disab
 
 ## Pre-deploy checklist
 
+> **API key:** Use an existing operator key, or obtain one at https://pro.dp.la/developers/api-key. Required for all `/v2/items` requests.
+
 - [ ] Confirm API is healthy: `curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['count'], 'items')"`
 - [ ] No in-flight pipeline executions: `aws codepipeline list-pipeline-executions --pipeline-name api-pipeline --query 'pipelineExecutionSummaries[?status==\`InProgress\`]'`
 - [ ] No in-flight GH Action runs: `gh run list --repo dpla/api --workflow "Deploy to Amazon ECR" --limit 3`
@@ -125,6 +127,59 @@ curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" \
 ```
 
 The API uses Elasticsearch as its primary data store. Expect 45–55 million items as of April 2026 (the count grows over time). A dramatically lower count (e.g. under 40 million) likely indicates an Elasticsearch connectivity or index issue.
+
+---
+
+## Troubleshooting and manual rollback
+
+### If the GitHub Action fails
+
+Check the action logs in the **Actions** tab in the GitHub UI. Common issues:
+
+- **`sbt assembly` failure:** Check for compilation errors or dependency resolution failures in the build log. Fix the code, push a new commit, and re-dispatch.
+- **ECR push failure:** Verify AWS credentials are valid and the ECR repo exists. Re-run the failed workflow from the GitHub Actions UI.
+- **Build timeout:** Rare, but `sbt assembly` can time out on a cold runner. Re-run the workflow.
+
+### If the CodePipeline fails
+
+Check which stage failed:
+
+```bash
+aws codepipeline get-pipeline-state \
+  --name api-pipeline \
+  --region us-east-1 \
+  --query 'stageStates[*].{stage:stageName,status:latestExecution.status}'
+```
+
+- **Source stage:** Usually a GitHub connectivity issue. Retry the pipeline: `aws codepipeline start-pipeline-execution --name api-pipeline --region us-east-1`
+- **Build stage:** Check CodeBuild logs for errors generating `taskdef.json` or `appspec.yaml`.
+- **Production stage:** Check the CodeDeploy deployment for health check failures. Automatic rollback should trigger; verify with `aws deploy list-deployments --application-name api-deployment --deployment-group-name api-deployment-group --region us-east-1`.
+
+### Manual rollback
+
+If automatic rollback doesn't trigger or issues are discovered post-deployment:
+
+1. Find the previous successful deployment:
+
+```bash
+aws deploy list-deployments \
+  --application-name api-deployment \
+  --deployment-group-name api-deployment-group \
+  --include-only-statuses Succeeded \
+  --max-items 5 \
+  --region us-east-1
+```
+
+2. Re-tag the previous stable ECR image as `latest` and re-run the pipeline. To identify the previous image, check ECR image history:
+
+```bash
+aws ecr describe-images \
+  --repository-name api \
+  --region us-east-1 \
+  --query 'sort_by(imageDetails, &imagePushedAt)[-5:].{pushed:imagePushedAt,digest:imageDigest,tags:imageTags}'
+```
+
+Then re-tag the desired image and start the pipeline to deploy it.
 
 ---
 
