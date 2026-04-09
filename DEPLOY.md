@@ -115,7 +115,7 @@ The CodePipeline webhook (auto-trigger on push to `main`) is intentionally disab
 - [ ] Confirm API is healthy: `curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['count'], 'items')"`
 - [ ] No in-flight pipeline executions: `aws codepipeline list-pipeline-executions --pipeline-name api-pipeline --query 'pipelineExecutionSummaries[?status==\`InProgress\`]'`
 - [ ] No in-flight GH Action runs: `gh run list --repo dpla/api --workflow "Deploy to Amazon ECR" --limit 3`
-- [ ] Confirm auto-rollback is still enabled: `aws deploy get-deployment-group --application-name api-deployment --deployment-group-name api-deployment-group --region us-east-1 --query 'deploymentGroupInfo.autoRollbackConfiguration' --output json` — verify `"enabled": true`
+- [ ] Confirm auto-rollback is still enabled: `aws deploy get-deployment-group --application-name api-deployment --deployment-group-name api-deployment-group --region us-east-1 --query 'deploymentGroupInfo.autoRollbackConfiguration' --output json` — verify `"enabled": true`. If `false`, enable it in the AWS Console (CodeDeploy → Deployment groups → `api-deployment-group` → Edit → Rollbacks) before proceeding, or proceed with extra caution and a manual rollback plan ready.
 
 ---
 
@@ -126,7 +126,7 @@ curl -s "https://api.dp.la/v2/items?api_key=<YOUR_API_KEY>&page_size=1" \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print('HTTP 200 —', d['count'], 'items in index')"
 ```
 
-The API uses Elasticsearch as its primary data store. Expect 45–55 million items as of April 2026 (the count grows over time). A dramatically lower count (e.g. under 40 million) likely indicates an Elasticsearch connectivity or index issue.
+The API uses Elasticsearch as its primary data store. Expect approximately 45–55 million items (the count grows over time). A dramatically lower count (e.g. under 40 million) likely indicates an Elasticsearch connectivity or index issue.
 
 ---
 
@@ -170,7 +170,7 @@ aws deploy list-deployments \
   --region us-east-1
 ```
 
-2. Re-tag the previous stable ECR image as `latest` and re-run the pipeline. To identify the previous image, check ECR image history:
+2. Identify the previous stable ECR image:
 
 ```bash
 aws ecr describe-images \
@@ -179,7 +179,30 @@ aws ecr describe-images \
   --query 'sort_by(imageDetails, &imagePushedAt)[-5:].{pushed:imagePushedAt,digest:imageDigest,tags:imageTags}'
 ```
 
-Then re-tag the desired image and start the pipeline to deploy it.
+3. Re-tag the chosen image as `latest` (replace `<DIGEST>` with the `imageDigest` from above):
+
+```bash
+MANIFEST=$(aws ecr batch-get-image \
+  --repository-name api \
+  --image-ids imageDigest=<DIGEST> \
+  --region us-east-1 \
+  --query 'images[0].imageManifest' \
+  --output text)
+
+aws ecr put-image \
+  --repository-name api \
+  --image-tag latest \
+  --image-manifest "$MANIFEST" \
+  --region us-east-1
+```
+
+4. Start the pipeline to deploy the re-tagged image:
+
+```bash
+aws codepipeline start-pipeline-execution \
+  --name api-pipeline \
+  --region us-east-1
+```
 
 ---
 
