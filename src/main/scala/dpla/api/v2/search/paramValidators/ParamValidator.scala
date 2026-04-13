@@ -343,17 +343,17 @@ trait ParamValidator extends FieldDefinitions {
       rawParams: Map[String, String]
   ): Option[Seq[Filter]] =
     rawParams.get("filter").map { filter =>
-      val fieldName = filter
-        .split(":", 2)
-        .headOption
+      val parts = filter.split(":", 2)
+      val fieldName = parts.headOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
 
-      val values = filter
-        .split(":", 2)
-        .lastOption
+      val values = parts.lastOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
         .split("AND")
-        .map(_.trim)
+        .collect { case s if s.trim.nonEmpty => s.trim }
+
+      if (values.isEmpty)
+        throw ValidationException(s"$filter is not a valid filter")
 
       if (searchableDataFields.contains(fieldName)) {
         val validationMethod = getValidationMethod(fieldName)
