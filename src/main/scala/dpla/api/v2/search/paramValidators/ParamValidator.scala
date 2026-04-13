@@ -199,6 +199,7 @@ trait ParamValidator extends FieldDefinitions {
 
         val facets =
           getValid(rawParams, "facets", validFields)
+            .filter(_.nonEmpty)
 
         val facetSize =
           getValid(rawParams, "facet_size", validIntWithRange)
@@ -206,6 +207,7 @@ trait ParamValidator extends FieldDefinitions {
 
         val fields =
           getValid(rawParams, "fields", validFields)
+            .filter(_.nonEmpty)
 
         val filter =
           getValidFilter(rawParams)
@@ -496,7 +498,7 @@ trait ParamValidator extends FieldDefinitions {
       case _            => (0, 2147483647)
     }
 
-    val rule = s"$param must be an integer between 0 and $max"
+    lazy val rule = s"$param must be an integer between $min and $max"
 
     Try(intString.toInt).toOption match {
       case Some(int) =>
