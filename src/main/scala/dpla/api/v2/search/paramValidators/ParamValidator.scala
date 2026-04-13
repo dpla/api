@@ -199,7 +199,6 @@ trait ParamValidator extends FieldDefinitions {
 
         val facets =
           getValid(rawParams, "facets", validFields)
-            .filter(_.nonEmpty)
 
         val facetSize =
           getValid(rawParams, "facet_size", validIntWithRange)
@@ -248,7 +247,7 @@ trait ParamValidator extends FieldDefinitions {
             s"Pagination too deep: from ($fromValue) + size ($requestedPageSize) exceeds 1000"
           )
 
-        val hasFacets = facets.nonEmpty
+        val hasFacets = facets.exists(_.nonEmpty)
         val hasQuery = q.isDefined || fieldQueries.nonEmpty
         val hasFilter = filter.isDefined
 
