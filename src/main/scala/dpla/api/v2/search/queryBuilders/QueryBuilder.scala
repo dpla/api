@@ -133,10 +133,10 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
   ) = {
 
     val keyword: Seq[JsObject] =
-      q.map(keywordQuery(_, keywordQueryFields)).toSeq
+      q.map(keywordQuery(_, keywordQueryFields, op)).toSeq
     val filterClause: Option[JsArray] = filter.map(filterQuery)
     val fieldQuery: Seq[JsObject] =
-      fieldQueries.flatMap(singleFieldQuery(_, exactFieldMatch))
+      fieldQueries.flatMap(singleFieldQuery(_, exactFieldMatch, op))
     val queryTerms: Seq[JsObject] = keyword ++ fieldQuery
     val boolTerm: String = if (op == "OR") "should" else "must"
 
@@ -162,7 +162,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
   /** A general keyword query on the given fields. Uses multi_match for
     * best_fields with lenient parsing.
     */
-  private def keywordQuery(q: String, fields: Seq[String]): JsObject = {
+  private def keywordQuery(q: String, fields: Seq[String], op: String = "AND"): JsObject = {
     val targetFields = if (fields.nonEmpty) fields else keywordQueryFields
 
     JsObject(
@@ -170,7 +170,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
         "query" -> q.toJson,
         "fields" -> targetFields.toJson,
         "type" -> "best_fields".toJson,
-        "operator" -> "AND".toJson,
+        "operator" -> op.toJson,
         "lenient" -> true.toJson
       )
     )
@@ -204,7 +204,8 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
     */
   private def singleFieldQuery(
       fieldQuery: FieldQuery,
-      exactFieldMatch: Boolean
+      exactFieldMatch: Boolean,
+      op: String = "AND"
   ): Seq[JsObject] =
 
     if (fieldQuery.fieldName.endsWith(".before")) {
@@ -270,7 +271,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       // Basic field query
       val fields: Seq[String] =
         Seq(getElasticSearchField(fieldQuery.fieldName)).flatten
-      val obj: JsObject = keywordQuery(fieldQuery.value, fields)
+      val obj: JsObject = keywordQuery(fieldQuery.value, fields, op)
       Seq(obj)
     }
 

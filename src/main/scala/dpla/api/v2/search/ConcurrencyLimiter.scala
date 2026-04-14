@@ -2,6 +2,7 @@ package dpla.api.v2.search
 
 import java.util.concurrent.{Semaphore, TimeUnit}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 /** Limits concurrent execution of Futures using a semaphore.
   *
@@ -53,7 +54,15 @@ class ConcurrencyLimiter(
     *   The wrapped Future, or a failed Future if permit couldn't be acquired
     */
   def apply[T](f: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
-    if (!semaphore.tryAcquire(timeoutSeconds, TimeUnit.SECONDS)) {
+    val acquired = try {
+      semaphore.tryAcquire(timeoutSeconds, TimeUnit.SECONDS)
+    } catch {
+      case e: InterruptedException =>
+        Thread.currentThread().interrupt()
+        return Future.failed(e)
+    }
+
+    if (!acquired) {
       Future.failed(
         ConcurrencyLimitExceeded(
           maxConcurrent = maxConcurrent,
@@ -65,7 +74,7 @@ class ConcurrencyLimiter(
         val future = f
         future.andThen { case _ => semaphore.release() }(ec)
       } catch {
-        case e: Throwable =>
+        case NonFatal(e) =>
           semaphore.release()
           Future.failed(e)
       }

@@ -130,6 +130,7 @@ trait ParamValidator extends FieldDefinitions {
   protected val defaultPageSize: Int = 10
   protected val minPageSize: Int = 0
   protected val maxPageSize: Int = 100
+  protected val maxFetchBatchSize: Int = 500
   protected val defaultSortOrder: String = "asc"
 
   // Abstract.
@@ -164,9 +165,9 @@ trait ParamValidator extends FieldDefinitions {
         )
       else {
         val ids = id.split(",")
-        if (ids.size > maxPageSize)
+        if (ids.size > maxFetchBatchSize)
           throw ValidationException(
-            s"The number of ids cannot exceed $maxPageSize"
+            s"The number of ids cannot exceed $maxFetchBatchSize"
           )
         ids.map(getValidId)
       }
@@ -345,8 +346,10 @@ trait ParamValidator extends FieldDefinitions {
   ): Option[Seq[Filter]] =
     rawParams.get("filter").map { filter =>
       val parts = filter.split(":", 2)
-      val fieldName = parts.headOption
-        .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
+      if (parts.length != 2 || parts.head.trim.isEmpty)
+        throw ValidationException(s"$filter is not a valid filter")
+
+      val fieldName = parts.head.trim
 
       val values = parts.lastOption
         .getOrElse(throw ValidationException(s"$filter is not a valid filter"))
