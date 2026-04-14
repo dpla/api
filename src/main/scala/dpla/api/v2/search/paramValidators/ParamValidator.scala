@@ -421,11 +421,11 @@ trait ParamValidator extends FieldDefinitions {
             validCoordinates
           else
             throw ValidationException(
-              s"The sort_by parameter is required."
+              "sort_by_pin is only allowed when sort_by is the coordinates field"
             )
         case None =>
           throw ValidationException(
-            s"The sort_by parameter is required."
+            "The sort_by parameter is required."
           )
       }
     }

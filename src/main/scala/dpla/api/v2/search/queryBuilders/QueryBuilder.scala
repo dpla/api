@@ -107,7 +107,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
       "aggs" -> aggs(params.facets, params.facetSize),
       "sort" -> sort(params),
       "_source" -> fieldRetrieval(params.fields),
-      "track_total_hits" -> 10000.toJson
+      "track_total_hits" -> true.toJson
     ).toJson
 
   // Reduced high-value fields for multi_match keyword queries
@@ -181,16 +181,15 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
     * documents.
     */
   private def filterQuery(filters: Seq[Filter]): JsArray =
-    filters
-      .map(filter => {
+    JsArray(
+      filters.map { filter =>
         JsObject(
           "term" -> JsObject(
             filter.fieldName -> filter.value.toJson
           )
         )
-      })
-      .toJson
-      .asInstanceOf[JsArray]
+      }.toVector
+    )
 
   /** For general field query, use a multi_match query. For exact field match,
     * use "term" query.
