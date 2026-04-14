@@ -17,7 +17,13 @@ When deploying both the DPLA API and the thumbnail API in the same maintenance w
 ~/bin/deploy-api-services thumb    # thumbnail-api only
 ```
 
-`deploy-api-services` is a local operator script at `~/bin/deploy-api-services` on the deploy machine — it is not part of this repository. It handles pre-flight checks, parallel ECR builds, ECR verification, and parallel pipeline execution with live monitoring. If you don't have it, follow the manual steps below for each service separately.
+`deploy-api-services` lives at `bin/deploy-api-services` in this repository. Copy it to `~/bin/` on the deploy machine:
+
+```bash
+cp bin/deploy-api-services ~/bin/ && chmod +x ~/bin/deploy-api-services
+```
+
+It handles pre-flight health checks, deployed-vs-main comparison, in-flight pipeline detection, parallel ECR builds, ECR verification, and parallel pipeline execution with live monitoring. If you don't have it, follow the manual steps below for each service separately.
 
 ---
 
