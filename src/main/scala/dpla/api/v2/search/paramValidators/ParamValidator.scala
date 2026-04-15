@@ -237,12 +237,6 @@ trait ParamValidator extends FieldDefinitions {
           getValid(rawParams, "sort_order", validSortOrder)
             .getOrElse(defaultSortOrder)
 
-        val requestedPage =
-          rawParams.get("page").flatMap(_.toIntOption).getOrElse(page)
-        val requestedPageSize =
-          rawParams.get("page_size").flatMap(_.toIntOption).getOrElse(pageSize)
-        val fromValue = (requestedPage - 1) * requestedPageSize
-
         val hasFacets = facets.exists(_.nonEmpty)
         val hasQuery = q.isDefined || fieldQueries.nonEmpty
         val hasFilter = filter.isDefined
