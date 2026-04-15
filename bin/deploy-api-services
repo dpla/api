@@ -27,6 +27,10 @@ bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 [[ -n "$AWS" && -x "$AWS" ]] || { err "aws CLI not found in PATH (set \$AWS or add aws to PATH)"; exit 1; }
 [[ -n "$GH"  && -x "$GH"  ]] || { err "gh CLI not found in PATH (set \$GH or add gh to PATH)";   exit 1; }
 
+for cmd in jq curl python3; do
+  command -v "$cmd" >/dev/null 2>&1 || { err "$cmd not found in PATH"; exit 1; }
+done
+
 abort_if_build_in_flight() {
   local repo=$1 workflow=$2 service=$3
   local count
@@ -127,12 +131,15 @@ poll_pipeline() {
   log "Monitoring $name ($exec_id)..."
   while true; do
     local status
-    status=$($AWS codepipeline get-pipeline-execution \
+    if ! status=$($AWS codepipeline get-pipeline-execution \
       --pipeline-name "$name" \
       --pipeline-execution-id "$exec_id" \
       --region "$REGION" \
       --query 'pipelineExecution.status' \
-      --output text 2>/dev/null || echo "Unknown")
+      --output text 2>/dev/null); then
+      err "$name: could not read pipeline execution status"
+      return 1
+    fi
     case "$status" in
       Succeeded)
         log "$name: Succeeded"
@@ -147,8 +154,8 @@ poll_pipeline() {
         sleep 30
         ;;
       *)
-        log "$name: status=$status, waiting..."
-        sleep 30
+        err "$name: unexpected status '$status'"
+        return 1
         ;;
     esac
   done
