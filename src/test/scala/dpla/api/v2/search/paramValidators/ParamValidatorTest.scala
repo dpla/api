@@ -576,7 +576,7 @@ class ParamValidatorTest
       replyProbe.expectMessageType[InvalidSearchParams]
     }
 
-    "default to max if param is too large" in {
+    "reject param if too large" in {
       val given = "600"
       val params = Map("page" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
@@ -614,7 +614,7 @@ class ParamValidatorTest
       replyProbe.expectMessageType[InvalidSearchParams]
     }
 
-    "default to max if param is too large" in {
+    "reject param if too large" in {
       val given = "999999"
       val params = Map("page_size" -> given)
       ebookParamValidator ! RawSearchParams(params, replyProbe.ref)
