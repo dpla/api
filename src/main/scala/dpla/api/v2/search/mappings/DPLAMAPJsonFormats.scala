@@ -2,6 +2,7 @@ package dpla.api.v2.search.mappings
 
 import dpla.api.v2.search.mappings.JsonFormatsHelper._
 import dpla.api.v2.search.models.DPLAMAPFields
+import org.slf4j.LoggerFactory
 import spray.json._
 
 /**
@@ -10,6 +11,8 @@ import spray.json._
  */
 object DPLAMAPJsonFormats extends JsonFieldReader
   with DPLAMAPFields {
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   implicit object BucketFormat extends RootJsonFormat[Bucket] {
 
@@ -79,6 +82,14 @@ object DPLAMAPJsonFormats extends JsonFieldReader
                 readObjectArray(root, fieldName, "buckets")
               }
 
+            // Warn when ES truncated a terms aggregation (more buckets exist than returned)
+            if (`type` == "terms" && log.isWarnEnabled) {
+              readInt(root, fieldName, "sum_other_doc_count").foreach { n =>
+                if (n > 0)
+                  log.warn(s"ES terms aggregation '$fieldName' truncated: $n additional docs not in response")
+              }
+            }
+
             Facet(
               field = fieldName,
               `type` = `type`,
@@ -136,6 +147,15 @@ object DPLAMAPJsonFormats extends JsonFieldReader
 
     def read(json: JsValue): DPLADocList = {
       val root = json.asJsObject
+
+      // Warn on partial results — partial results are silently returned otherwise
+      if (log.isWarnEnabled) {
+        if (readBoolean(root, "timed_out").contains(true))
+          log.warn("ES query timed out — results may be partial")
+        readInt(root, "_shards", "failed").foreach { n =>
+          if (n > 0) log.warn(s"ES query had $n failed shard(s) — results may be partial")
+        }
+      }
 
       DPLADocList(
         count = readInt(root, "hits", "total", "value"),

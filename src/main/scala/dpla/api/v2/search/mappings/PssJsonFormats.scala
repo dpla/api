@@ -2,6 +2,7 @@ package dpla.api.v2.search.mappings
 
 import dpla.api.v2.search.mappings.JsonFormatsHelper.filterIfEmpty
 import dpla.api.v2.search.models.PssFields
+import org.slf4j.LoggerFactory
 import spray.json._
 
 /**
@@ -10,6 +11,8 @@ import spray.json._
  */
 object PssJsonFormats extends JsonFieldReader
   with PssFields {
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   implicit object PssSourceFormat extends RootJsonFormat[PssPart] {
     def read(json: JsValue): PssPart = {
@@ -136,6 +139,15 @@ object PssJsonFormats extends JsonFieldReader
 
     def read(json: JsValue): PssSetList = {
       val root = json.asJsObject
+
+      // Warn on partial results — partial results are silently returned otherwise
+      if (log.isWarnEnabled) {
+        if (readBoolean(root, "timed_out").contains(true))
+          log.warn("ES query timed out — PSS results may be partial")
+        readInt(root, "_shards", "failed").foreach { n =>
+          if (n > 0) log.warn(s"ES query had $n failed shard(s) — PSS results may be partial")
+        }
+      }
 
       PssSetList(
         `@context` = readObjectArray(root, "hits", "hits").headOption.map { hit =>
