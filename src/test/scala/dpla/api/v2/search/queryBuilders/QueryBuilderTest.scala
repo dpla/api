@@ -597,6 +597,17 @@ class QueryBuilderTest
       val fieldNames = parent.get.fields.keys
       fieldNames should contain only expected
     }
+
+    "specify OR operator in multi_match" in {
+      val expected = Some("OR")
+      val params = detailSearchParams.copy(op = "OR")
+      val query = getJsSearchQuery(params)
+      val boolShould = readObjectArray(query, "query", "bool", "should")
+      val multiMatch =
+        boolShould.flatMap(obj => readObject(obj, "multi_match")).head
+      val traversed = readString(multiMatch, "operator")
+      assert(traversed == expected)
+    }
   }
 
   "agg query builder" should {

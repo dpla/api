@@ -243,11 +243,6 @@ trait ParamValidator extends FieldDefinitions {
           rawParams.get("page_size").flatMap(_.toIntOption).getOrElse(pageSize)
         val fromValue = (requestedPage - 1) * requestedPageSize
 
-        if (fromValue + requestedPageSize > 1000)
-          throw ValidationException(
-            s"Pagination too deep: from ($fromValue) + size ($requestedPageSize) exceeds 1000"
-          )
-
         val hasFacets = facets.exists(_.nonEmpty)
         val hasQuery = q.isDefined || fieldQueries.nonEmpty
         val hasFilter = filter.isDefined
