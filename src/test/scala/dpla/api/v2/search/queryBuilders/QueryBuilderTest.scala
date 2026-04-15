@@ -271,8 +271,8 @@ class QueryBuilderTest
     }
 
     "specify track_total_hits" in {
-      val expected = Some(10000)
-      val traversed = readInt(minQuery, "track_total_hits")
+      val expected = Some(true)
+      val traversed = readBoolean(minQuery, "track_total_hits")
       assert(traversed == expected)
     }
   }
