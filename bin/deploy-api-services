@@ -34,10 +34,13 @@ done
 abort_if_build_in_flight() {
   local repo=$1 workflow=$2 service=$3
   local count
-  count=$($GH run list --repo "$repo" --workflow "$workflow" \
+  if ! count=$($GH run list --repo "$repo" --workflow "$workflow" \
     --json status \
     --jq '[.[] | select(.status == "in_progress" or .status == "queued" or .status == "waiting" or .status == "requested" or .status == "pending")] | length' \
-    2>/dev/null || echo 0)
+    2>&1); then
+    err "Failed to check in-flight builds for $service — aborting"
+    exit 1
+  fi
   [[ "$count" -gt 0 ]] && { err "$service ECR build already in progress — aborting to avoid :latest tag race"; exit 1; }
 }
 
