@@ -369,17 +369,27 @@ if [[ "$FAILED" -eq 1 ]]; then
   exit 1
 fi
 
-bold "=== All deployments succeeded ==="
+POST_DEPLOY_FAILED=0
 if [[ "$DEPLOY_API" == "true" ]]; then
   log "api health check:"
-  curl -sf "https://api.dp.la/v2/items?api_key=${DPLA_API_KEY:-test}&page_size=1" \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print('  api.dp.la: HTTP 200 —', d['count'], 'items')" \
-    || log "  (health check request failed — verify manually)"
+  if ! curl -sf "https://api.dp.la/v2/items?api_key=${DPLA_API_KEY:-test}&page_size=1" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print('  api.dp.la: HTTP 200 —', d['count'], 'items')"; then
+    err "api post-deploy health check failed"
+    POST_DEPLOY_FAILED=1
+  fi
 fi
 if [[ "$DEPLOY_THUMB" == "true" ]]; then
   log "thumbnail-api health check:"
   # Use dp.la/thumb/... routing — thumb.dp.la may 403 from CloudFront WAF on this machine
-  curl -sf -o /dev/null -w "  thumbnail API: HTTP %{http_code}\n" \
-    "https://dp.la/thumb/ee7d7c513000727d22613e1c6ba17061" \
-    || log "  (health check request failed — verify manually)"
+  if ! curl -sf -o /dev/null -w "  thumbnail API: HTTP %{http_code}\n" \
+    "https://dp.la/thumb/ee7d7c513000727d22613e1c6ba17061"; then
+    err "thumbnail-api post-deploy health check failed"
+    POST_DEPLOY_FAILED=1
+  fi
 fi
+
+if [[ "$POST_DEPLOY_FAILED" -eq 1 ]]; then
+  exit 1
+fi
+
+bold "=== All deployments succeeded ==="
