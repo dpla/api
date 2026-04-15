@@ -14,8 +14,8 @@
 
 set -euo pipefail
 
-AWS=/usr/local/aws-cli/aws
-GH=/opt/homebrew/bin/gh
+AWS=${AWS:-$(command -v aws 2>/dev/null || true)}
+GH=${GH:-$(command -v gh 2>/dev/null || true)}
 REGION=us-east-1
 
 # ── helpers ────────────────────────────────────────────────────────────────
@@ -24,10 +24,23 @@ log()  { echo "[$(date '+%H:%M:%S')] $*"; }
 err()  { echo "[$(date '+%H:%M:%S')] ERROR: $*" >&2; }
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 
+[[ -n "$AWS" && -x "$AWS" ]] || { err "aws CLI not found in PATH (set \$AWS or add aws to PATH)"; exit 1; }
+[[ -n "$GH"  && -x "$GH"  ]] || { err "gh CLI not found in PATH (set \$GH or add gh to PATH)";   exit 1; }
+
+abort_if_build_in_flight() {
+  local repo=$1 workflow=$2 service=$3
+  local count
+  count=$($GH run list --repo "$repo" --workflow "$workflow" \
+    --json status \
+    --jq '[.[] | select(.status == "in_progress" or .status == "queued" or .status == "waiting" or .status == "requested" or .status == "pending")] | length' \
+    2>/dev/null || echo 0)
+  [[ "$count" -gt 0 ]] && { err "$service ECR build already in progress — aborting to avoid :latest tag race"; exit 1; }
+}
+
 wait_for_gh_run() {
   local repo=$1 workflow_name=$2 triggered_after=$3
   local run_id=""
-  log "Waiting for $workflow_name to appear in $repo..."
+  log "Waiting for $workflow_name to appear in $repo..." >&2
   for i in $(seq 1 20); do
     run_id=$($GH run list --repo "$repo" --workflow "$workflow_name" \
       --json databaseId,createdAt,status \
@@ -86,8 +99,17 @@ verify_ecr_image() {
     err "Could not read ECR image for $repo"
     return 1
   fi
-  if [[ "$pushed" < "$triggered_after" ]]; then
-    err "$repo ECR image ($pushed) predates trigger time ($triggered_after) — build may have failed"
+  # ECR returns imagePushedAt as a Unix epoch float; TRIGGER_TIME is RFC3339.
+  # Convert both to integer epoch seconds before comparing.
+  local pushed_epoch triggered_epoch
+  pushed_epoch=${pushed%%.*}
+  triggered_epoch=$(python3 -c "
+import datetime
+dt = datetime.datetime.strptime('$triggered_after', '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
+print(int(dt.timestamp()))
+")
+  if (( pushed_epoch < triggered_epoch )); then
+    err "$repo ECR image (epoch $pushed) predates trigger time ($triggered_after) — build may have failed"
     return 1
   fi
   log "$repo ECR image pushed at $pushed — OK"
@@ -95,7 +117,7 @@ verify_ecr_image() {
 
 start_pipeline() {
   local name=$1
-  log "Starting CodePipeline: $name"
+  log "Starting CodePipeline: $name" >&2
   $AWS codepipeline start-pipeline-execution --name "$name" --region "$REGION" \
     --query 'pipelineExecutionId' --output text
 }
@@ -145,8 +167,8 @@ show_deploy_summary() {
     --jq '.sha[0:7] + " — " + (.commit.message | split("\n")[0]) + " (" + (.commit.committer.date | split("T")[0]) + ")"' \
     2>/dev/null || echo "(unknown)")
   echo "  $label:"
-  echo "    📦 ECR image last pushed: $ecr_pushed"
-  echo "    🔜 Will deploy:           $main_commit"
+  echo "    📦 ECR :latest tag pushed: $ecr_pushed"
+  echo "    🔜 Will deploy:            $main_commit"
 }
 
 # ── service definitions ────────────────────────────────────────────────────
@@ -202,6 +224,10 @@ bold "=== What will be deployed ==="
 [[ "$DEPLOY_API" == "true" ]]   && show_deploy_summary "api"           api           dpla/api
 [[ "$DEPLOY_THUMB" == "true" ]] && show_deploy_summary "thumbnail-api" thumbnail-api dpla/thumbnail-api
 echo
+
+# Check for in-flight GH Actions ECR builds — a running build can overwrite :latest
+[[ "$DEPLOY_API"   == "true" ]] && abort_if_build_in_flight dpla/api           "Deploy to Amazon ECR"       api
+[[ "$DEPLOY_THUMB" == "true" ]] && abort_if_build_in_flight dpla/thumbnail-api  "push to ecr: production"    thumbnail-api
 
 # Check for in-flight pipelines
 for pipeline_check in \
