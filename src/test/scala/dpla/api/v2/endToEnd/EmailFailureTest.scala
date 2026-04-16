@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockEbookRegistry, SearchRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -23,14 +23,11 @@ class EmailFailureTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
-
   val apiKeyRegistryWithEmailFailure: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClientFailure))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry,
+    new Routes(itemRegistry, pssRegistry,
       apiKeyRegistryWithEmailFailure, smrRegistry).applicationRoutes
 
   "/api_key/[email]" should {

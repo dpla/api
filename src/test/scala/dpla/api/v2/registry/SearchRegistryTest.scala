@@ -7,7 +7,7 @@ import dpla.api.helpers.Utils.fakeApiKey
 import dpla.api.v2.analytics.{AnalyticsClientCommand, TrackSearch}
 import dpla.api.v2.registry.RegistryProtocol.RegistryResponse
 import dpla.api.v2.search.SearchProtocol.SearchCommand
-import dpla.api.v2.search.MockEbookSearch
+import dpla.api.v2.search.MockItemSearch
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -22,8 +22,8 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
   val analyticsProbe: TestProbe[AnalyticsClientCommand] =
     testKit.createTestProbe[AnalyticsClientCommand]
 
-  val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
+  val itemSearch: ActorRef[SearchCommand] =
+    MockItemSearch(testKit, Some(itemElasticSearchClient), Some(dplaMapMapper))
 
   val replyProbe: TestProbe[RegistryResponse] =
     testKit.createTestProbe[RegistryResponse]
@@ -32,10 +32,10 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
     "send analytics message if account is non-staff" in {
 
-      val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
+      val searchRegistry: ActorRef[SearchRegistryCommand] =
+        MockItemRegistry(testKit, authenticator, analyticsProbe.ref, Some(itemSearch))
 
-      ebookRegistry ! RegisterSearch(Some(fakeApiKey),
+      searchRegistry ! RegisterSearch(Some(fakeApiKey),
         Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectMessageType[TrackSearch]
@@ -43,10 +43,10 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
     "not send analytics message if account is staff" in {
 
-      val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticatorStaff, analyticsProbe.ref, Some(ebookSearch))
+      val searchRegistry: ActorRef[SearchRegistryCommand] =
+        MockItemRegistry(testKit, authenticatorStaff, analyticsProbe.ref, Some(itemSearch))
 
-      ebookRegistry ! RegisterSearch(Some(fakeApiKey),
+      searchRegistry ! RegisterSearch(Some(fakeApiKey),
         Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectNoMessage
@@ -57,10 +57,10 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
     "send analytics message if account is non-staff" in {
 
-      val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
+      val searchRegistry: ActorRef[SearchRegistryCommand] =
+        MockItemRegistry(testKit, authenticator, analyticsProbe.ref, Some(itemSearch))
 
-      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
+      searchRegistry ! RegisterFetch(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectMessageType[TrackSearch]
@@ -68,10 +68,10 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
     "not send analytics message if account is staff" in {
 
-      val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticatorStaff, analyticsProbe.ref, Some(ebookSearch))
+      val searchRegistry: ActorRef[SearchRegistryCommand] =
+        MockItemRegistry(testKit, authenticatorStaff, analyticsProbe.ref, Some(itemSearch))
 
-      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
+      searchRegistry ! RegisterFetch(Some(fakeApiKey),
         "ufwPJ34Bj-MaVWqX9KZL", Map(), "", "", replyProbe.ref)
 
       analyticsProbe.expectNoMessage
@@ -82,10 +82,10 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
     "send analytics message if account is non-staff" in {
 
-      val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticator, analyticsProbe.ref, Some(ebookSearch))
+      val searchRegistry: ActorRef[SearchRegistryCommand] =
+        MockItemRegistry(testKit, authenticator, analyticsProbe.ref, Some(itemSearch))
 
-      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
+      searchRegistry ! RegisterFetch(Some(fakeApiKey),
         "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
         Map(), "", "", replyProbe.ref)
 
@@ -94,10 +94,10 @@ class SearchRegistryTest extends AnyWordSpec with Matchers with FileReader
 
     "not send analytics message if account is staff" in {
 
-      val ebookRegistry: ActorRef[SearchRegistryCommand] =
-        MockEbookRegistry(testKit, authenticatorStaff, analyticsProbe.ref, Some(ebookSearch))
+      val searchRegistry: ActorRef[SearchRegistryCommand] =
+        MockItemRegistry(testKit, authenticatorStaff, analyticsProbe.ref, Some(itemSearch))
 
-      ebookRegistry ! RegisterFetch(Some(fakeApiKey),
+      searchRegistry ! RegisterFetch(Some(fakeApiKey),
         "b70107e4fe29fe4a247ae46e118ce192,17b0da7b05805d78daf8753a6641b3f5",
         Map(), "", "", replyProbe.ref)
 
