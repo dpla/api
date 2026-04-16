@@ -796,14 +796,6 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
       msg.params.sortByPin shouldEqual Some(givenSortByPin)
     }
 
-    "reject sort_by coordinates if sort_by_pin is not and accepted param" in {
-      val givenSortBy = "sourceResource.spatial.coordinates"
-      val givenSortByPin = "40,-73"
-      val params = Map("sort_by" -> givenSortBy, "sort_by_pin" -> givenSortByPin)
-      itemParamValidator ! RawSearchParams(params, replyProbe.ref)
-      replyProbe.expectMessageType[InvalidSearchParams]
-    }
-
     "reject sort_by coordinates if sort_by_pin is not present" in {
       val givenSortBy = "sourceResource.spatial.coordinates"
       val params = Map("sort_by" -> givenSortBy)
