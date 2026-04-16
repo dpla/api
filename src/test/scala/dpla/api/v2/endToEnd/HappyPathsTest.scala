@@ -49,6 +49,16 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     new Routes(itemRegistryEsSuccess, pssRegistry,
       apiKeyRegistryWithEmailSuccess, smrRegistryS3Success).applicationRoutes
 
+  "/v2/ebooks route" should {
+    "return NotFound after ebook removal" in {
+      val request = Get("/v2/ebooks")
+
+      request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+  }
+
   "/v2/items route" should {
     "be happy with valid user inputs and successful es response" in {
       val request = Get(s"/v2/items?page_size=100&api_key=$fakeApiKey")
