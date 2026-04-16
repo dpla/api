@@ -1,0 +1,434 @@
+#!/usr/bin/env bash
+# deploy-api-services — build and deploy api + thumbnail-api in one pass
+#
+# Runs both ECR builds in parallel, waits for both, then starts both
+# CodePipelines simultaneously. One maintenance window, not two.
+#
+# Usage:
+#   deploy-api-services           # deploy both api and thumbnail-api
+#   deploy-api-services api       # deploy only the DPLA API
+#   deploy-api-services thumb     # deploy only the thumbnail API
+#   deploy-api-services preflight # run pre-flight checks only — no builds or deploys
+#
+# Canonical source: dpla/api bin/deploy-api-services
+# Copy to ~/bin/ on the deploy machine: cp bin/deploy-api-services ~/bin/
+
+set -euo pipefail
+
+AWS=${AWS:-$(command -v aws 2>/dev/null || true)}
+GH=${GH:-$(command -v gh 2>/dev/null || true)}
+REGION=us-east-1
+
+# ── helpers ────────────────────────────────────────────────────────────────
+
+log()  { echo "[$(date '+%H:%M:%S')] $*"; }
+err()  { echo "[$(date '+%H:%M:%S')] ERROR: $*" >&2; }
+bold() { printf '\033[1m%s\033[0m\n' "$*"; }
+
+[[ -n "$AWS" && -x "$AWS" ]] || { err "aws CLI not found in PATH (set \$AWS or add aws to PATH)"; exit 1; }
+[[ -n "$GH"  && -x "$GH"  ]] || { err "gh CLI not found in PATH (set \$GH or add gh to PATH)";   exit 1; }
+
+for cmd in jq curl python3; do
+  command -v "$cmd" >/dev/null 2>&1 || { err "$cmd not found in PATH"; exit 1; }
+done
+
+abort_if_build_in_flight() {
+  local repo=$1 workflow=$2 service=$3
+  local count
+  if ! count=$($GH run list --repo "$repo" --workflow "$workflow" \
+    --json status \
+    --jq '[.[] | select(.status == "in_progress" or .status == "queued" or .status == "waiting" or .status == "requested" or .status == "pending")] | length' \
+    2>&1); then
+    err "Failed to check in-flight builds for $service — aborting"
+    exit 1
+  fi
+  [[ "$count" -gt 0 ]] && { err "$service ECR build already in progress — aborting to avoid :latest tag race"; exit 1; }
+}
+
+wait_for_gh_run() {
+  local repo=$1 workflow_name=$2 triggered_after=$3
+  local run_id=""
+  log "Waiting for $workflow_name to appear in $repo..." >&2
+  for i in $(seq 1 20); do
+    run_id=$($GH run list --repo "$repo" --workflow "$workflow_name" \
+      --json databaseId,createdAt,status \
+      --jq "[.[] | select(.createdAt >= \"$triggered_after\")][0].databaseId" 2>/dev/null || true)
+    [[ -n "$run_id" && "$run_id" != "null" ]] && break
+    sleep 10
+  done
+  if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+    err "Could not find $workflow_name run for $repo triggered after $triggered_after"
+    return 1
+  fi
+  echo "$run_id"
+}
+
+poll_gh_run() {
+  local repo=$1 run_id=$2 label=$3
+  log "Watching $label (run $run_id)..."
+  while true; do
+    local run_json status conclusion
+    run_json=$($GH run view "$run_id" --repo "$repo" --json status,conclusion 2>/dev/null || echo '{}')
+    status=$(echo "$run_json" | jq -r '.status // "unknown"')
+    conclusion=$(echo "$run_json" | jq -r '.conclusion // ""')
+    case "$status" in
+      completed)
+        if [[ "$conclusion" == "success" ]]; then
+          log "$label: completed successfully"
+          return 0
+        else
+          err "$label: finished with conclusion '$conclusion'"
+          return 1
+        fi
+        ;;
+      in_progress|queued|waiting|requested|pending)
+        log "$label: $status..."
+        sleep 30
+        ;;
+      *)
+        err "$label: unexpected status '$status'"
+        return 1
+        ;;
+    esac
+  done
+}
+
+verify_ecr_image() {
+  local repo=$1 triggered_after=$2
+  log "Verifying $repo ECR image..."
+  local pushed
+  pushed=$($AWS ecr describe-images \
+    --repository-name "$repo" \
+    --image-ids imageTag=latest \
+    --region "$REGION" \
+    --query 'imageDetails[0].imagePushedAt' \
+    --output text 2>/dev/null || echo "")
+  if [[ -z "$pushed" ]]; then
+    err "Could not read ECR image for $repo"
+    return 1
+  fi
+  # ECR returns imagePushedAt as a Unix epoch float; TRIGGER_TIME is RFC3339.
+  # Convert both to integer epoch seconds before comparing.
+  local pushed_epoch triggered_epoch
+  pushed_epoch=${pushed%%.*}
+  triggered_epoch=$(python3 -c "
+import datetime
+dt = datetime.datetime.strptime('$triggered_after', '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
+print(int(dt.timestamp()))
+")
+  if (( pushed_epoch < triggered_epoch )); then
+    err "$repo ECR image (epoch $pushed) predates trigger time ($triggered_after) — build may have failed"
+    return 1
+  fi
+  log "$repo ECR image pushed at $pushed — OK"
+}
+
+start_pipeline() {
+  local name=$1
+  log "Starting CodePipeline: $name" >&2
+  $AWS codepipeline start-pipeline-execution --name "$name" --region "$REGION" \
+    --query 'pipelineExecutionId' --output text
+}
+
+poll_pipeline() {
+  local name=$1 exec_id=$2
+  log "Monitoring $name ($exec_id)..."
+  while true; do
+    local status
+    if ! status=$($AWS codepipeline get-pipeline-execution \
+      --pipeline-name "$name" \
+      --pipeline-execution-id "$exec_id" \
+      --region "$REGION" \
+      --query 'pipelineExecution.status' \
+      --output text 2>/dev/null); then
+      err "$name: could not read pipeline execution status"
+      return 1
+    fi
+    case "$status" in
+      Succeeded)
+        log "$name: Succeeded"
+        return 0
+        ;;
+      Failed|Cancelled|Stopped|Superseded)
+        err "$name: $status — check the console"
+        return 1
+        ;;
+      InProgress|Stopping)
+        log "$name: $status..."
+        sleep 30
+        ;;
+      *)
+        err "$name: unexpected status '$status'"
+        return 1
+        ;;
+    esac
+  done
+}
+
+show_deploy_summary() {
+  local label=$1 ecr_repo=$2 gh_repo=$3
+  local ecr_pushed main_commit
+
+  # Fetch both fields in one call; jq extracts each with a safe fallback.
+  local ecr_image ecr_pushed ecr_digest
+  ecr_image=$($AWS ecr describe-images \
+    --repository-name "$ecr_repo" \
+    --image-ids imageTag=latest --region "$REGION" \
+    --query 'imageDetails[0]' --output json 2>/dev/null || echo '{}')
+  ecr_pushed=$(echo "$ecr_image" | jq -r '.imagePushedAt // "(unknown)"')
+  ecr_digest=$(echo "$ecr_image"  | jq -r '.imageDigest  // ""')
+
+  main_commit=$($GH api "repos/$gh_repo/commits/main" \
+    --jq '.sha[0:7] + " — " + (.commit.message | split("\n")[0]) + " (" + (.commit.committer.date | split("T")[0]) + ")"' \
+    2>/dev/null || echo "(unknown)")
+
+  # Compare the digest of the running container to ECR :latest to detect a stale deploy.
+  # Cluster and service names match ecr_repo in our infrastructure.
+  local task_arn="" running_digest="" deployed_note=""
+  task_arn=$($AWS ecs list-tasks \
+    --cluster "$ecr_repo" --service-name "$ecr_repo" \
+    --desired-status RUNNING --region "$REGION" \
+    --query 'taskArns[0]' --output text 2>/dev/null || echo "")
+  if [[ -n "$task_arn" && "$task_arn" != "None" ]]; then
+    running_digest=$($AWS ecs describe-tasks \
+      --cluster "$ecr_repo" --tasks "$task_arn" --region "$REGION" \
+      --query 'tasks[0].containers[0].imageDigest' --output text 2>/dev/null || echo "")
+  fi
+  if [[ -z "$running_digest" || "$running_digest" == "None" ]]; then
+    deployed_note="(unknown — could not read running container)"
+  elif [[ "$running_digest" == "$ecr_digest" ]]; then
+    deployed_note="✅ up to date (matches ECR :latest)"
+  else
+    # :7 skips the "sha256:" prefix; show 12 hex chars from each digest for a quick visual diff
+    deployed_note="⚠️  stale (running ${running_digest:7:12}… / ECR :latest ${ecr_digest:7:12}…)"
+  fi
+
+  echo "  $label:"
+  echo "    🟢 Deployed image:         $deployed_note"
+  echo "    📦 ECR :latest pushed:     $ecr_pushed"
+  echo "    🔜 Will deploy:            $main_commit"
+}
+
+# ── service definitions ────────────────────────────────────────────────────
+
+DEPLOY_API=false
+DEPLOY_THUMB=false
+
+PRE_FLIGHT_ONLY=false
+
+case "${1:-both}" in
+  both)      DEPLOY_API=true; DEPLOY_THUMB=true ;;
+  api)       DEPLOY_API=true ;;
+  thumb)     DEPLOY_THUMB=true ;;
+  preflight) DEPLOY_API=true; DEPLOY_THUMB=true; PRE_FLIGHT_ONLY=true ;;
+  *)
+    echo "Usage: $0 [both|api|thumb|preflight]"
+    exit 1
+    ;;
+esac
+
+# Load secrets for health checks (non-fatal if absent)
+source ~/.claude/secrets/dpla.env 2>/dev/null || true
+
+# ── pre-flight ──────────────────────────────────────────────────────────────
+
+bold "=== DPLA API Services Deploy ==="
+log "Services: $( [[ $DEPLOY_API == true ]] && echo 'api ' )$( [[ $DEPLOY_THUMB == true ]] && echo 'thumbnail-api' )"
+echo
+
+bold "=== Pre-flight checks ==="
+
+# Service health checks — do not deploy to a broken service
+if [[ "$DEPLOY_API" == "true" ]]; then
+  API_HEALTH=$(curl -o /dev/null -s -w "%{http_code}" \
+    "https://api.dp.la/v2/items?api_key=${DPLA_API_KEY:-test}&page_size=1" 2>/dev/null || echo "000")
+  if [[ "$API_HEALTH" != "200" ]]; then
+    err "api.dp.la is unhealthy (HTTP $API_HEALTH) — do not deploy to a broken service"
+    exit 1
+  fi
+  log "api.dp.la: HTTP $API_HEALTH — healthy"
+fi
+
+if [[ "$DEPLOY_THUMB" == "true" ]]; then
+  # Use dp.la/thumb/... routing — thumb.dp.la may 403 from CloudFront WAF on this machine
+  THUMB_HEALTH=$(curl -o /dev/null -s -w "%{http_code}" \
+    "https://dp.la/thumb/ee7d7c513000727d22613e1c6ba17061" 2>/dev/null || echo "000")
+  if [[ "$THUMB_HEALTH" != "200" && "$THUMB_HEALTH" != "202" && "$THUMB_HEALTH" != "302" ]]; then
+    err "thumbnail API is unhealthy (HTTP $THUMB_HEALTH) — do not deploy to a broken service"
+    exit 1
+  fi
+  log "thumbnail API: HTTP $THUMB_HEALTH — healthy"
+fi
+
+echo
+bold "=== What will be deployed ==="
+[[ "$DEPLOY_API" == "true" ]]   && show_deploy_summary "api"           api           dpla/api
+[[ "$DEPLOY_THUMB" == "true" ]] && show_deploy_summary "thumbnail-api" thumbnail-api dpla/thumbnail-api
+echo
+
+# Check for in-flight GH Actions ECR builds — a running build can overwrite :latest
+[[ "$DEPLOY_API"   == "true" ]] && abort_if_build_in_flight dpla/api           "Deploy to Amazon ECR"       api
+[[ "$DEPLOY_THUMB" == "true" ]] && abort_if_build_in_flight dpla/thumbnail-api  "push to ecr: production"    thumbnail-api
+
+# Check for in-flight pipelines
+for pipeline_check in \
+  "$DEPLOY_API:api-pipeline" \
+  "$DEPLOY_THUMB:thumbnail-api-pipeline"; do
+  enabled=${pipeline_check%%:*}
+  pipeline=${pipeline_check##*:}
+  [[ "$enabled" != "true" ]] && continue
+  if ! in_flight=$($AWS codepipeline list-pipeline-executions \
+    --pipeline-name "$pipeline" --region "$REGION" \
+    --query 'pipelineExecutionSummaries[?status==`InProgress` || status==`Stopping`].pipelineExecutionId' \
+    --output json 2>/dev/null | jq 'length'); then
+    err "Failed to check in-flight status for $pipeline — aborting"
+    exit 1
+  fi
+  if [[ "$in_flight" -gt 0 ]]; then
+    err "$pipeline already has an execution in progress or stopping — aborting"
+    exit 1
+  fi
+done
+log "Pre-flight checks passed"
+
+if [[ "$PRE_FLIGHT_ONLY" == "true" ]]; then
+  log "Pre-flight-only mode — exiting without building or deploying."
+  exit 0
+fi
+echo
+
+# ── phase 1: trigger ECR builds ────────────────────────────────────────────
+
+bold "=== Phase 1: Building Docker images ==="
+TRIGGER_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+if [[ "$DEPLOY_API" == "true" ]]; then
+  log "Dispatching api ECR build (sbt assembly + Docker, ~20-25 min)..."
+  $GH api --method POST /repos/dpla/api/actions/workflows/deploy.yml/dispatches \
+    -f ref=main > /dev/null
+fi
+
+if [[ "$DEPLOY_THUMB" == "true" ]]; then
+  log "Dispatching thumbnail-api ECR build (~5-10 min)..."
+  $GH api --method POST /repos/dpla/thumbnail-api/actions/workflows/ecr.yml/dispatches \
+    -f ref=main > /dev/null
+fi
+
+sleep 5  # brief pause for GitHub to register the runs
+
+# Collect run IDs
+API_RUN_ID=""
+THUMB_RUN_ID=""
+
+if [[ "$DEPLOY_API" == "true" ]]; then
+  API_RUN_ID=$(wait_for_gh_run dpla/api "Deploy to Amazon ECR" "$TRIGGER_TIME")
+  log "api GH run ID: $API_RUN_ID"
+fi
+
+if [[ "$DEPLOY_THUMB" == "true" ]]; then
+  THUMB_RUN_ID=$(wait_for_gh_run dpla/thumbnail-api "push to ecr: production" "$TRIGGER_TIME")
+  log "thumbnail-api GH run ID: $THUMB_RUN_ID"
+fi
+
+echo
+
+# ── phase 2: wait for builds (parallel) ────────────────────────────────────
+
+bold "=== Phase 2: Waiting for builds ==="
+FAILED=0
+
+# Run both polls in background, capture exit codes
+API_POLL_PID=""
+THUMB_POLL_PID=""
+
+if [[ "$DEPLOY_API" == "true" ]]; then
+  poll_gh_run dpla/api "$API_RUN_ID" "api ECR build" &
+  API_POLL_PID=$!
+fi
+
+if [[ "$DEPLOY_THUMB" == "true" ]]; then
+  poll_gh_run dpla/thumbnail-api "$THUMB_RUN_ID" "thumbnail-api ECR build" &
+  THUMB_POLL_PID=$!
+fi
+
+[[ -n "$API_POLL_PID" ]]   && { wait $API_POLL_PID   || FAILED=1; }
+[[ -n "$THUMB_POLL_PID" ]] && { wait $THUMB_POLL_PID || FAILED=1; }
+
+if [[ "$FAILED" -eq 1 ]]; then
+  err "One or more ECR builds failed — aborting before pipeline start"
+  exit 1
+fi
+
+echo
+
+# ── phase 3: verify ECR images ─────────────────────────────────────────────
+
+bold "=== Phase 3: Verifying ECR images ==="
+[[ "$DEPLOY_API" == "true" ]]   && verify_ecr_image api           "$TRIGGER_TIME"
+[[ "$DEPLOY_THUMB" == "true" ]] && verify_ecr_image thumbnail-api "$TRIGGER_TIME"
+echo
+
+# ── phase 4: start pipelines simultaneously ────────────────────────────────
+
+bold "=== Phase 4: Starting CodePipelines ==="
+API_EXEC_ID=""
+THUMB_EXEC_ID=""
+
+[[ "$DEPLOY_API" == "true" ]]   && API_EXEC_ID=$(start_pipeline api-pipeline)
+[[ "$DEPLOY_THUMB" == "true" ]] && THUMB_EXEC_ID=$(start_pipeline thumbnail-api-pipeline)
+echo
+
+# ── phase 5: monitor pipelines (parallel) ──────────────────────────────────
+
+bold "=== Phase 5: Monitoring deployments ==="
+FAILED=0
+
+API_PIPE_PID=""
+THUMB_PIPE_PID=""
+
+if [[ "$DEPLOY_API" == "true" ]]; then
+  poll_pipeline api-pipeline "$API_EXEC_ID" &
+  API_PIPE_PID=$!
+fi
+
+if [[ "$DEPLOY_THUMB" == "true" ]]; then
+  poll_pipeline thumbnail-api-pipeline "$THUMB_EXEC_ID" &
+  THUMB_PIPE_PID=$!
+fi
+
+[[ -n "$API_PIPE_PID" ]]   && { wait $API_PIPE_PID   || FAILED=1; }
+[[ -n "$THUMB_PIPE_PID" ]] && { wait $THUMB_PIPE_PID || FAILED=1; }
+
+echo
+
+# ── done ───────────────────────────────────────────────────────────────────
+
+if [[ "$FAILED" -eq 1 ]]; then
+  err "One or more deployments failed — check the AWS CodePipeline console"
+  exit 1
+fi
+
+POST_DEPLOY_FAILED=0
+if [[ "$DEPLOY_API" == "true" ]]; then
+  log "api health check:"
+  if ! curl -sf "https://api.dp.la/v2/items?api_key=${DPLA_API_KEY:-test}&page_size=1" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print('  api.dp.la: HTTP 200 —', d['count'], 'items')"; then
+    err "api post-deploy health check failed"
+    POST_DEPLOY_FAILED=1
+  fi
+fi
+if [[ "$DEPLOY_THUMB" == "true" ]]; then
+  log "thumbnail-api health check:"
+  # Use dp.la/thumb/... routing — thumb.dp.la may 403 from CloudFront WAF on this machine
+  if ! curl -sf -o /dev/null -w "  thumbnail API: HTTP %{http_code}\n" \
+    "https://dp.la/thumb/ee7d7c513000727d22613e1c6ba17061"; then
+    err "thumbnail-api post-deploy health check failed"
+    POST_DEPLOY_FAILED=1
+  fi
+fi
+
+if [[ "$POST_DEPLOY_FAILED" -eq 1 ]]; then
+  exit 1
+fi
+
+bold "=== All deployments succeeded ==="
