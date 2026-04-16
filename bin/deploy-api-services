@@ -8,6 +8,7 @@
 #   deploy-api-services           # deploy both api and thumbnail-api
 #   deploy-api-services api       # deploy only the DPLA API
 #   deploy-api-services thumb     # deploy only the thumbnail API
+#   deploy-api-services preflight # run pre-flight checks only — no builds or deploys
 #
 # Canonical source: dpla/api bin/deploy-api-services
 # Copy to ~/bin/ on the deploy machine: cp bin/deploy-api-services ~/bin/
@@ -167,17 +168,44 @@ poll_pipeline() {
 show_deploy_summary() {
   local label=$1 ecr_repo=$2 gh_repo=$3
   local ecr_pushed main_commit
-  ecr_pushed=$($AWS ecr describe-images \
+
+  # Fetch both fields in one call; jq extracts each with a safe fallback.
+  local ecr_image ecr_pushed ecr_digest
+  ecr_image=$($AWS ecr describe-images \
     --repository-name "$ecr_repo" \
-    --image-ids imageTag=latest \
-    --region "$REGION" \
-    --query 'imageDetails[0].imagePushedAt' \
-    --output text 2>/dev/null || echo "(unknown)")
+    --image-ids imageTag=latest --region "$REGION" \
+    --query 'imageDetails[0]' --output json 2>/dev/null || echo '{}')
+  ecr_pushed=$(echo "$ecr_image" | jq -r '.imagePushedAt // "(unknown)"')
+  ecr_digest=$(echo "$ecr_image"  | jq -r '.imageDigest  // ""')
+
   main_commit=$($GH api "repos/$gh_repo/commits/main" \
     --jq '.sha[0:7] + " — " + (.commit.message | split("\n")[0]) + " (" + (.commit.committer.date | split("T")[0]) + ")"' \
     2>/dev/null || echo "(unknown)")
+
+  # Compare the digest of the running container to ECR :latest to detect a stale deploy.
+  # Cluster and service names match ecr_repo in our infrastructure.
+  local task_arn="" running_digest="" deployed_note=""
+  task_arn=$($AWS ecs list-tasks \
+    --cluster "$ecr_repo" --service-name "$ecr_repo" \
+    --desired-status RUNNING --region "$REGION" \
+    --query 'taskArns[0]' --output text 2>/dev/null || echo "")
+  if [[ -n "$task_arn" && "$task_arn" != "None" ]]; then
+    running_digest=$($AWS ecs describe-tasks \
+      --cluster "$ecr_repo" --tasks "$task_arn" --region "$REGION" \
+      --query 'tasks[0].containers[0].imageDigest' --output text 2>/dev/null || echo "")
+  fi
+  if [[ -z "$running_digest" || "$running_digest" == "None" ]]; then
+    deployed_note="(unknown — could not read running container)"
+  elif [[ "$running_digest" == "$ecr_digest" ]]; then
+    deployed_note="✅ up to date (matches ECR :latest)"
+  else
+    # :7 skips the "sha256:" prefix; show 12 hex chars from each digest for a quick visual diff
+    deployed_note="⚠️  stale (running ${running_digest:7:12}… / ECR :latest ${ecr_digest:7:12}…)"
+  fi
+
   echo "  $label:"
-  echo "    📦 ECR :latest tag pushed: $ecr_pushed"
+  echo "    🟢 Deployed image:         $deployed_note"
+  echo "    📦 ECR :latest pushed:     $ecr_pushed"
   echo "    🔜 Will deploy:            $main_commit"
 }
 
@@ -186,12 +214,15 @@ show_deploy_summary() {
 DEPLOY_API=false
 DEPLOY_THUMB=false
 
+PRE_FLIGHT_ONLY=false
+
 case "${1:-both}" in
-  both)   DEPLOY_API=true; DEPLOY_THUMB=true ;;
-  api)    DEPLOY_API=true ;;
-  thumb)  DEPLOY_THUMB=true ;;
+  both)      DEPLOY_API=true; DEPLOY_THUMB=true ;;
+  api)       DEPLOY_API=true ;;
+  thumb)     DEPLOY_THUMB=true ;;
+  preflight) DEPLOY_API=true; DEPLOY_THUMB=true; PRE_FLIGHT_ONLY=true ;;
   *)
-    echo "Usage: $0 [both|api|thumb]"
+    echo "Usage: $0 [both|api|thumb|preflight]"
     exit 1
     ;;
 esac
@@ -259,6 +290,11 @@ for pipeline_check in \
   fi
 done
 log "Pre-flight checks passed"
+
+if [[ "$PRE_FLIGHT_ONLY" == "true" ]]; then
+  log "Pre-flight-only mode — exiting without building or deploying."
+  exit 0
+fi
 echo
 
 # ── phase 1: trigger ECR builds ────────────────────────────────────────────

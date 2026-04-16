@@ -12,9 +12,10 @@ The DPLA API is a Scala/JVM service running on AWS ECS Fargate (8 tasks, blue/gr
 When deploying both the DPLA API and the thumbnail API in the same maintenance window, use the combined script to run everything in parallel. This produces one impact window instead of two:
 
 ```bash
-~/bin/deploy-api-services          # deploy both
-~/bin/deploy-api-services api      # api only
-~/bin/deploy-api-services thumb    # thumbnail-api only
+~/bin/deploy-api-services           # deploy both
+~/bin/deploy-api-services api       # api only
+~/bin/deploy-api-services thumb     # thumbnail-api only
+~/bin/deploy-api-services preflight # pre-flight checks only — no builds or deploys
 ```
 
 `deploy-api-services` lives at `bin/deploy-api-services` in this repository. Copy it to `~/bin/` on the deploy machine:
