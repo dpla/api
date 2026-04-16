@@ -18,7 +18,7 @@ set -euo pipefail
 AWS=${AWS:-$(command -v aws 2>/dev/null || true)}
 GH=${GH:-$(command -v gh 2>/dev/null || true)}
 REGION=us-east-1
-BROWSER_UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+BROWSER_UA=${BROWSER_UA:-"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
