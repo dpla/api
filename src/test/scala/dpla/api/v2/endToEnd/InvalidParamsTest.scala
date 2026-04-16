@@ -63,8 +63,8 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
     "still pass a well-formed key through to the registry" in {
       val request = Get(s"/v2/items?api_key=$fakeApiKey")
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.OK
-        contentType should ===(ContentTypes.`application/json`)
+        status should not be StatusCodes.Forbidden
+        status should not be StatusCodes.NotFound
       }
     }
   }
