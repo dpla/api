@@ -554,17 +554,20 @@ class Routes(
     RawHeader("X-Frame-Options", "DENY")
   )
 
-  private def jsonEntity(message: String): ResponseEntity = {
-    // Converting to json and back to string ensures that the string is
-    // encased in quotation marks, and external quotation marks are escaped.
-    val json = message.toJson.toString
+  private def errorEntity(error: String, message: String): ResponseEntity = {
+    val json = Map(
+      "error" -> error,
+      "message" -> message,
+      "documentation" -> "https://pro.dp.la/developers/responses#errors"
+    ).toJson.toString
     HttpEntity(ContentTypes.`application/json`, json)
   }
 
   private val internalErrorResponse: HttpResponse =
     HttpResponse(
       InternalServerError,
-      entity = jsonEntity(
+      entity = errorEntity(
+        "internal_error",
         "There was an unexpected internal error. Please try again later."
       )
     )
@@ -572,7 +575,8 @@ class Routes(
   private val notFoundResponse: HttpResponse =
     HttpResponse(
       NotFound,
-      entity = jsonEntity(
+      entity = errorEntity(
+        "not_found",
         "The record you are searching for could not be found."
       )
     )
@@ -580,7 +584,8 @@ class Routes(
   private val forbiddenResponse: HttpResponse =
     HttpResponse(
       Forbidden,
-      entity = jsonEntity(
+      entity = errorEntity(
+        "invalid_api_key",
         "Invalid or inactive API key."
       )
     )
@@ -588,23 +593,27 @@ class Routes(
   private def badRequestResponse(message: String): HttpResponse =
     HttpResponse(
       BadRequest,
-      entity = jsonEntity(message)
+      entity = errorEntity("bad_request", message)
     )
 
   private def existingKeyResponse(email: String): HttpResponse =
     HttpResponse(
       Conflict,
-      entity = jsonEntity(s"There is already an API key for $email" +
-        ". We have sent a reminder message to that address."
+      entity = errorEntity(
+        "existing_key",
+        s"There is already an API key for $email" +
+          ". We have sent a reminder message to that address."
       )
     )
 
   private def disabledKeyResponse(email: String): HttpResponse =
     HttpResponse(
       Conflict,
-      entity = jsonEntity(s"The API key associated with email address $email" +
-        " has been disabled. If you would like to reactivate it, " +
-        "please contact DPLA."
+      entity = errorEntity(
+        "disabled_key",
+        s"The API key associated with email address $email" +
+          " has been disabled. If you would like to reactivate it, " +
+          "please contact DPLA."
       )
     )
 
