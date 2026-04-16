@@ -120,6 +120,7 @@ trait ParamValidator extends FieldDefinitions {
   protected def preProcess(value: Map[String, String]): Map[String, String]
 
   protected val defaultExactFieldMatch: Boolean = false
+  protected val requiresQueryForFacets: Boolean = false
   protected val defaultFacetSize: Int = 50
   protected val minFacetSize: Int = 0
   protected val maxFacetSize: Int = 200
@@ -241,7 +242,7 @@ trait ParamValidator extends FieldDefinitions {
         val hasQuery = q.isDefined || fieldQueries.nonEmpty
         val hasFilter = filter.isDefined
 
-        if (hasFacets && !hasQuery && !hasFilter)
+        if (requiresQueryForFacets && hasFacets && !hasQuery && !hasFilter)
           throw ValidationException(
             "Facet requests require at least one query term (q) or filter"
           )
