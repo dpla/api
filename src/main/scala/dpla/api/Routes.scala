@@ -555,7 +555,11 @@ class Routes(
   )
 
   private def errorEntity(error: String, message: String): ResponseEntity = {
-    val json = Map("error" -> error, "message" -> message).toJson.toString
+    val json = Map(
+      "error" -> error,
+      "message" -> message,
+      "documentation" -> "https://pro.dp.la/developers/responses#errors"
+    ).toJson.toString
     HttpEntity(ContentTypes.`application/json`, json)
   }
 
