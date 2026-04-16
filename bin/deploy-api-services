@@ -248,13 +248,13 @@ for pipeline_check in \
   [[ "$enabled" != "true" ]] && continue
   if ! in_flight=$($AWS codepipeline list-pipeline-executions \
     --pipeline-name "$pipeline" --region "$REGION" \
-    --query 'pipelineExecutionSummaries[?status==`InProgress`].pipelineExecutionId' \
+    --query 'pipelineExecutionSummaries[?status==`InProgress` || status==`Stopping`].pipelineExecutionId' \
     --output json 2>/dev/null | jq 'length'); then
     err "Failed to check in-flight status for $pipeline — aborting"
     exit 1
   fi
   if [[ "$in_flight" -gt 0 ]]; then
-    err "$pipeline already has an execution in progress — aborting"
+    err "$pipeline already has an execution in progress or stopping — aborting"
     exit 1
   fi
 done
