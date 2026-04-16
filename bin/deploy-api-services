@@ -18,6 +18,7 @@ set -euo pipefail
 AWS=${AWS:-$(command -v aws 2>/dev/null || true)}
 GH=${GH:-$(command -v gh 2>/dev/null || true)}
 REGION=us-east-1
+BROWSER_UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
@@ -250,8 +251,9 @@ if [[ "$DEPLOY_API" == "true" ]]; then
 fi
 
 if [[ "$DEPLOY_THUMB" == "true" ]]; then
-  # Use dp.la/thumb/... routing — thumb.dp.la may 403 from CloudFront WAF on this machine
+  # Use dp.la/thumb/... routing — pass a browser UA (CloudFront WAF blocks curl's default User-Agent)
   THUMB_HEALTH=$(curl -o /dev/null -s -w "%{http_code}" \
+    -A "$BROWSER_UA" \
     "https://dp.la/thumb/ee7d7c513000727d22613e1c6ba17061" 2>/dev/null || echo "000")
   if [[ "$THUMB_HEALTH" != "200" && "$THUMB_HEALTH" != "202" && "$THUMB_HEALTH" != "302" ]]; then
     err "thumbnail API is unhealthy (HTTP $THUMB_HEALTH) — do not deploy to a broken service"
@@ -419,8 +421,9 @@ if [[ "$DEPLOY_API" == "true" ]]; then
 fi
 if [[ "$DEPLOY_THUMB" == "true" ]]; then
   log "thumbnail-api health check:"
-  # Use dp.la/thumb/... routing — thumb.dp.la may 403 from CloudFront WAF on this machine
+  # Use dp.la/thumb/... routing — pass a browser UA (CloudFront WAF blocks curl's default User-Agent)
   if ! curl -sf -o /dev/null -w "  thumbnail API: HTTP %{http_code}\n" \
+    -A "$BROWSER_UA" \
     "https://dp.la/thumb/ee7d7c513000727d22613e1c6ba17061"; then
     err "thumbnail-api post-deploy health check failed"
     POST_DEPLOY_FAILED=1
