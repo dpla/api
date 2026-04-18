@@ -49,9 +49,6 @@ class SearchTests extends ITHelper with LogCapturing {
   val authenticator: ActorRef[AuthenticationCommand] =
     ITMockAuthenticator(testKit, Some(postgresClient))
 
-  val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    testKit.spawn(EbookRegistry(authenticator, analyticsClient))
-
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     testKit.spawn(ApiKeyRegistry(authenticator))
 
@@ -65,7 +62,7 @@ class SearchTests extends ITHelper with LogCapturing {
     testKit.spawn(SmrRegistry(authenticator))
 
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+    new Routes(itemRegistry, pssRegistry, apiKeyRegistry,
       smrRegistry).applicationRoutes
 
   /** Helper methods */

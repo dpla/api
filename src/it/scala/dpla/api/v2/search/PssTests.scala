@@ -38,9 +38,6 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
   val authenticator: ActorRef[AuthenticationCommand] =
     ITMockAuthenticator(testKit, Some(postgresClient))
 
-  val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    testKit.spawn(EbookRegistry(authenticator, analyticsClient))
-
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     testKit.spawn(ApiKeyRegistry(authenticator))
 
@@ -54,7 +51,7 @@ class PssTests extends ITHelper with LogCapturing with FileReader {
     testKit.spawn(SmrRegistry(authenticator))
 
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+    new Routes(itemRegistry, pssRegistry, apiKeyRegistry,
       smrRegistry).applicationRoutes
 
   "all sets endpoint" should {

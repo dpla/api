@@ -6,7 +6,7 @@ import dpla.api.v2.search.ItemSearch
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 
 /**
- * Handles the control flow for processing an ebooks request from Routes.
+ * Handles the control flow for processing an items request from Routes.
  */
 object ItemRegistry extends SearchRegistryBehavior {
 

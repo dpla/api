@@ -2,13 +2,13 @@ package dpla.api.helpers
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
-import dpla.api.v2.analytics.{AnalyticsClientCommand, EbookAnalyticsClient, ItemAnalyticsClient, PssAnalyticsClient}
+import dpla.api.v2.analytics.{AnalyticsClientCommand, ItemAnalyticsClient, PssAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication._
 import dpla.api.v2.email.EmailClient.EmailClientCommand
 import dpla.api.v2.email.{MockEmailClientFailure, MockEmailClientSuccess}
 import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockItemRegistry, MockPssRegistry, MockSmrRegistry, SearchRegistryCommand, SmrRegistryCommand}
-import dpla.api.v2.search.{MockEboookEsClientSuccess, MockEsClientFailure, MockEsClientNotFound, MockItemEsClientSuccess}
+import dpla.api.v2.search.{MockEsClientFailure, MockEsClientNotFound, MockItemEsClientSuccess}
 import dpla.api.v2.search.mappings.{DPLAMAPMapper, MockMapperFailure}
 import dpla.api.v2.smr.{MockS3ClientFailure, MockS3ClientSuccess}
 
@@ -17,9 +17,6 @@ trait ActorHelper {
   /** Abstract methods */
   val testKit: ActorTestKit
 
-
-  val ebookAnalyticsClient: ActorRef[AnalyticsClientCommand] =
-    testKit.spawn(EbookAnalyticsClient())
 
   val itemAnalyticsClient: ActorRef[AnalyticsClientCommand] =
     testKit.spawn(ItemAnalyticsClient())
@@ -66,8 +63,6 @@ trait ActorHelper {
   val dplaMapMapper = testKit.spawn(DPLAMAPMapper())
 
   val mapperFailure = testKit.spawn(MockMapperFailure())
-
-  val ebookElasticSearchClient = testKit.spawn(MockEboookEsClientSuccess(dplaMapMapper))
 
   val itemElasticSearchClient = testKit.spawn(MockItemEsClientSuccess(dplaMapMapper))
 

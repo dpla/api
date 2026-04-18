@@ -265,7 +265,7 @@ trait ParamValidator extends FieldDefinitions {
 
   /**
    * Method returns Failure if ID is invalid.
-   * Ebook ID must be a non-empty String comprised of letters, numbers, and
+   * ID must be a non-empty String comprised of letters, numbers, and
    * hyphens.
    */
   private def getValidId(id: String): String = {

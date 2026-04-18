@@ -10,7 +10,7 @@ import dpla.api.helpers.ITUtils.fakeApiKey
 import dpla.api.v2.analytics.{AnalyticsClientCommand, ITMockAnalyticsClient}
 import dpla.api.v2.authentication.AuthProtocol.AuthenticationCommand
 import dpla.api.v2.authentication.{ITMockAuthenticator, ITMockPostgresClient}
-import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, EbookRegistry, ItemRegistry, PssRegistry, SearchRegistryCommand, SmrRegistry, SmrRegistryCommand}
+import dpla.api.v2.registry.{ApiKeyRegistry, ApiKeyRegistryCommand, ItemRegistry, PssRegistry, SearchRegistryCommand, SmrRegistry, SmrRegistryCommand}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -40,9 +40,6 @@ class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
   val authenticator: ActorRef[AuthenticationCommand] =
     ITMockAuthenticator(testKit, Some(postgresClient))
 
-  val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    testKit.spawn(EbookRegistry(authenticator, analyticsClient))
-
   val apiKeyRegistry: ActorRef[ApiKeyRegistryCommand] =
     testKit.spawn(ApiKeyRegistry(authenticator))
 
@@ -56,7 +53,7 @@ class FacetableFields extends AnyWordSpec with Matchers with ScalatestRouteTest
     testKit.spawn(SmrRegistry(authenticator))
 
   val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+    new Routes(itemRegistry, pssRegistry, apiKeyRegistry,
       smrRegistry).applicationRoutes
 
   val facetableFields = Seq(

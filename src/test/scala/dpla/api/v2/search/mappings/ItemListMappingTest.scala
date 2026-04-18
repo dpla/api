@@ -19,7 +19,7 @@ class ItemListMappingTest extends AnyWordSpec with Matchers
   val minItemList: JsObject =
     minEsItemList.parseJson.convertTo[DPLADocList].toJson.asJsObject
 
-  "a list of ebook records" should {
+  "a list of item records" should {
     "map count" in {
       val expected = 167
       val traversed = readInt(itemList, "count").get

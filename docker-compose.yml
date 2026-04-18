@@ -49,7 +49,6 @@ services:
       - DATABASE_URL=jdbc:postgresql://postgres:5432/postgres
       - ITEM_ELASTICSEARCH_URL=http://elasticsearch:9200/dpla_alias
       - PSS_ELASTICSEARCH_URL=http://search.internal.dp.la:9200/dpla_pss
-      - EBOOK_ELASTICSEARCH_URL=http://elasticsearch:9200/dpla_ebooks
       - POSTGRES_PASSWORD=weebaeloo3taZiezaip6Uph4R
       - POSTGRES_SERVER=postgres
       - POSTGRES_DB=postgres

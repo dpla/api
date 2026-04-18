@@ -38,7 +38,7 @@ class DPLAMAPMapperTest
     sortOrder = ""
   )
 
-  val minEsEbookList: String =
+  val minEsItemList: String =
     readFile("/elasticSearchMinimalItemList.json")
   val esItem: String =
     readFile("/elasticSearchItem.json")
@@ -47,7 +47,7 @@ class DPLAMAPMapperTest
 
   "search response mapper" should {
     "return success for mappable response" in {
-      itemMapper ! SearchQueryResponse(params, minEsEbookList, probe.ref)
+      itemMapper ! SearchQueryResponse(params, minEsItemList, probe.ref)
       probe.expectMessageType[MappedSearchResult]
     }
 
@@ -119,7 +119,7 @@ class DPLAMAPMapperTest
 
   "multi-fetch response mapper" should {
     "return success for mappable response" in {
-      itemMapper ! MultiFetchQueryResponse(minEsEbookList, probe.ref)
+      itemMapper ! MultiFetchQueryResponse(minEsItemList, probe.ref)
       probe.expectMessageType[MappedMultiFetchResult]
     }
 

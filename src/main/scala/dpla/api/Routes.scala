@@ -25,7 +25,6 @@ import spray.json.enrichAny
 
 
 class Routes(
-              ebookRegistry: ActorRef[SearchRegistryCommand],
               itemRegistry: ActorRef[SearchRegistryCommand],
               pssRegistry: ActorRef[SearchRegistryCommand],
               apiKeyRegistry: ActorRef[ApiKeyRegistryCommand],
@@ -41,41 +40,6 @@ class Routes(
   )
 
   val log: Logger = LoggerFactory.getLogger(getClass)
-
-  // Requests are send to the appropriate register for processing.
-
-  def searchEbooks(
-                    auth: Option[String],
-                    params: Map[String, String],
-                    host: String,
-                    path: String
-                  ): Future[RegistryResponse] = {
-
-    val apiKey: Option[String] = getApiKey(params, auth)
-    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
-      Future.successful(ForbiddenFailure)
-    else {
-      val cleanParams = getCleanParams(params)
-      ebookRegistry.ask(RegisterSearch(apiKey, cleanParams, host, path, _))
-    }
-  }
-
-  def fetchEbooks(
-                   auth: Option[String],
-                   id: String,
-                   params: Map[String, String],
-                   host: String,
-                   path: String
-                 ): Future[RegistryResponse] = {
-
-    val apiKey: Option[String] = getApiKey(params, auth)
-    if (apiKey.exists(k => !hasValidApiKeyFormat(k)))
-      Future.successful(ForbiddenFailure)
-    else {
-      val cleanParams = getCleanParams(params)
-      ebookRegistry.ask(RegisterFetch(apiKey, id, cleanParams, host, path, _))
-    }
-  }
 
   // Item search and fetch requests are send to ItemRegistry actor for
   // processing.
@@ -215,7 +179,6 @@ class Routes(
 
   lazy val applicationRoutes: Route =
     concat (
-      pathPrefix("ebooks")(ebooksRoutes),
       pathPrefix("items")(itemsRoutes),
       pathPrefix("pss")(pssRoutes),
       pathPrefix("smr")(smrRoutes),
@@ -223,7 +186,6 @@ class Routes(
       pathPrefix("random")(randomRoute),
       pathPrefix("v2") {
         concat(
-          pathPrefix("ebooks")(ebooksRoutes),
           pathPrefix("items")(itemsRoutes),
           pathPrefix("pss")(pssRoutes),
           pathPrefix("smr")(smrRoutes),
@@ -232,58 +194,6 @@ class Routes(
         )
       },
       path("health-check")(healthCheckRoute)
-    )
-
-  lazy val ebooksRoutes: Route =
-    concat(
-      pathEnd {
-        get {
-          extractUri { uri =>
-            logURL(uri)
-            extractHost { host =>
-              extractMatchedPath { path =>
-                parameterMap { params =>
-                  // Get the API key from Authorization header if it exists.
-                  optionalHeaderValueByName("Authorization") { auth =>
-                    respondWithHeaders(securityResponseHeaders) {
-                      onComplete(searchEbooks(auth, params, host, path.toString)) {
-                        case Success(response) =>
-                          renderRegistryResponse(response, path.toString)
-                        case Failure(e) =>
-                          renderRegistryFailure(e, path.toString)
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      path(Segment) { id =>
-        get {
-          extractUri { uri =>
-            logURL(uri)
-            extractHost { host =>
-              extractMatchedPath { path =>
-                parameterMap { params =>
-                  // Get the API key from Authorization header if it exists.
-                  optionalHeaderValueByName("Authorization") { auth =>
-                    respondWithHeaders(securityResponseHeaders) {
-                      onComplete(fetchEbooks(auth, id, params, host, path.toString)) {
-                        case Success(response) =>
-                          renderRegistryResponse(response, path.toString)
-                        case Failure(e) =>
-                          renderRegistryFailure(e, path.toString)
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
     )
 
   lazy val itemsRoutes: Route =

@@ -1,14 +1,13 @@
 package dpla.api
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.helpers.ActorHelper
-import dpla.api.v2.registry.{MockEbookRegistry, SearchRegistryCommand}
 
 
 class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
@@ -21,11 +20,8 @@ class HealthCheckTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient)
-
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistry, pssRegistry, apiKeyRegistry,
+    new Routes(itemRegistry, pssRegistry, apiKeyRegistry,
       smrRegistry).applicationRoutes
 
   "Health check" should {

@@ -10,10 +10,10 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry._
+import dpla.api.v2.registry.{ApiKeyRegistryCommand, MockApiKeyRegistry, MockItemRegistry, MockPssRegistry, MockSmrRegistry, SearchRegistryCommand, SmrRegistryCommand}
 import dpla.api.v2.search.SearchProtocol.SearchCommand
 import dpla.api.v2.search.mappings.JsonFieldReader
-import dpla.api.v2.search.{MockEbookSearch, MockItemSearch}
+import dpla.api.v2.search.MockItemSearch
 import dpla.api.v2.smr.MockSmrRequestHandler
 import dpla.api.v2.smr.SmrProtocol.SmrCommand
 import org.scalatest.matchers.should.Matchers
@@ -30,17 +30,11 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def createActorSystem(): akka.actor.ActorSystem =
     testKit.system.classicSystem
 
-  val ebookSearch: ActorRef[SearchCommand] =
-    MockEbookSearch(testKit, Some(ebookElasticSearchClient), Some(dplaMapMapper))
-
   val itemSearch: ActorRef[SearchCommand] =
     MockItemSearch(testKit, Some(itemElasticSearchClient), Some(dplaMapMapper))
 
   val smrRequestHandler: ActorRef[SmrCommand] =
     MockSmrRequestHandler(testKit, Some(s3ClientSuccess))
-
-  val ebookRegistry: ActorRef[SearchRegistryCommand] =
-    MockEbookRegistry(testKit, authenticator, ebookAnalyticsClient, Some(ebookSearch))
 
   val apiKeyRegistryWithEmailSuccess: ActorRef[ApiKeyRegistryCommand] =
     MockApiKeyRegistry(testKit, authenticator, Some(emailClient))
@@ -52,65 +46,15 @@ class HappyPathsTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     MockSmrRegistry(testKit, authenticator, Some(smrRequestHandler))
 
   lazy val routes: Route =
-    new Routes(ebookRegistry, itemRegistryEsSuccess, pssRegistry,
+    new Routes(itemRegistryEsSuccess, pssRegistry,
       apiKeyRegistryWithEmailSuccess, smrRegistryS3Success).applicationRoutes
 
   "/v2/ebooks route" should {
-    "be happy with valid user inputs and successful es response" in {
-      val request = Get(s"/v2/ebooks?page_size=100&api_key=$fakeApiKey")
+    "return NotFound after ebook removal" in {
+      val request = Get("/v2/ebooks")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.OK
-        contentType should === (ContentTypes.`application/json`)
-
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-
-        val limit: Option[Int] = readInt(entity, "limit")
-        limit should === (Some(100))
-
-        val expected = Seq(
-          "3dbbf125aba2642e21f17c955bef4e96",
-          "ccde9a5246356b1048873f9d9c71e5bb"
-        )
-        val ids = readObjectArray(entity, "docs")
-          .flatMap(readString(_, "id"))
-        ids should contain allElementsOf expected
-      }
-    }
-  }
-
-  "/v2/ebooks/[id] route" should {
-    "be happy with valid single ID and successful es response" in {
-      val request =
-        Get(s"/v2/ebooks/3dbbf125aba2642e21f17c955bef4e96?api_key=$fakeApiKey")
-
-      request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.OK
-        contentType should === (ContentTypes.`application/json`)
-
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val id = readObjectArray(entity, "docs")
-          .flatMap(readString(_, "id")).headOption
-        id should === (Some("3dbbf125aba2642e21f17c955bef4e96"))
-      }
-    }
-
-    "be happy with valid multiple IDs and successful es response" in {
-      val idSeq = Seq(
-        "3dbbf125aba2642e21f17c955bef4e96",
-        "ccde9a5246356b1048873f9d9c71e5bb"
-      )
-      val ids = idSeq.mkString(",")
-      val request = Get(s"/v2/ebooks/$ids?api_key=$fakeApiKey")
-
-      request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.OK
-        contentType should === (ContentTypes.`application/json`)
-
-        val entity: JsObject = entityAs[String].parseJson.asJsObject
-        val ids = readObjectArray(entity, "docs")
-          .flatMap(readString(_, "id"))
-        ids should contain allElementsOf idSeq
+        status shouldEqual StatusCodes.NotFound
       }
     }
   }
