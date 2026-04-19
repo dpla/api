@@ -2,11 +2,15 @@ package dpla.api.v2.search
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter.TypedSchedulerOps
 import akka.http.scaladsl.model.{HttpResponse, StatusCode}
 import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.pattern.CircuitBreaker
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.jdk.DurationConverters._
 import scala.util.{Failure, Success}
 
 /**
@@ -48,11 +52,28 @@ object ElasticSearchResponseHandler {
 
   def apply(): Behavior[ElasticSearchResponseHandlerCommand] = {
     Behaviors.setup { context =>
+
+      val cfg = context.system.settings.config.getConfig("elasticSearch.circuitBreaker")
+
+      val maxFailures: Int = cfg.getInt("maxFailures")
+      val callTimeout: FiniteDuration = cfg.getDuration("callTimeout").toScala.toCoarsest
+      val resetTimeout: FiniteDuration = cfg.getDuration("resetTimeout").toScala.toCoarsest
+
+      // If ES calls time out maxFailures times consecutively, stop sending
+      // requests for resetTimeout to let ES recover before retrying.
+      val breaker = CircuitBreaker(
+        scheduler    = context.system.scheduler.toClassic,
+        maxFailures  = maxFailures,
+        callTimeout  = callTimeout,
+        resetTimeout = resetTimeout
+      ).onOpen(() => context.log.warn("ElasticSearch circuit breaker opened"))
+       .onClose(() => context.log.info("ElasticSearch circuit breaker closed"))
+       .onHalfOpen(() => context.log.info("ElasticSearch circuit breaker half-open, testing ES"))
+
       Behaviors.receiveMessage[ElasticSearchResponseHandlerCommand] {
 
         case ProcessElasticSearchResponse(futureHttpResponse, replyTo) =>
-          // Map the Future value to a message, handled by this actor.
-          context.pipeToSelf(futureHttpResponse) {
+          context.pipeToSelf(breaker.withCircuitBreaker(futureHttpResponse)) {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
             case Failure(e) =>
