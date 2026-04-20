@@ -52,6 +52,7 @@ object SearchProtocol {
   final case object FetchNotFound extends SearchResponse
   final case object SearchNotFound extends SearchResponse
   final case object SearchFailure extends SearchResponse
+  final case object SearchQueryParseFailure extends SearchResponse
 
   /**
    * Internal command protocol.
