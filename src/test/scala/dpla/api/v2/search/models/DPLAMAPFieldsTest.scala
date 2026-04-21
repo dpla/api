@@ -58,5 +58,36 @@ class DPLAMAPFieldsTest extends AnyWordSpec with Matchers {
       val sortable = tester.fields.filter(_.sortable)
       exactMatch should contain allElementsOf sortable
     }
+
+    "have searchable keywordQuery fields defined in ES mapping" in {
+      val keywordFields = Seq(
+        "sourceResource.title",
+        "sourceResource.subject.name",
+        "sourceResource.description",
+        "sourceResource.creator",
+        "sourceResource.collection.title",
+        "dataProvider.name",
+        "provider.name"
+      )
+
+      val mapped = keywordFields.flatMap(tester.getElasticSearchField)
+      mapped.size shouldBe keywordFields.size
+    }
+
+    "use not_analyzed subfields for exact matches on keyword-backed fields" in {
+      val exactMatchFields = Seq(
+        "dataProvider.name",
+        "provider.name",
+        "sourceResource.collection.title",
+        "sourceResource.subject.name",
+        "sourceResource.title"
+      )
+
+      exactMatchFields.foreach { field =>
+        val exact = tester.getElasticSearchExactMatchField(field)
+        exact should not be empty
+        exact.get should include("not_analyzed")
+      }
+    }
   }
 }
