@@ -2,6 +2,7 @@ package dpla.api.v2.search
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.adapter.TypedSchedulerOps
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{
   ContentTypes,
@@ -10,6 +11,7 @@ import akka.http.scaladsl.model.{
   HttpRequest,
   HttpResponse
 }
+import akka.pattern.CircuitBreaker
 import dpla.api.v2.search.ElasticSearchResponseHandler.{
   ElasticSearchResponseHandlerCommand,
   ProcessElasticSearchResponse
@@ -23,7 +25,9 @@ import dpla.api.v2.search.paramValidators.{
 import spray.json.JsValue
 
 import java.util.concurrent.{Semaphore, TimeUnit}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.DurationConverters._
 import org.slf4j.LoggerFactory
 
 /** Sends requests to Elastic Search.
@@ -126,6 +130,19 @@ object ElasticSearchClient {
           "ElasticSearchResponseHandler"
         )
 
+      val cfg = context.system.settings.config.getConfig("elasticSearch.circuitBreaker")
+      val maxFailures: Int = cfg.getInt("maxFailures")
+      val callTimeout: FiniteDuration = cfg.getDuration("callTimeout").toScala.toCoarsest
+      val resetTimeout: FiniteDuration = cfg.getDuration("resetTimeout").toScala.toCoarsest
+      val breaker = CircuitBreaker(
+        scheduler    = context.system.scheduler.toClassic,
+        maxFailures  = maxFailures,
+        callTimeout  = callTimeout,
+        resetTimeout = resetTimeout
+      ).onOpen(() => context.log.warn("ElasticSearch circuit breaker opened"))
+       .onClose(() => context.log.info("ElasticSearch circuit breaker closed"))
+       .onHalfOpen(() => context.log.info("ElasticSearch circuit breaker half-open, testing ES"))
+
       Behaviors.receiveMessage[IntermediateSearchResult] {
 
         case SearchQuery(params, query, replyTo) =>
@@ -136,7 +153,8 @@ object ElasticSearchClient {
             endpoint,
             replyTo,
             responseHandler,
-            nextPhase
+            nextPhase,
+            breaker
           )
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
@@ -150,7 +168,8 @@ object ElasticSearchClient {
             endpoint,
             replyTo,
             responseHandler,
-            nextPhase
+            nextPhase,
+            breaker
           )
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
@@ -161,7 +180,8 @@ object ElasticSearchClient {
             endpoint,
             replyTo,
             responseHandler,
-            nextPhase
+            nextPhase,
+            breaker
           )
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
@@ -174,7 +194,8 @@ object ElasticSearchClient {
             endpoint,
             replyTo,
             responseHandler,
-            nextPhase
+            nextPhase,
+            breaker
           )
           context.spawnAnonymous(sessionChildActor)
           Behaviors.same
@@ -195,7 +216,8 @@ object ElasticSearchClient {
       endpoint: String,
       replyTo: ActorRef[SearchResponse],
       responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
-      nextPhase: ActorRef[IntermediateSearchResult]
+      nextPhase: ActorRef[IntermediateSearchResult],
+      breaker: CircuitBreaker
   ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -210,7 +232,7 @@ object ElasticSearchClient {
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
       val futureResp: Future[HttpResponse] = withConcurrencyLimit {
-        Http().singleRequest(request)
+        breaker.withCircuitBreaker { Http().singleRequest(request) }
       }
 
       context.log.info2(
@@ -249,7 +271,8 @@ object ElasticSearchClient {
       endpoint: String,
       replyTo: ActorRef[SearchResponse],
       responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
-      nextPhase: ActorRef[IntermediateSearchResult]
+      nextPhase: ActorRef[IntermediateSearchResult],
+      breaker: CircuitBreaker
   ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -259,7 +282,7 @@ object ElasticSearchClient {
       // Make an HTTP request to elastic search.
       val fetchUri = s"$endpoint/_doc/$id"
       val futureResp: Future[HttpResponse] = withConcurrencyLimit {
-        Http().singleRequest(HttpRequest(uri = fetchUri))
+        breaker.withCircuitBreaker { Http().singleRequest(HttpRequest(uri = fetchUri)) }
       }
 
       context.log.info("ElasticSearch fetch QUERY: {}", fetchUri)
@@ -299,7 +322,8 @@ object ElasticSearchClient {
       endpoint: String,
       replyTo: ActorRef[SearchResponse],
       responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
-      nextPhase: ActorRef[IntermediateSearchResult]
+      nextPhase: ActorRef[IntermediateSearchResult],
+      breaker: CircuitBreaker
   ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -314,7 +338,7 @@ object ElasticSearchClient {
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
       val futureResp: Future[HttpResponse] = withConcurrencyLimit {
-        Http().singleRequest(request)
+        breaker.withCircuitBreaker { Http().singleRequest(request) }
       }
 
       context.log.info2(
@@ -352,7 +376,8 @@ object ElasticSearchClient {
       endpoint: String,
       replyTo: ActorRef[SearchResponse],
       responseHandler: ActorRef[ElasticSearchResponseHandlerCommand],
-      nextPhase: ActorRef[IntermediateSearchResult]
+      nextPhase: ActorRef[IntermediateSearchResult],
+      breaker: CircuitBreaker
   ): Behavior[ElasticSearchResponse] = {
 
     Behaviors.setup { context =>
@@ -367,7 +392,7 @@ object ElasticSearchClient {
         entity = HttpEntity(ContentTypes.`application/json`, query.toString)
       )
       val futureResp: Future[HttpResponse] = withConcurrencyLimit {
-        Http().singleRequest(request)
+        breaker.withCircuitBreaker { Http().singleRequest(request) }
       }
 
       context.log.info2(
