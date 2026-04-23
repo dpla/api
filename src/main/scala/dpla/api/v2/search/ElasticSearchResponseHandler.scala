@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.{HttpResponse, StatusCode}
 import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.pattern.CircuitBreakerOpenException
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
@@ -48,10 +49,10 @@ object ElasticSearchResponseHandler {
 
   def apply(): Behavior[ElasticSearchResponseHandlerCommand] = {
     Behaviors.setup { context =>
+
       Behaviors.receiveMessage[ElasticSearchResponseHandlerCommand] {
 
         case ProcessElasticSearchResponse(futureHttpResponse, replyTo) =>
-          // Map the Future value to a message, handled by this actor.
           context.pipeToSelf(futureHttpResponse) {
             case Success(httpResponse) =>
               ProcessHttpResponse(httpResponse, replyTo)
@@ -96,12 +97,11 @@ object ElasticSearchResponseHandler {
         }
 
         case ReturnFinalResponse(response, replyTo, error) =>
-          // Log error if there is one
           error match {
+            case Some(_: CircuitBreakerOpenException) =>
+              context.log.warn("Request rejected: ElasticSearch circuit breaker is open")
             case Some(e) =>
-              context.log.error(
-                "Failed to process ElasticSearch response:", e
-              )
+              context.log.error("Failed to process ElasticSearch response:", e)
             case None => // no-op
           }
           // Send fully processed reply to original requester.
