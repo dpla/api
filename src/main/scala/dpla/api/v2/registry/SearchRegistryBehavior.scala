@@ -40,6 +40,8 @@ final case class RegisterRandom(
 
 trait SearchRegistryBehavior {
 
+  private val QueryParseErrorMessage = "The q parameter contains invalid search syntax."
+
   def spawnSearchActor(context: ActorContext[SearchRegistryCommand]):
     ActorRef[SearchCommand]
 
@@ -183,6 +185,10 @@ trait SearchRegistryBehavior {
           searchResponse = Some(NotFoundFailure)
           possibleSessionResolution
 
+        case SearchQueryParseFailure =>
+          searchResponse = Some(ValidationFailure(QueryParseErrorMessage))
+          possibleSessionResolution
+
         case SearchFailure =>
           searchResponse = Some(InternalFailure)
           possibleSessionResolution
@@ -298,6 +304,10 @@ trait SearchRegistryBehavior {
           fetchResponse = Some(NotFoundFailure)
           possibleSessionResolution
 
+        case SearchQueryParseFailure =>
+          fetchResponse = Some(InternalFailure)
+          possibleSessionResolution
+
         case SearchFailure =>
           fetchResponse = Some(InternalFailure)
           possibleSessionResolution
@@ -381,6 +391,10 @@ trait SearchRegistryBehavior {
 
         case InvalidSearchParams(message) =>
           randomResponse = Some(ValidationFailure(message))
+          possibleSessionResolution
+
+        case SearchQueryParseFailure =>
+          randomResponse = Some(ValidationFailure(QueryParseErrorMessage))
           possibleSessionResolution
 
         case SearchFailure =>

@@ -250,8 +250,11 @@ object ElasticSearchClient {
           nextPhase ! SearchQueryResponse(params, body, replyTo)
           Behaviors.stopped
 
-        case ElasticSearchHttpError(_) =>
-          replyTo ! SearchFailure
+        case ElasticSearchHttpError(statusCode) =>
+          if (statusCode.intValue == 400)
+            replyTo ! SearchQueryParseFailure
+          else
+            replyTo ! SearchFailure
           Behaviors.stopped
 
         case ElasticSearchResponseFailure =>
@@ -410,8 +413,11 @@ object ElasticSearchClient {
           nextPhase ! RandomQueryResponse(params, body, replyTo)
           Behaviors.stopped
 
-        case ElasticSearchHttpError(_) =>
-          replyTo ! SearchFailure
+        case ElasticSearchHttpError(statusCode) =>
+          if (statusCode.intValue == 400)
+            replyTo ! SearchQueryParseFailure
+          else
+            replyTo ! SearchFailure
           Behaviors.stopped
 
         case ElasticSearchResponseFailure =>

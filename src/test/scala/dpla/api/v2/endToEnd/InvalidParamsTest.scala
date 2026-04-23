@@ -8,7 +8,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import dpla.api.Routes
 import dpla.api.helpers.ActorHelper
 import dpla.api.helpers.Utils.fakeApiKey
-import dpla.api.v2.registry.{MockSmrRegistry, SmrRegistryCommand}
+import dpla.api.v2.registry.{MockItemRegistry, MockSmrRegistry, SmrRegistryCommand}
+import dpla.api.v2.search.{MockEsClientQueryParseError, MockItemSearch}
 import dpla.api.v2.smr.MockSmrRequestHandler
 import dpla.api.v2.smr.SmrProtocol.SmrCommand
 import org.scalatest.matchers.should.Matchers
@@ -33,6 +34,17 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
 
   lazy val routes: Route =
     new Routes(itemRegistry, pssRegistry, apiKeyRegistry,
+      smrRegistryS3Success).applicationRoutes
+
+  val esQueryParseErrorClient =
+    testKit.spawn(MockEsClientQueryParseError())
+  val itemSearchWithParseError =
+    MockItemSearch(testKit, Some(esQueryParseErrorClient))
+  val itemRegistryWithParseError =
+    MockItemRegistry(testKit, authenticator, itemAnalyticsClient,
+      Some(itemSearchWithParseError))
+  val routesWithParseError: Route =
+    new Routes(itemRegistryWithParseError, pssRegistry, apiKeyRegistry,
       smrRegistryS3Success).applicationRoutes
 
   "malformed api_key" should {
@@ -88,6 +100,16 @@ class InvalidParamsTest extends AnyWordSpec with Matchers
       val request = Post("/v2/api_key/foo")
 
       request ~> Route.seal(routes) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        contentType should === (ContentTypes.`application/json`)
+      }
+    }
+  }
+
+  "Elasticsearch query parse error" should {
+    "return BadRequest for /v2/items" in {
+      val request = Get(s"/v2/items?api_key=$fakeApiKey&q=invalid%29-")
+      request ~> Route.seal(routesWithParseError) ~> check {
         status shouldEqual StatusCodes.BadRequest
         contentType should === (ContentTypes.`application/json`)
       }
