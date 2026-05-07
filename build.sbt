@@ -54,3 +54,4 @@ ThisBuild / assemblyMergeStrategy := {
   case "META-INF/MANIFEST.MF" => MergeStrategy.discard
   case x => MergeStrategy.first
 }
+ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % "always"
