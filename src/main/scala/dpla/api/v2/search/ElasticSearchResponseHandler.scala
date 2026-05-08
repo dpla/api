@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 /**
- * Processes response streams from Elastic Search.
+ * Processes response streams from Elasticsearch.
  */
 
 sealed trait ElasticSearchResponse
