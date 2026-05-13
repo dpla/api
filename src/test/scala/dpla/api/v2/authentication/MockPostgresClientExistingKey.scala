@@ -22,8 +22,8 @@ object MockPostgresClientExistingKey {
       case ValidApiKey(_, _) =>
         Behaviors.unhandled
 
-      case ValidEmail(_, replyTo) =>
-        replyTo ! AccountFound(account)
+      case ValidEmail(email, replyTo) =>
+        replyTo ! AccountFound(account.copy(email = email))
         Behaviors.same
 
       case _ =>
