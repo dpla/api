@@ -735,7 +735,7 @@ class ParamValidatorTest extends AnyWordSpec with Matchers
 
     "reject too-short param" in {
       val given = "d"
-      val params =  Map("sourceResource.subject.name" -> given)
+      val params = Map("sourceResource.subject.name" -> given)
       itemParamValidator ! RawSearchParams(params, replyProbe.ref)
       replyProbe.expectMessageType[InvalidSearchParams]
     }

@@ -334,8 +334,8 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
             }
 
             val gte = facet.split("\\.").lastOption match {
-              case Some("month") => "now-416y"
-              case _ => "now-2000y"
+              case Some("month") => "1600-01-01"
+              case _ => "0001-01-01"
             }
 
             val dateHistogram = JsObject(
@@ -343,7 +343,7 @@ trait QueryBuilder extends FieldDefinitions with DefaultJsonProtocol {
                 "range" -> JsObject(
                   esField -> JsObject(
                     "gte" -> gte.toJson,
-                    "lte" -> "now".toJson
+                    "lte" -> "now/d".toJson
                   )
                 )
               ),

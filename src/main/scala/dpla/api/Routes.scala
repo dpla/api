@@ -410,9 +410,9 @@ class Routes(
       case SmrArchiveSuccess =>
         complete(smrArchiveSuccessMessage)
       case NewApiKey(email) =>
-        complete(newKeyMessage(email))
+        complete(apiKeyMessage(email))
       case ExistingApiKey(email) =>
-        complete(existingKeyResponse(email))
+        complete(apiKeyMessage(email))
       case DisabledApiKey(email) =>
         complete(disabledKeyResponse(email))
       case NotFoundFailure =>
@@ -506,16 +506,6 @@ class Routes(
       entity = errorEntity("bad_request", message)
     )
 
-  private def existingKeyResponse(email: String): HttpResponse =
-    HttpResponse(
-      Conflict,
-      entity = errorEntity(
-        "existing_key",
-        s"There is already an API key for $email" +
-          ". We have sent a reminder message to that address."
-      )
-    )
-
   private def disabledKeyResponse(email: String): HttpResponse =
     HttpResponse(
       Conflict,
@@ -527,8 +517,8 @@ class Routes(
       )
     )
 
-  private def newKeyMessage(email: String): String =
-    s"API key created and sent to $email."
+  private def apiKeyMessage(email: String): String =
+    s"Your API key has been sent to $email."
 
   private val smrArchiveSuccessMessage: String =
     s"Your request has been received."

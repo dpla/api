@@ -44,7 +44,7 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
   }
 
   "/api_key/[email] route" should {
-    "return Conflict if email has existing api key" in {
+    "return OK if email has existing api key" in {
       lazy val routes: Route =
         new Routes(itemRegistry, pssRegistry,
           apiKeyRegistryExistingKey, smrRegistry).applicationRoutes
@@ -52,8 +52,8 @@ class PostgresErrorTest extends AnyWordSpec with Matchers
       val request = Post("/v2/api_key/email@example.com")
 
       request ~> Route.seal(routes) ~> check {
-        status shouldEqual StatusCodes.Conflict
-        contentType should === (ContentTypes.`application/json`)
+        status shouldEqual StatusCodes.OK
+        entityAs[String] shouldEqual "Your API key has been sent to email@example.com."
       }
     }
   }

@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
   .settings(
     inThisBuild(List(
       organization    := "dpla",
-      scalaVersion    := "2.13.4"
+      scalaVersion    := "2.13.16"
     )),
     Defaults.itSettings,
 
@@ -54,3 +54,4 @@ ThisBuild / assemblyMergeStrategy := {
   case "META-INF/MANIFEST.MF" => MergeStrategy.discard
   case x => MergeStrategy.first
 }
+ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % "always"

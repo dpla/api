@@ -635,7 +635,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify default filter gte" in {
-      val expected = Some("now-2000y")
+      val expected = Some("0001-01-01")
       val traversed = readString(dateFacetQuery, "aggs",
         "sourceResource.date.begin", "filter", "range",
         "sourceResource.date.begin", "gte")
@@ -643,7 +643,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify year gte" in {
-      val expected = Some("now-2000y")
+      val expected = Some("0001-01-01")
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.end.year")))
       val query = getJsSearchQuery(params)
@@ -654,7 +654,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify month gte" in {
-      val expected = Some("now-416y")
+      val expected = Some("1600-01-01")
       val params = minSearchParams
         .copy(facets = Some(Seq("sourceResource.date.end.month")))
       val query = getJsSearchQuery(params)
@@ -665,7 +665,7 @@ class QueryBuilderTest extends AnyWordSpec with Matchers
     }
 
     "specify filter lte" in {
-      val expected = Some("now")
+      val expected = Some("now/d")
       val traversed = readString(dateFacetQuery, "aggs",
         "sourceResource.date.begin", "filter", "range",
         "sourceResource.date.begin", "lte")
