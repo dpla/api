@@ -84,6 +84,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       elasticSearchNotAnalyzed = Some("dataProvider.name.not_analyzed")
     ),
     DataField(
+      name = "exhibitions",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = false,
+      elasticSearchDefault = "exhibitions",
+      elasticSearchNotAnalyzed = Some("exhibitions")
+    ),
+    DataField(
       name = "hasView.@id",
       fieldType = URLField,
       searchable = true,
@@ -226,6 +235,15 @@ trait DPLAMAPFields extends FieldDefinitions {
       sortable = false,
       elasticSearchDefault = "originalRecord",
       elasticSearchNotAnalyzed = None
+    ),
+    DataField(
+      name = "primarySourceSets",
+      fieldType = TextField,
+      searchable = true,
+      facetable = true,
+      sortable = false,
+      elasticSearchDefault = "primarySourceSets",
+      elasticSearchNotAnalyzed = Some("primarySourceSets")
     ),
     DataField(
       name = "provider",
