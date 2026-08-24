@@ -139,9 +139,9 @@ object ElasticSearchClient {
         maxFailures  = maxFailures,
         callTimeout  = callTimeout,
         resetTimeout = resetTimeout
-      ).onOpen(() => context.log.warn("ElasticSearch circuit breaker opened"))
-       .onClose(() => context.log.info("ElasticSearch circuit breaker closed"))
-       .onHalfOpen(() => context.log.info("ElasticSearch circuit breaker half-open, testing ES"))
+      ).onOpen(() => log.warn("ElasticSearch circuit breaker opened"))
+       .onClose(() => log.info("ElasticSearch circuit breaker closed"))
+       .onHalfOpen(() => log.info("ElasticSearch circuit breaker half-open, testing ES"))
 
       Behaviors.receiveMessage[IntermediateSearchResult] {
 
